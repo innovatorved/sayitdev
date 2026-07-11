@@ -451,9 +451,14 @@ def test_missing_token_against_auth_required_server_fails(auth_mcp_port):
 
 
 def test_http_with_bearer_token_is_refused():
-    """dev must refuse non-loopback http:// + --mcp-token (token would be sent in plaintext)."""
-    # 192.0.2.1 is TEST-NET (RFC 5737) - non-routable, non-loopback, guaranteed to be refused.
-    # The security check fires before any network call, so this exits immediately.
+    """dev must refuse non-loopback http:// + --mcp-token (token would be sent in plaintext).
+
+    Uses a public hostname on port 80 so the plaintext-credential guard is what
+    fires: the SSRF host-allowlist only permits ports 80/443 and blocks
+    private/link-local hosts, so a non-standard port (or a TEST-NET address)
+    would trip the earlier blocked-host guard instead of the plaintext one.
+    The refusal is thrown before any network call, so this exits immediately.
+    """
     result = subprocess.run(
         [
             str(BINARY),
@@ -461,7 +466,7 @@ def test_http_with_bearer_token_is_refused():
             "--port",
             str(find_free_port()),
             "--mcp",
-            "http://192.0.2.1:8080/mcp",
+            "http://mcp.example.com/mcp",
             "--mcp-token",
             "mytoken",
         ],
