@@ -49,7 +49,7 @@ check-toolchain:
 # Build as your user (never sudo). Then: sudo make install
 build: check-toolchain
 	swift build -c release
-	@codesign --force --sign - .build/release/$(BINARY) 2>/dev/null || true
+	@bash scripts/adhoc-sign.sh .build/release/$(BINARY)
 	@$(MAKE) --no-print-directory generate-man-page
 
 install:
