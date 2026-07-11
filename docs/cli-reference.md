@@ -58,8 +58,17 @@ SERVER (--serve)
   --token <secret>                        Require Bearer token auth
   --token-auto                            Generate random Bearer token
   --public-health                         Keep /health unauthenticated
+  --i-know-what-im-doing                  Allow non-loopback --serve without --token
   --footgun                               Disable all protections
   --max-concurrent <n>                    Max concurrent requests (default: 5)
+
+VOICE (--speak, --listen, --agent)
+  --input-device <uid>                    Microphone device UID [DEV_AUDIO_INPUT]
+  --voice-name <name>                     TTS voice id or personal [DEV_TTS_VOICE]
+  --locale <id>                           STT/TTS locale [DEV_STT_LOCALE, default en-US]
+  --rate <n>                              TTS speaking rate [DEV_TTS_RATE]
+  --audio-format <fmt>                    TTS output format: wav, pcm, aac [DEV_TTS_FORMAT]
+  --timestamps                            Include timing in transcriptions
 
 META
   -v, --version                           Print version
@@ -183,6 +192,9 @@ dev --serve --no-origin-check
 # --max-concurrent
 dev --serve --max-concurrent 2
 
+# --i-know-what-im-doing
+dev --serve --i-know-what-im-doing --host 0.0.0.0 --token "secret"
+
 # --benchmark, --model-info, --update, --release, --version, --help
 dev --benchmark -o json | jq '.benchmarks[] | {name, speedup_ratio}'
 dev --model-info
@@ -202,6 +214,8 @@ dev --listen
 dev --agent
 dev --speak "Hi" --voice-name personal --rate 1.1
 dev --listen --locale en-US
+dev --listen --input-device <uid> --timestamps
+dev --speak "Hi" --audio-format wav
 ```
 
 Security details live in [server-security.md](server-security.md). Background-service usage lives in [background-service.md](background-service.md).

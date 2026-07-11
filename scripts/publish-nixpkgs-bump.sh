@@ -64,8 +64,13 @@ info() { echo "===> $*"; }
 # distinct failure. All failures keep a non-zero code so `make release` still
 # treats the bump as non-fatal (any non-zero -> WARN, never fails the release).
 finish() {
-  local token="$1" code="$2"; shift 2
-  echo "NIXPKGS_BUMP_STATUS=${token} version=${version:-unknown} ${*}"
+  local token="$1" code="$2"
+  shift 2
+  if (("$#" > 0)); then
+    echo "NIXPKGS_BUMP_STATUS=${token} version=${version:-unknown} $*"
+  else
+    echo "NIXPKGS_BUMP_STATUS=${token} version=${version:-unknown}"
+  fi
   exit "$code"
 }
 
