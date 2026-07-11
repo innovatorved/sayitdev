@@ -17,12 +17,18 @@ enum AgentLoop {
             } catch SpeechInputError.emptyAudio {
                 printStderr("(no speech detected, listening again...)")
                 continue
+            } catch SpeechInputError.microphoneNoAudio {
+                printStderr(SpeechInputError.microphoneNoAudio.localizedDescription)
+                try await Task.sleep(for: .milliseconds(300))
+                continue
             }
             printStderr("You: \(transcript)")
             let reply = try await generateReply(transcript: transcript, systemPrompt: systemPrompt, options: options)
             print(reply)
             printStderr("SayItDev: speaking reply...")
             try await SpeechOutput.speak(reply, config: config)
+            // Let output→input device routing settle before the next mic capture (Bluetooth headsets).
+            try await Task.sleep(for: .milliseconds(150))
         }
     }
 

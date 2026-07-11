@@ -11,6 +11,13 @@ import Foundation
 import SayItDevCore
 import os
 
+private func voiceDebug(_ message: String) {
+    guard ProcessInfo.processInfo.environment["DEV_VOICE_DEBUG"] == "1" else { return }
+    if let data = "voice: \(message)\n".data(using: .utf8) {
+        FileHandle.standardError.write(data)
+    }
+}
+
 final class MicCaptureBridge: @unchecked Sendable {
     private let request: SFSpeechAudioBufferRecognitionRequest
     private let listenConfig: MicListenConfig
@@ -21,6 +28,7 @@ final class MicCaptureBridge: @unchecked Sendable {
         var shouldStop = false
         var stopReason: MicListenStopReason?
         var lastPartial = ""
+        var audioBufferCount = 0
     }
 
     private let stopLatch = TeardownLatch()
@@ -45,6 +53,9 @@ final class MicCaptureBridge: @unchecked Sendable {
                 return true
             }
             guard stillAccepting else { return }
+            if buffer.frameLength > 0 {
+                flagsLock.withLock { $0.audioBufferCount += 1 }
+            }
             request.append(buffer)
             let rms = MicCaptureBridge.rmsLevel(from: buffer)
             let now = Date.timeIntervalSinceReferenceDate
@@ -88,6 +99,10 @@ final class MicCaptureBridge: @unchecked Sendable {
 
     var lastPartial: String {
         flagsLock.withLock { $0.lastPartial }
+    }
+
+    var hasReceivedAudio: Bool {
+        flagsLock.withLock { $0.audioBufferCount > 0 }
     }
 
     /// Returns `true` exactly once when this caller should tear down the mic graph.
@@ -137,6 +152,7 @@ final class MicCaptureSession {
     var monitorTask: Task<Void, Never>?
     /// Set when the recognizer delivered `.isFinal` (skip redundant `endAudio`).
     var endedNaturally = false
+    private(set) var startedAt: TimeInterval = 0
 
     private var input: AVAudioInputNode { engine.inputNode }
 
@@ -156,9 +172,27 @@ final class MicCaptureSession {
 
     func start() throws {
         let format = input.outputFormat(forBus: 0)
+        guard MicListenPolicy.isValidCaptureFormat(
+            channelCount: format.channelCount,
+            sampleRate: format.sampleRate
+        ) else {
+            voiceDebug("start rejected: invalid pre-start format ch=\(format.channelCount) sr=\(format.sampleRate)")
+            throw SpeechInputError.noInputDevice
+        }
         bridge.installTap(on: input, format: format)
         engine.prepare()
         try engine.start()
+        startedAt = Date.timeIntervalSinceReferenceDate
+        let liveFormat = input.outputFormat(forBus: 0)
+        guard MicListenPolicy.isValidCaptureFormat(
+            channelCount: liveFormat.channelCount,
+            sampleRate: liveFormat.sampleRate
+        ) else {
+            voiceDebug("start rejected: invalid post-start format ch=\(liveFormat.channelCount) sr=\(liveFormat.sampleRate)")
+            stop(endAudio: false)
+            throw SpeechInputError.noInputDevice
+        }
+        voiceDebug("engine started ch=\(liveFormat.channelCount) sr=\(liveFormat.sampleRate) running=\(engine.isRunning)")
     }
 
     /// Idempotent mic graph teardown. Call on MainActor before resuming any async continuation.
@@ -168,20 +202,32 @@ final class MicCaptureSession {
         if endAudio, !endedNaturally {
             request.endAudio()
         }
+        if engine.isRunning {
+            engine.stop()
+        }
         input.removeTap(onBus: 0)
-        engine.stop()
         recognitionTask?.cancel()
         recognitionTask = nil
+        voiceDebug("engine stopped")
     }
 
-    /// Safety-net stop for `defer` when the caller may already have stopped explicitly.
-    func stopIfNeeded() {
-        stop(endAudio: !endedNaturally)
+    /// Cancel monitor work and let CoreAudio release the input device before the next capture.
+    func finishTeardown() async {
+        monitorTask?.cancel()
+        if let monitorTask {
+            _ = await monitorTask.value
+        }
+        monitorTask = nil
+        recognitionTask = nil
+        // Brief settle so the next AVAudioEngine can acquire the default input (notably after TTS).
+        try? await Task.sleep(for: .milliseconds(50))
+        voiceDebug("teardown complete")
     }
 
     var lastPartial: String { bridge.lastPartial }
     var shouldStop: Bool { bridge.shouldStop }
     var stopReason: MicListenStopReason? { bridge.stopReason }
+    var hasReceivedAudio: Bool { bridge.hasReceivedAudio }
 
     func notePartial(_ text: String) {
         bridge.notePartial(text)

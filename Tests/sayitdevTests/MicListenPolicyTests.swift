@@ -62,6 +62,17 @@ func runMicListenPolicyTests() {
         try assertTrue(!latch.claim())
         try assertTrue(!latch.claim())
     }
+
+    test("isValidCaptureFormat accepts positive channels and sample rate") {
+        try assertTrue(MicListenPolicy.isValidCaptureFormat(channelCount: 1, sampleRate: 48_000))
+        try assertTrue(MicListenPolicy.isValidCaptureFormat(channelCount: 2, sampleRate: 16_000))
+    }
+
+    test("isValidCaptureFormat rejects zero channels or sample rate") {
+        try assertTrue(!MicListenPolicy.isValidCaptureFormat(channelCount: 0, sampleRate: 48_000))
+        try assertTrue(!MicListenPolicy.isValidCaptureFormat(channelCount: 1, sampleRate: 0))
+        try assertTrue(!MicListenPolicy.isValidCaptureFormat(channelCount: 0, sampleRate: 0))
+    }
 }
 
 private func assertEqual<T: FloatingPoint>(

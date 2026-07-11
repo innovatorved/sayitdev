@@ -422,6 +422,10 @@ do {
             printError(SpeechInputError.noInputDevice.localizedDescription)
             await shutdownMCP()
             exit(SayItDevExitCodes.noInputDevice)
+        } catch SpeechInputError.microphoneNoAudio {
+            printError(SpeechInputError.microphoneNoAudio.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.noInputDevice)
         } catch SpeechInputError.emptyAudio {
             printError("No speech detected")
             await shutdownMCP()
@@ -441,6 +445,10 @@ do {
             exit(SayItDevExitCodes.speechAssetFailed)
         } catch SpeechInputError.noInputDevice {
             printError(SpeechInputError.noInputDevice.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.noInputDevice)
+        } catch SpeechInputError.microphoneNoAudio {
+            printError(SpeechInputError.microphoneNoAudio.localizedDescription)
             await shutdownMCP()
             exit(SayItDevExitCodes.noInputDevice)
         }

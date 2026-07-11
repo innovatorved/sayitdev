@@ -85,6 +85,11 @@ public struct MicListenSession: Sendable, Equatable {
 }
 
 public enum MicListenPolicy {
+    /// True when an `AVAudioFormat` from the input node can carry capture data.
+    public static func isValidCaptureFormat(channelCount: UInt32, sampleRate: Double) -> Bool {
+        channelCount > 0 && sampleRate > 0
+    }
+
     public static func rmsLevel(samples: [Float]) -> Float {
         guard !samples.isEmpty else { return 0 }
         var sum: Float = 0

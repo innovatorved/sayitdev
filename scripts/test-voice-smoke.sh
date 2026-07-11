@@ -49,7 +49,54 @@ run_silence_test() {
   return 0
 }
 
+run_sequential_listen_test() {
+  echo "==> dev --listen twice sequentially (second capture must not abort)"
+  local code1 code2
+  set +e
+  "$DEV" --listen </dev/null >/dev/null 2>&1 &
+  local pid1=$!
+  local waited=0
+  while kill -0 "$pid1" 2>/dev/null && [[ "$waited" -lt 10 ]]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
+  if kill -0 "$pid1" 2>/dev/null; then
+    kill "$pid1" 2>/dev/null || true
+    wait "$pid1" 2>/dev/null || true
+    code1=0
+  else
+    wait "$pid1"
+    code1=$?
+  fi
+
+  "$DEV" --listen </dev/null >/dev/null 2>&1 &
+  local pid2=$!
+  waited=0
+  while kill -0 "$pid2" 2>/dev/null && [[ "$waited" -lt 10 ]]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
+  if kill -0 "$pid2" 2>/dev/null; then
+    kill "$pid2" 2>/dev/null || true
+    wait "$pid2" 2>/dev/null || true
+    code2=0
+  else
+    wait "$pid2"
+    code2=$?
+  fi
+  set -e
+
+  if [[ "$code1" -eq "$abort_exit" || "$code2" -eq "$abort_exit" ]]; then
+    echo "    FAIL: first=$code1 second=$code2 (exit $abort_exit abort)"
+    failures=$((failures + 1))
+    return 1
+  fi
+  echo "    OK: first=$code1 second=$code2 (no abort on second capture)"
+  return 0
+}
+
 run_silence_test "dev --listen" "$DEV" --listen || true
+run_sequential_listen_test || true
 run_silence_test "dev --agent" "$DEV" --agent || true
 
 if [[ "$failures" -gt 0 ]]; then

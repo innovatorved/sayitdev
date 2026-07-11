@@ -25,6 +25,7 @@ enum SpeechInputError: Error, LocalizedError {
     case permissionDenied(String)
     case assetInstallFailed
     case noInputDevice
+    case microphoneNoAudio
     case transcriptionFailed(String)
     case emptyAudio
 
@@ -33,6 +34,8 @@ enum SpeechInputError: Error, LocalizedError {
         case .permissionDenied(let m): return m
         case .assetInstallFailed: return "Failed to install speech recognition model assets"
         case .noInputDevice: return "No microphone input device available"
+        case .microphoneNoAudio:
+            return "Microphone opened but received no audio — wait a moment and try again (another capture may still be releasing the device)"
         case .transcriptionFailed(let m): return m
         case .emptyAudio: return "No speech detected in audio"
         }
@@ -232,7 +235,8 @@ enum SpeechInput {
 
         let session = try MicCaptureSession(locale: config.locale, listenConfig: listenConfig)
         try session.start()
-        defer { session.stopIfNeeded() }
+
+        let noAudioWatchdogSeconds: TimeInterval = 1.5
 
         return try await withCheckedThrowingContinuation { cont in
             final class State: @unchecked Sendable {
@@ -241,9 +245,11 @@ enum SpeechInput {
             let state = State()
 
             @MainActor
-            func resumeOnce(with result: Result<String, Error>) {
+            func finishCapture(with result: Result<String, Error>) async {
                 guard !state.resumed else { return }
                 state.resumed = true
+                session.monitorTask?.cancel()
+                await session.finishTeardown()
                 switch result {
                 case .success(let text):
                     cont.resume(returning: text)
@@ -253,29 +259,29 @@ enum SpeechInput {
             }
 
             @MainActor
-            func finalize(with text: String) {
+            func finalize(with text: String) async {
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
-                    resumeOnce(with: .failure(SpeechInputError.emptyAudio))
+                    await finishCapture(with: .failure(SpeechInputError.emptyAudio))
                 } else {
-                    resumeOnce(with: .success(trimmed))
+                    await finishCapture(with: .success(trimmed))
                 }
             }
 
             @MainActor
-            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) {
+            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) async {
                 guard !state.resumed else { return }
                 if let error {
                     let ns = error as NSError
                     if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 {
                         session.endedNaturally = true
                         session.stop(endAudio: false)
-                        finalize(with: session.lastPartial)
+                        await finalize(with: session.lastPartial)
                         return
                     }
                     session.endedNaturally = true
                     session.stop(endAudio: true)
-                    resumeOnce(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
+                    await finishCapture(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
                     return
                 }
                 guard let result else { return }
@@ -285,7 +291,7 @@ enum SpeechInput {
                 if result.isFinal {
                     session.endedNaturally = true
                     session.stop(endAudio: false)
-                    finalize(with: text)
+                    await finalize(with: text)
                 }
             }
 
@@ -296,7 +302,7 @@ enum SpeechInput {
                     captureBridge.stopAcceptingAudioFromCallback()
                 }
                 Task { @MainActor in
-                    handleRecognition(result: result, error: error)
+                    await handleRecognition(result: result, error: error)
                 }
             }
 
@@ -304,6 +310,16 @@ enum SpeechInput {
                 while !state.resumed {
                     try? await Task.sleep(for: .milliseconds(100))
                     if state.resumed { break }
+
+                    let now = Date.timeIntervalSinceReferenceDate
+                    if session.startedAt > 0,
+                       now - session.startedAt >= noAudioWatchdogSeconds,
+                       !session.hasReceivedAudio {
+                        session.stop(endAudio: false)
+                        await finishCapture(with: .failure(SpeechInputError.microphoneNoAudio))
+                        break
+                    }
+
                     if let reason = session.pollStopReason() {
                         session.markShouldStop(reason: reason)
                     }
@@ -317,7 +333,7 @@ enum SpeechInput {
                             }
                         }
                         if !state.resumed {
-                            finalize(with: session.lastPartial)
+                            await finalize(with: session.lastPartial)
                         }
                         break
                     }

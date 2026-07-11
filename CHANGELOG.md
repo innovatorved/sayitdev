@@ -14,6 +14,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 - `POST /v1/audio/speech` no longer hangs: server TTS render yields the MainActor instead of blocking `RunLoop.main`.
 - Integration tests pass Bearer auth to the standing MCP server on port 11435 (`post_chat_rotating_seeds`).
 - Integration test suite: the `--serve --mcp` custom-server fixtures now pass `--token` (required since MCP auth hardening), the remote-MCP tests send the Bearer token on the protected `/v1/models` and streaming `/v1/chat/completions` routes, `test_http_with_bearer_token_is_refused` targets the plaintext-credential guard via a port-80 public host instead of tripping the earlier SSRF host-block guard, and `test_code_oneliner_battery` rotates seeds to tolerate on-device model verbosity.
+- Second and later `dev --listen` / `dev --agent` turns no longer come up silent: mic graph teardown is fully awaited (`finishTeardown`), the engine stops before the tap is removed, capture format is validated on start, and a first-buffer watchdog surfaces a clear error when the tap receives no audio.
 
 ## [1.0.1] - 2026-07-11
 
