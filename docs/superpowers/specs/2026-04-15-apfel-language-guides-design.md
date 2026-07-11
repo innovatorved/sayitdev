@@ -36,7 +36,7 @@ Tier 2 (Mac-native / Mac-shipped scripting):
 
 ## Two repositories
 
-### `__UPSTREAM_DEV_REPO__` (this repo) - docs only
+### `innovatorved/sayitdev` (this repo) - docs only
 
 New directory: `docs/guides/`
 
@@ -59,7 +59,7 @@ Linked from:
 - `README.md` (new "Using from other languages" section)
 - `docs/integrations.md` (cross-link)
 
-### `__UPSTREAM_DEV_REPO__-guides-lab` (new repo) - runnable proof
+### `innovatorved/sayitdev-guides-lab` (new repo) - runnable proof
 
 ```
 dev-guides-lab/
@@ -183,7 +183,7 @@ A `Brewfile` at the repo root installs any brew-available toolchains; per-langua
 
 Empirical testing across 10 languages will exercise dev's OpenAI surface harder than any prior integration test. Expected outcome: some bugs surface (wrong status codes, header-case mismatches, streaming edge cases, JSON-mode quirks with certain prompt shapes, CORS issues, etc.).
 
-**Rule:** whenever testing a script reveals a bug, inconsistency, or spec violation in dev (not in the guide script), file a GitHub issue on `__UPSTREAM_DEV_REPO__` before moving on. The issue must include:
+**Rule:** whenever testing a script reveals a bug, inconsistency, or spec violation in dev (not in the guide script), file a GitHub issue on `innovatorved/sayitdev` before moving on. The issue must include:
 
 - Failing language + script path (lab repo, pinned commit SHA)
 - The exact request sent (curl reproducer)

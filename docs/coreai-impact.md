@@ -4,7 +4,7 @@
 > [developer.apple.com/documentation/updates/foundationmodels](https://developer.apple.com/documentation/updates/foundationmodels)
 > (FoundationModels OS 27 updates) and
 > [developer.apple.com/documentation/coreai](https://developer.apple.com/documentation/coreai/) (Core AI, beta).
-> Tracking epic: [#189](__UPSTREAM_DEV_URL__/issues/189).
+> Tracking epic: [#189](https://github.com/innovatorved/sayitdev/issues/189).
 
 ## TL;DR
 

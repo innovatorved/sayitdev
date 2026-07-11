@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Twice-daily nixpkgs dev-llm bump catch-up. Before install, replace
+  __REPO_ROOT__ with the absolute path to this checkout (e.g. ~/Desktop/concept/sayitdev).
+
+  cp scripts/launchd/com.innovatorved.sayitdev-nixpkgs-bump.plist ~/Library/LaunchAgents/
+  # edit __REPO_ROOT__ in the copied plist, then:
+  launchctl load ~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.innovatorved.sayitdev-nixpkgs-bump</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO_ROOT__/scripts/nixpkgs-bump-cron.sh</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>10</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>20</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+    </array>
+    <key>StandardOutPath</key>
+    <string>/tmp/sayitdev-nixpkgs-bump.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/sayitdev-nixpkgs-bump.log</string>
+</dict>
+</plist>

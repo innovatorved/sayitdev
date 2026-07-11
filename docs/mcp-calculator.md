@@ -4,7 +4,7 @@ dev natively speaks the [https://modelcontextprotocol.io/](https://modelcontextp
 
 All inference runs on-device with no network calls for the LLM itself. Optional remote MCP tool servers (`--mcp https://...`) do make network calls for tool arguments.
 
-> **Ready-made MCPs for dev**: [dev-mcp.franzai.com](https://dev-mcp.franzai.com/) ships three token-budget-optimized MCP servers for dev's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. Details in [Ready-made MCPs](#ready-made-mcps) below.
+> **Ready-made MCPs for dev**: [github.com/innovatorved/sayitdev](https://github.com/innovatorved/sayitdev/) ships three token-budget-optimized MCP servers for dev's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. Details in [Ready-made MCPs](#ready-made-mcps) below.
 
 ## Quick start
 
@@ -41,7 +41,7 @@ dev "Hello"
 
 ### Persistent MCP registry (dev-run)
 
-If you find yourself typing the same `--mcp` list every day, [__UPSTREAM_DEV_REPO__-run](__UPSTREAM_DEV_URL__-run) (MIT, ~200 LOC) reads a plain text config at `~/.config/dev/mcps.conf`, builds `DEV_MCP` from the enabled lines, and `execve`s dev. Comment out a line with `-` to disable, uncomment to re-enable.
+If you find yourself typing the same `--mcp` list every day, [innovatorved/sayitdev-run](https://github.com/innovatorved/sayitdev-run) (MIT, ~200 LOC) reads a plain text config at `~/.config/dev/mcps.conf`, builds `DEV_MCP` from the enabled lines, and `execve`s dev. Comment out a line with `-` to disable, uncomment to re-enable.
 
 ```bash
 # ~/.config/dev/mcps.conf
@@ -240,9 +240,9 @@ See `mcp/calculator/server.py` for a complete working example.
 
 ## Ready-made MCPs
 
-- [dev-mcp.franzai.com](https://dev-mcp.franzai.com/) - three token-budget-optimized MCP servers for dev's 4096-token context window:
+- [github.com/innovatorved/sayitdev](https://github.com/innovatorved/sayitdev/) - three token-budget-optimized MCP servers for dev's 4096-token context window:
   - `dev-mcp-url-fetch` - fetch a URL, extract the main article with Readability, return clean Markdown. SSRF blocklist, 6000-char hard cap.
   - `dev-mcp-ddg-search` - DuckDuckGo web search via direct HTML scrape. No API key. 2000-char hard cap.
   - `dev-mcp-search-and-fetch` - the flagship compound tool. Searches AND fetches the top N result pages in ONE tool call. Saves ~500 tokens of schema/state overhead vs chaining separate tools. Declared as both `search` and `web_search` so the 3B model's hallucinated tool names still route correctly.
-  - Install with `brew install Arthur-Ficial/tap/dev-mcp`
-  - Repo: [github.com/__UPSTREAM_DEV_REPO__-mcp](__UPSTREAM_DEV_URL__-mcp) - open for contributions of new dev-optimized MCPs. See [dev-mcp.franzai.com/#contribute](https://dev-mcp.franzai.com/#contribute) for the rules and idea list.
+  - Install with `brew install innovatorved/tap/dev-mcp`
+  - Repo: [github.com/innovatorved/sayitdev-mcp](https://github.com/innovatorved/sayitdev-mcp) - open for contributions of new dev-optimized MCPs. See [github.com/innovatorved/sayitdev/#contribute](https://github.com/innovatorved/sayitdev/#contribute) for the rules and idea list.

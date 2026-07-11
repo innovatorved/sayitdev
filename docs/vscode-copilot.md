@@ -15,7 +15,7 @@ Add this to your VSCode settings (`customendpoint` BYOK provider, chat-completio
 ```json
 [
   {
-    "name": "Apfel",
+    "name": "SayItDev",
     "vendor": "customendpoint",
     "apiType": "chat-completions",
     "models": [

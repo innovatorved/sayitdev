@@ -33,7 +33,7 @@ jobs:
         run: make build
 
       - name: Unit tests
-        run: swift run dev-tests
+        run: swift run sayitdev-tests
 
       - name: Install Python test dependencies
         run: pip3 install --break-system-packages pytest pytest-xdist httpx jsonschema pyyaml
@@ -78,7 +78,9 @@ jobs:
           # turn marker rot into a red build.
           python3 -m pytest Tests/integration/test_marker_discipline.py -v --tb=short
 
-          # Note: performance_test.py requires Apple Intelligence (benchmark runs inference).
+          python3 -m pytest Tests/integration/test_rebrand_guard.py -v --tb=short
+
+          python3 -m pytest Tests/integration/test_voice.py -v --tb=short
           # It runs locally via make preflight / make release.
 
       - name: Model-free HTTP server suites
@@ -140,7 +142,7 @@ jobs:
       - name: Require CHANGELOG [Unreleased] entry for source changes
         run: bash scripts/check-changelog.sh "origin/${{ github.base_ref }}"
 
-  apfelcore-public-api:
+  sayitdevcore-public-api:
     runs-on: macos-26
     steps:
       - name: Check out repository
@@ -166,14 +168,14 @@ jobs:
 
       - name: Build SayItDevCore docs
         run: |
-          mkdir -p "$RUNNER_TEMP/apfelcore-docs"
+          mkdir -p "$RUNNER_TEMP/sayitdevcore-docs"
           swift package \
-            --allow-writing-to-directory "$RUNNER_TEMP/apfelcore-docs" \
+            --allow-writing-to-directory "$RUNNER_TEMP/sayitdevcore-docs" \
             generate-documentation \
             --target SayItDevCore \
             --disable-indexing \
             --warnings-as-errors \
-            --output-path "$RUNNER_TEMP/apfelcore-docs"
+            --output-path "$RUNNER_TEMP/sayitdevcore-docs"
 
       - name: Diagnose API breakage for SayItDevCore
         run: |
@@ -199,7 +201,7 @@ jobs:
         run: pip3 install --break-system-packages pytest httpx
 
       - name: Downstream consumer smoke test
-        run: python3 -m pytest Tests/integration/test_apfelcore_package.py -v --tb=short
+        run: python3 -m pytest Tests/integration/test_sayitdevcore_package.py -v --tb=short
 
       - name: SayItDevCore examples smoke test
-        run: python3 -m pytest Tests/integration/test_apfelcore_examples.py -v --tb=short
+        run: python3 -m pytest Tests/integration/test_sayitdevcore_examples.py -v --tb=short

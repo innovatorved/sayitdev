@@ -8,7 +8,7 @@
 // Bugs in the FoundationModels-coupled executable target (#175/#176/#179/#182)
 // and the feature tickets (#167-#171) are guarded at the wire/CLI boundary in
 // Tests/integration/test_tdd_red.py - they cannot be reached from this
-// pure-library test target (see Package.swift: dev-tests depends only on
+// pure-library test target (see Package.swift: sayitdev-tests depends only on
 // SayItDevCore + SayItDevCLI).
 // ============================================================================
 

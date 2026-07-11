@@ -12,6 +12,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 BINARY = ROOT / ".build" / "release" / "dev"
 MCP_SERVER = ROOT / "mcp" / "calculator" / "server.py"
 OPENAI_SPEC = pathlib.Path(__file__).parent / "openai_spec" / "openapi.yaml"
+INTEGRATION_MCP_TOKEN = "integration-test-token"
+MCP_AUTH_HEADERS = {"Authorization": f"Bearer {INTEGRATION_MCP_TOKEN}"}
 
 
 _MODEL_AVAILABLE = None
@@ -247,7 +249,10 @@ def guard_server_11435():
         yield
         return
 
-    proc = _start_server(11435, ["--mcp", str(MCP_SERVER)])
+    proc = _start_server(
+        11435,
+        ["--mcp", str(MCP_SERVER), "--token", INTEGRATION_MCP_TOKEN],
+    )
     if proc is None:
         # See guard_server_11434: a non-starting server is a failure (#227).
         pytest.fail("Could not start dev MCP server on port 11435")

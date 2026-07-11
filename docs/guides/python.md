@@ -4,7 +4,7 @@ Call Apple's on-device Foundation Model from Python using the official `openai` 
 
 This guide covers the canonical patterns: one-shot completion, streaming, JSON mode, error handling, tool calling, and a real text-summarization example. Every code block was run against a live dev server; the output below each snippet is real unedited stdout.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/python](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/python).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/python](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/python).
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ Real output:
 Swift is a modern, high-performance, and safe programming language developed by Apple for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/01_oneshot.py).
+Lab script: [`01_oneshot.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/01_oneshot.py).
 
 ## 2. Streaming
 
@@ -76,7 +76,7 @@ Apple M2
 Apple M3
 ```
 
-Lab script: [`02_stream.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/02_stream.py).
+Lab script: [`02_stream.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/02_stream.py).
 
 ## 3. JSON mode / structured output
 
@@ -114,7 +114,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/03_json.py).
+Lab script: [`03_json.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/03_json.py).
 
 ## 4. Error handling
 
@@ -140,7 +140,7 @@ Real output:
 Got expected error: HTTP 501 - Error code: 501 - {'error': {'message': "Embeddings not supported by Apple's on-device model.", 'type': 'invalid_request_error'}}
 ```
 
-Lab script: [`04_errors.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/04_errors.py).
+Lab script: [`04_errors.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/04_errors.py).
 
 ## 5. Tool calling
 
@@ -198,7 +198,7 @@ Real output:
 The current temperature in Vienna is 14°C.
 ```
 
-Lab script: [`05_tools.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/05_tools.py).
+Lab script: [`05_tools.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/05_tools.py).
 
 ## 6. Real example - summarize a file from stdin
 
@@ -233,7 +233,7 @@ Real output (summarizing a paragraph about the M1 chip):
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It features an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip combines CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/python/06_example.py).
+Lab script: [`06_example.py`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/python/06_example.py).
 
 ## Troubleshooting
 
@@ -250,11 +250,11 @@ Lab script: [`06_example.py`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/
 - Python 3.11 / openai 2.31.0
 - Date: 2026-04-16
 
-Full runnable test suite + captured outputs: [dev-guides-lab/tests/test_python.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_python.py).
+Full runnable test suite + captured outputs: [dev-guides-lab/tests/test_python.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_python.py).
 
 ## See also
 
 - [nodejs.md](nodejs.md) - same thing from Node.js
 - [ruby.md](ruby.md) / [php.md](php.md) - same thing from Ruby / PHP
 - [bash-curl.md](bash-curl.md) - raw HTTP, no SDK
-- [__UPSTREAM_DEV_REPO__-guides-lab](__UPSTREAM_DEV_URL__-guides-lab) - runnable proof for all ten languages
+- [innovatorved/sayitdev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab) - runnable proof for all ten languages

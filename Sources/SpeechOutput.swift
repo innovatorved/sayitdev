@@ -28,6 +28,7 @@ enum SpeechOutput {
         return s
     }()
 
+    @MainActor
     static func resolveVoice(config: VoiceConfig) async -> AVSpeechSynthesisVoice? {
         if config.voiceName?.lowercased() == "personal" {
             await withCheckedContinuation { cont in
@@ -56,23 +57,55 @@ enum SpeechOutput {
     }
 
     /// Speak through the default output device; blocks until finished.
+    @MainActor
     static func speak(_ text: String, config: VoiceConfig) async throws {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let voice = await resolveVoice(config: config)
         let utterance = makeUtterance(trimmed, config: config, voice: voice)
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            delegate.onFinish = { cont.resume() }
-            synthesizer.speak(utterance)
-            while synthesizer.isSpeaking {
-                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
-            }
-            delegate.onFinish?()
-            delegate.onFinish = nil
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
         }
+
+        // CLI tools must pump RunLoop.main or AVSpeechSynthesizer never completes.
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            var finished = false
+            func finish() {
+                guard !finished else { return }
+                finished = true
+                delegate.onFinish = nil
+                cont.resume()
+            }
+            delegate.onFinish = finish
+            synthesizer.speak(utterance)
+
+            let rate = max(utterance.rate, 0.01)
+            let estSeconds = max(2.0, Double(trimmed.count) / (Double(rate) * 12.0) + 1.5)
+            let deadline = Date(timeIntervalSinceNow: min(estSeconds + 5.0, 120.0))
+
+            var sawSpeaking = false
+            var idleTicks = 0
+            while !finished && Date() < deadline {
+                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+                if synthesizer.isSpeaking {
+                    sawSpeaking = true
+                    idleTicks = 0
+                } else if sawSpeaking {
+                    idleTicks += 1
+                    if idleTicks >= 3 {
+                        finish()
+                    }
+                }
+            }
+            finish()
+        }
+
+        // Brief tail so the last phonemes reach the output device before process exit.
+        try await Task.sleep(nanoseconds: 100_000_000)
     }
 
     /// Render speech to audio bytes (for server).
+    @MainActor
     static func render(_ text: String, config: VoiceConfig) async throws -> (data: Data, contentType: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw SpeechOutputError.emptyInput }
@@ -83,13 +116,30 @@ enum SpeechOutput {
         }
         let box = BufferBox()
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            var finished = false
+            func finish() {
+                guard !finished else { return }
+                finished = true
+                delegate.onFinish = nil
+                cont.resume()
+            }
+            delegate.onFinish = finish
             synthesizer.write(utterance) { buffer in
                 if let pcm = buffer as? AVAudioPCMBuffer {
-                    box.buffers.append(pcm)
+                    if pcm.frameLength > 0 {
+                        box.buffers.append(pcm)
+                    } else {
+                        finish()
+                    }
                 } else {
-                    cont.resume()
+                    finish()
                 }
             }
+            let deadline = Date(timeIntervalSinceNow: 120)
+            while !finished && Date() < deadline {
+                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+            }
+            finish()
         }
         guard let first = box.buffers.first else { throw SpeechOutputError.renderFailed }
         let format = first.format
@@ -102,11 +152,7 @@ enum SpeechOutput {
             for b in box.buffers { try file.write(from: b) }
             return (try Data(contentsOf: tempURL), config.audioFormat == .wav ? "audio/wav" : "audio/pcm")
         case .aac:
-            let wavURL = tempURL.deletingPathExtension().appendingPathExtension("wav")
-            defer { try? FileManager.default.removeItem(at: wavURL) }
-            let file = try AVAudioFile(forWriting: wavURL, settings: format.settings)
-            for b in box.buffers { try file.write(from: b) }
-            return (try Data(contentsOf: wavURL), "audio/wav")
+            throw SpeechOutputError.unsupportedFormat("aac")
         }
     }
 

@@ -12,6 +12,9 @@
 | `POST /v1/responses` | Supported | See [Responses API](#responses-api) below |
 | `GET /v1/models` | Supported | Returns `sayitdev-on-device` |
 | `GET /health` | Supported | Model availability, context window, languages |
+| `POST /v1/audio/speech` | Supported | On-device TTS via `AVSpeechSynthesizer`; `response_format`: `wav`, `pcm`, `aac` (`mp3`/`opus`/`flac` → 400) |
+| `POST /v1/audio/transcriptions` | Supported | Multipart upload; `response_format`: `json`, `text`, `verbose_json`, `srt`, `vtt` |
+| `GET /v1/audio/voices` | Supported | Lists system TTS voices |
 | `GET /v1/logs`, `/v1/logs/stats` | Debug only | Requires `--debug` |
 | Tool calling | Supported | Native `ToolDefinition` + JSON detection. See [tool-calling-guide.md](tool-calling-guide.md) |
 | `response_format: json_object` | Supported | System-prompt injection; markdown fences stripped from output |

@@ -11,6 +11,10 @@ package enum BodyLimits {
 
     /// Cap on audio upload bodies (25 MiB).
     public static let maxAudioUploadBytes: Int = 25 * 1024 * 1024
+
+    /// Cap on piped stdin (16 MiB). Larger than HTTP bodies because PDF/image
+    /// pipe workflows may exceed 1 MiB; still bounded to prevent OOM DoS.
+    public static let maxStdinBytes: Int = 16 * 1024 * 1024
     /// into the 4096-token context window.
     public static let defaultOutputReserveTokens: Int = 512
 

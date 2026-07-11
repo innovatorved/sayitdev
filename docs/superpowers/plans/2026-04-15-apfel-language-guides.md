@@ -20,7 +20,7 @@
 - Create: `~/dev/dev-guides-lab/` (new directory, not in dev repo)
 
 - [ ] Create directory + git init
-- [ ] Create GitHub repo `__UPSTREAM_DEV_REPO__-guides-lab` via `gh repo create` (public, no README, no license yet)
+- [ ] Create GitHub repo `innovatorved/sayitdev-guides-lab` via `gh repo create` (public, no README, no license yet)
 - [ ] First commit: placeholder README
 - [ ] Push to main
 
@@ -103,7 +103,7 @@
 - [ ] `05_tools.py` defines a `get_weather(city)` tool schema, sends prompt, handles tool call, returns fake result, prints final answer
 - [ ] Test: asserts final stdout mentions weather/temperature
 - [ ] Run, capture, commit
-- [ ] **If dev bug found:** file issue on `__UPSTREAM_DEV_REPO__`, mark script as Blocked in a `BLOCKED.md` in lab repo
+- [ ] **If dev bug found:** file issue on `innovatorved/sayitdev`, mark script as Blocked in a `BLOCKED.md` in lab repo
 
 ### Task 11: Python 06 - real mini-example
 
@@ -258,11 +258,11 @@ One task per language. Each task:
 
 ### Task 80: Publish lab repo
 
-- [ ] `gh repo edit __UPSTREAM_DEV_REPO__-guides-lab --description "..." --homepage "https://dev.franzai.com"`
+- [ ] `gh repo edit innovatorved/sayitdev-guides-lab --description "..." --homepage "https://github.com/innovatorved/sayitdev"`
 - [ ] Final push
 
 ---
 
 ## Bug reporting
 
-Per spec: any dev bug found during testing = GitHub issue on `__UPSTREAM_DEV_REPO__` with curl reproducer, version, observed vs expected. Script marked Blocked in lab repo. Guide section held until dev fix + re-verify.
+Per spec: any dev bug found during testing = GitHub issue on `innovatorved/sayitdev` with curl reproducer, version, observed vs expected. Script marked Blocked in lab repo. Guide section held until dev fix + re-verify.

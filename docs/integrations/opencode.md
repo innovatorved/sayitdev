@@ -2,7 +2,7 @@
 
 Run [opencode](https://opencode.ai), the open-source terminal AI coding agent, against dev's OpenAI-compatible server so every token stays on-device at zero cost.
 
-**Verified:** opencode 1.17.16 + dev 1.8.2, macOS 26 (Apple Silicon). A real session transcript is at the bottom of this page.
+**Verified:** opencode 1.17.16 + dev 1.0.0, macOS 26 (Apple Silicon). A real session transcript is at the bottom of this page.
 
 ## 0. Install opencode
 
@@ -141,7 +141,7 @@ Every one of these was hit and confirmed while testing on 2026-07-09:
 
 ## Verified session
 
-dev 1.8.2 server, opencode 1.17.16, `lean` agent, with a 12 KB global `~/.claude/CLAUDE.md` present (the fix env var set):
+dev 1.0.0 server, opencode 1.17.16, `lean` agent, with a 12 KB global `~/.claude/CLAUDE.md` present (the fix env var set):
 
 ```
 $ OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1 opencode run --agent lean \

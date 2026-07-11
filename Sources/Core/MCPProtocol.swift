@@ -15,11 +15,11 @@ public enum MCPProtocol {
     // MARK: - Request formatting
 
     /// Formats the MCP `initialize` JSON-RPC request.
-    public static func initializeRequest(id: Int) -> String {
+    public static func initializeRequest(id: Int, clientVersion: String = "1.0.0") -> String {
         return jsonRPC(id: id, method: "initialize", params: [
             "protocolVersion": protocolVersion,
             "capabilities": [:] as [String: Any],
-            "clientInfo": ["name": "dev", "version": "1.0.0"]
+            "clientInfo": ["name": "dev", "version": clientVersion]
         ])
     }
 

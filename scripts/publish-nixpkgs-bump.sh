@@ -36,7 +36,7 @@ set -euo pipefail
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 NIXPKGS_DIR="${NIXPKGS_BUMP_DIR:-$HOME/dev/nixpkgs-bump}"
 UPSTREAM="NixOS/nixpkgs"
-FORK="Arthur-Ficial/nixpkgs"
+FORK="innovatorved/nixpkgs"
 PACKAGE_PATH="pkgs/by-name/ap/dev-llm/package.nix"
 
 version=""
@@ -73,7 +73,7 @@ finish() {
 # catch-up run, which has no --version and where the local .version may lag a
 # release made elsewhere). Falls back to local .version if the API is down.
 if [[ -z "$version" ]]; then
-  version=$(gh api repos/__UPSTREAM_DEV_REPO__/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//' || true)
+  version=$(gh api repos/innovatorved/sayitdev/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//' || true)
   [[ -z "$version" ]] && version=$(cat "$REPO_ROOT/.version" 2>/dev/null || true)
 fi
 
@@ -174,8 +174,8 @@ if ! $dry_run; then
     git remote set-url origin "https://x-access-token:${token}@github.com/$FORK.git"
   fi
 
-  git config user.name "Arthur Ficial"
-  git config user.email "arti.ficial@fullstackoptimization.com"
+  git config user.name "Ved Gupta"
+  git config user.email "vedgupta@protonmail.com"
 
   info "Syncing fork master with upstream..."
   # Shallow fetch to keep fast on repeat runs (nixpkgs has thousands of commits/day).
@@ -275,7 +275,7 @@ else:
   pr_title="$commit_msg"
   pr_body="Bumps dev-llm \`${old_version}\` -> \`${version}\`.
 
-Release notes: __UPSTREAM_DEV_URL__/releases/tag/v${version}
+Release notes: https://github.com/innovatorved/sayitdev/releases/tag/v${version}
 
 Opened by the package maintainer (I maintain dev-llm). r-ryantm cannot auto-update this package: it is \`meta.platforms = [ \"aarch64-darwin\" ]\` only, so the bot's x86_64-linux worker refuses to evaluate it and never opens a PR (its log: https://nixpkgs-update-logs.nix-community.org/dev-llm/ - \"Refusing to evaluate ... hostPlatform.system = x86_64-linux\"). The merge bot's \"opened by r-ryantm or a committer\" precondition is therefore unsatisfiable here, so a committer merge is appreciated whenever one has a moment. Only \`pkgs/by-name\` is touched.
 

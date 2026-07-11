@@ -4,7 +4,7 @@
 //
 // The actual libedit read_history/write_history wiring lives in the root
 // target (Sources/ChatLineEditor.swift), which is not unit-testable. The
-// opt-in decision - the security-relevant part - lives here so dev-tests
+// opt-in decision - the security-relevant part - lives here so sayitdev-tests
 // can cover it.
 // ============================================================================
 

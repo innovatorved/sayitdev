@@ -61,6 +61,43 @@ def read_log(log_path):
     return pathlib.Path(log_path).read_text(encoding="utf-8")
 
 
+def spawn_server_process(*extra_args, env=None, port=None, bind_host="127.0.0.1"):
+    """Launch a server and return (proc, log_path, base_url). Caller must wait/kill proc."""
+    port = port or find_free_port()
+    log_path = tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8", delete=False)
+    log_path.close()
+    proc = subprocess.Popen(
+        [
+            str(BINARY),
+            "--serve",
+            "--host",
+            bind_host,
+            "--port",
+            str(port),
+            *extra_args,
+        ],
+        stdout=open(log_path.name, "a", encoding="utf-8"),
+        stderr=subprocess.STDOUT,
+        text=True,
+        env=clean_env(env),
+    )
+    return proc, log_path.name, f"http://127.0.0.1:{port}"
+
+
+def expect_server_refused(*extra_args, bind_host="127.0.0.1", port=None):
+    """Server startup must fail fast (usage error) with message on stderr."""
+    proc, log_path, _ = spawn_server_process(*extra_args, bind_host=bind_host, port=port)
+    try:
+        proc.wait(timeout=10)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=5)
+    banner = read_log(log_path)
+    pathlib.Path(log_path).unlink(missing_ok=True)
+    return proc.returncode, banner
+
+
 @contextlib.contextmanager
 def running_server(*extra_args, env=None, port=None, bind_host="127.0.0.1", ready_statuses=(200,)):
     """Launch a dedicated release-binary server for non-default flag tests."""
@@ -370,11 +407,11 @@ def test_env_token_not_echoed_in_startup_banner():
 
 
 def test_token_auto_prints_generated_secret():
-    """--token-auto should still surface the generated token for the operator."""
+    """--token-auto should surface a truncated token preview for the operator."""
     with running_server("--token-auto") as (_, log_path):
         banner = read_log(log_path)
     assert "token:    required" in banner
-    assert re.search(r"token: [0-9A-Fa-f-]{36}", banner)
+    assert re.search(r"token: [0-9A-Fa-f-]{8}…", banner)
 
 
 def test_no_origin_check_shows_loud_warning_without_cors():
@@ -401,14 +438,20 @@ def test_default_server_has_no_origin_warning():
     assert "Any website can access this server" not in banner
 
 
-def test_non_loopback_bind_without_token_warns_loudly():
-    """0.0.0.0 with no token must fire a loud red banner pointing at --token (#228)."""
-    with running_server(bind_host="0.0.0.0") as (_, log_path):
-        banner = read_log(log_path)
-    assert "WARNING" in banner
-    assert "NO token" in banner
+def test_non_loopback_bind_without_token_refused():
+    """0.0.0.0 with no token must refuse startup (#228 hardening)."""
+    code, banner = expect_server_refused(bind_host="0.0.0.0")
+    assert code != 0
+    assert "refusing to bind" in banner
     assert "--token" in banner
-    assert "docs/server-security.md" in banner
+
+
+def test_non_loopback_bind_with_insecure_override_warns():
+    """--i-know-what-im-doing allows 0.0.0.0 without token but prints a loud warning."""
+    with running_server("--i-know-what-im-doing", bind_host="0.0.0.0") as (_, log_path):
+        banner = read_log(log_path)
+    assert "i-know-what-im-doing" in banner.lower()
+    assert "no token" in banner.lower()
 
 
 def test_non_loopback_bind_with_token_has_no_exposure_warning():
@@ -421,10 +464,37 @@ def test_non_loopback_bind_with_token_has_no_exposure_warning():
 
 
 def test_loopback_bind_without_token_has_no_exposure_warning():
-    """Default loopback bind without a token must not print the #228 warning."""
+    """Default loopback bind without a token must not print the insecure override warning."""
     with running_server() as (_, log_path):
         banner = read_log(log_path)
-    assert "NO token" not in banner
+    assert "i-know-what-im-doing" not in banner.lower()
+
+
+def test_serve_mcp_without_token_refused():
+    """--serve --mcp must refuse startup without a bearer token."""
+    mcp_server = ROOT / "mcp" / "calculator" / "server.py"
+    if not mcp_server.is_file():
+        pytest.skip("calculator MCP fixture missing")
+    code, banner = expect_server_refused("--mcp", str(mcp_server))
+    assert code != 0
+    assert "mcp" in banner.lower()
+    assert "token" in banner.lower()
+
+
+def test_serve_mcp_with_token_starts():
+    """--serve --mcp with --token must start successfully."""
+    mcp_server = ROOT / "mcp" / "calculator" / "server.py"
+    if not mcp_server.is_file():
+        pytest.skip("calculator MCP fixture missing")
+    with running_server(
+        "--mcp", str(mcp_server), "--token", "secret123", ready_statuses=(200,)
+    ) as (base_url, _):
+        resp = httpx.get(
+            f"{base_url}/v1/models",
+            headers={"Authorization": "Bearer secret123"},
+            timeout=10,
+        )
+    assert resp.status_code == 200
 
 
 def test_unauthorized_error_keeps_cors_for_allowed_origin():

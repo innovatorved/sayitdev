@@ -1,8 +1,8 @@
 # dev(1) man page — design
 
 **Date:** 2026-04-17
-**Issue:** [#103](__UPSTREAM_DEV_URL__/issues/103) — _Proposal: Create man page for apfel_
-**Author:** Arthur Ficial
+**Issue:** [#103](https://github.com/innovatorved/sayitdev/issues/103) — _Proposal: Create man page for apfel_
+**Author:** Ved Gupta
 
 ## Goal
 
@@ -50,7 +50,7 @@ A single integration test, `Tests/integration/test_man_page.py`, enforces:
 
 This test runs in three places:
 
-- `swift run dev-tests` + `python3 -m pytest Tests/integration/test_man_page.py` during local dev.
+- `swift run sayitdev-tests` + `python3 -m pytest Tests/integration/test_man_page.py` during local dev.
 - GitHub CI (`ci.yml`) on every push and PR — blocks merge.
 - `make preflight` — blocks every release.
 
@@ -91,7 +91,7 @@ AUTHORS
 2. `make preflight`.
 3. `make release` (patch bump 1.0.4 → 1.0.5).
 4. `post-release-verify.sh`.
-5. Close [#103](__UPSTREAM_DEV_URL__/issues/103) with a short friendly note crediting CamJN.
+5. Close [#103](https://github.com/innovatorved/sayitdev/issues/103) with a short friendly note crediting CamJN.
 
 ## Risks / open questions
 

@@ -2,13 +2,13 @@
 
 Community-contributed configurations for using dev with other tools.
 
-For **scripting language guides** (how to call dev from Python, Node.js, Ruby, PHP, Bash, Zsh, AppleScript, Swift, Perl, AWK) see [docs/guides/index.md](guides/index.md). Every snippet there was run against a live dev server; lab repo: [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab).
+For **scripting language guides** (how to call dev from Python, Node.js, Ruby, PHP, Bash, Zsh, AppleScript, Swift, Perl, AWK) see [docs/guides/index.md](guides/index.md). Every snippet there was run against a live dev server; lab repo: [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab).
 
 ---
 
 ## opencode
 
-[opencode](https://opencode.ai) is an open-source terminal AI coding agent. Wire it to dev's OpenAI-compatible server and every token stays on-device at zero cost. Re-verified end-to-end on opencode 1.17.16 + dev 1.8.2.
+[opencode](https://opencode.ai) is an open-source terminal AI coding agent. Wire it to dev's OpenAI-compatible server and every token stays on-device at zero cost. Re-verified end-to-end on opencode 1.17.16 + dev 1.0.0.
 
 Full setup, the verified config, a real transcript, and every gotcha are on the dedicated page: [docs/integrations/opencode.md](integrations/opencode.md). The one you must not miss: opencode pastes your global `~/.claude/CLAUDE.md` into the system prompt, which overflows dev's 4096-token window - fix it with `export OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`.
 
@@ -26,12 +26,12 @@ Full setup, the verified config, a real transcript, and every gotcha are on the 
 {
   "language_models": {
     "openai_compatible": {
-      "Apfel": {
+      "SayItDev": {
         "api_url": "http://127.0.0.1:11434/v1",
         "available_models": [
           {
             "name": "sayitdev-on-device",
-            "display_name": "Apfel (apple on-device)",
+            "display_name": "SayItDev (on-device)",
             "max_tokens": 4096,
             "max_output_tokens": 1024,
             "capabilities": { "tools": true, "images": false, "parallel_tool_calls": false, "prompt_cache_key": false }
@@ -55,7 +55,7 @@ Launch Zed (Zed insists on a key for the provider; dev ignores it):
 DEV_API_KEY=dummy zed
 ```
 
-Open the agent panel (`Cmd+?`), pick `Apfel (apple on-device)`, send a prompt. Zed POSTs to `/v1/chat/completions` on dev.
+Open the agent panel (`Cmd+?`), pick `SayItDev (on-device)`, send a prompt. Zed POSTs to `/v1/chat/completions` on dev.
 
 ---
 
@@ -73,4 +73,4 @@ Why this setup works well:
 
 ---
 
-*Have an integration to share? Open an issue at [__UPSTREAM_DEV_URL__/issues](__UPSTREAM_DEV_URL__/issues).*
+*Have an integration to share? Open an issue at [https://github.com/innovatorved/sayitdev/issues](https://github.com/innovatorved/sayitdev/issues).*

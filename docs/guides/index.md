@@ -47,10 +47,10 @@ If `/health` responds, you're ready. Pick your language and follow the guide.
 
 ## See the tests that produced these guides
 
-Every guide links to its exact test script and captured output on [__UPSTREAM_DEV_REPO__-guides-lab](__UPSTREAM_DEV_URL__-guides-lab). If you want to rerun them on your own Mac:
+Every guide links to its exact test script and captured output on [innovatorved/sayitdev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab). If you want to rerun them on your own Mac:
 
 ```bash
-git clone __UPSTREAM_DEV_URL__-guides-lab
+git clone https://github.com/innovatorved/sayitdev-guides-lab
 cd dev-guides-lab
 dev --serve &
 python3 -m pytest -v

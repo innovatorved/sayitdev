@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from Node.js using the official `openai` npm package, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/nodejs](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/nodejs).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/nodejs](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/nodejs).
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ Real output:
 Swift is a modern, high-performance, and easy-to-learn programming language developed by Apple for building applications on iOS, macOS, watchOS, and tvOS.
 ```
 
-Lab script: [`01_oneshot.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/01_oneshot.mjs).
+Lab script: [`01_oneshot.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/01_oneshot.mjs).
 
 ## 2. Streaming
 
@@ -67,7 +67,7 @@ Apple M2
 Apple M2 Pro
 ```
 
-Lab script: [`02_stream.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/02_stream.mjs).
+Lab script: [`02_stream.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/02_stream.mjs).
 
 ## 3. JSON mode
 
@@ -104,7 +104,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/03_json.mjs).
+Lab script: [`03_json.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/03_json.mjs).
 
 ## 4. Error handling
 
@@ -133,7 +133,7 @@ Real output:
 Got expected error: HTTP 501 - 501 Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/04_errors.mjs).
+Lab script: [`04_errors.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/04_errors.mjs).
 
 ## 5. Tool calling
 
@@ -186,7 +186,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/05_tools.mjs).
+Lab script: [`05_tools.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/05_tools.mjs).
 
 ## 6. Real example - summarize stdin
 
@@ -224,7 +224,7 @@ Real output (M1 paragraph):
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/06_example.mjs).
+Lab script: [`06_example.mjs`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/nodejs/06_example.mjs).
 
 ## Troubleshooting
 
@@ -238,8 +238,8 @@ Lab script: [`06_example.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts
 - Node.js v25.8.1 / openai 4.x
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_nodejs.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_nodejs.py).
+Runnable tests: [tests/test_nodejs.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_nodejs.py).
 
 ## See also
 
-[python.md](python.md), [ruby.md](ruby.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[python.md](python.md), [ruby.md](ruby.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

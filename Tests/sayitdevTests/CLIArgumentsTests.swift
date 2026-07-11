@@ -487,6 +487,11 @@ func runCLIArgumentsTests() {
         try assertTrue(args.serverCORS)
     }
 
+    test("--i-know-what-im-doing sets allow insecure bind override") {
+        let args = try CLIArguments.parse(["--serve", "--i-know-what-im-doing"])
+        try assertTrue(args.serverAllowInsecureBind)
+    }
+
     test("--allowed-origins parses comma-separated list") {
         let args = try CLIArguments.parse(["--serve", "--allowed-origins", "http://a.com,http://b.com"])
         try assertEqual(args.serverAllowedOrigins.count, 2)
@@ -553,6 +558,17 @@ func runCLIArgumentsTests() {
         } catch let e as CLIParseError {
             try assertTrue(e.message.contains("--mcp-token"))
         }
+    }
+
+    test("--footgun disables origin check AND enables CORS") {
+        let args = try CLIArguments.parse(["--serve", "--footgun"])
+        try assertTrue(!args.serverOriginCheckEnabled)
+        try assertTrue(args.serverCORS)
+    }
+
+    test("--i-know-what-im-doing sets allow insecure bind override") {
+        let args = try CLIArguments.parse(["--serve", "--i-know-what-im-doing"])
+        try assertTrue(args.serverAllowInsecureBind)
     }
 
     test("--mcp accepts http URL") {
@@ -1205,6 +1221,12 @@ func runCLIArgumentsTests() {
     test("--agent sets agent mode") {
         let args = try CLIArguments.parse(["--agent"])
         try assertEqual(args.mode, .agent)
+    }
+
+    test("--agent accepts --system steering prompt") {
+        let args = try CLIArguments.parse(["--agent", "-s", "You are concise"])
+        try assertEqual(args.mode, .agent)
+        try assertEqual(args.systemPrompt, "You are concise")
     }
 
     test("voice env DEV_TTS_VOICE is applied") {

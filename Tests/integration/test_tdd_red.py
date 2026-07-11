@@ -5,8 +5,8 @@ These began life as the TDD RED batch (branch tdd/red-tests-167-183). Every
 ticket they cover is now FIXED and shipped; the tests are kept as REGRESSION
 GUARDS so the behaviour cannot silently regress. They live here (not in the
 pure-Swift unit target) because they exercise the wire/CLI boundary of the
-FoundationModels-coupled executable target, which dev-tests cannot import
-(see Package.swift: dev-tests depends only on SayItDevCore + SayItDevCLI).
+FoundationModels-coupled executable target, which sayitdev-tests cannot import
+(see Package.swift: sayitdev-tests depends only on SayItDevCore + SayItDevCLI).
 
 Two kinds of guard:
   - Wire-level behaviour guards (real requests): #167 json_schema, #169 prewarm

@@ -114,6 +114,8 @@ public struct CLIArguments: Sendable, Equatable {
     public var serverToken: String? = nil
     public var serverTokenAuto: Bool = false
     public var serverPublicHealth: Bool = false
+    /// Override refusal of non-loopback `--serve` without `--token` (#228 hardening).
+    public var serverAllowInsecureBind: Bool = false
 
     // MARK: - MCP
 
@@ -172,7 +174,7 @@ public struct CLIArguments: Sendable, Equatable {
         "--strict", "--model-info", "--update", "--demos",
         "--port", "--host", "--cors", "--max-concurrent", "--debug",
         "--allowed-origins", "--no-origin-check", "--token", "--token-auto",
-        "--public-health", "--footgun",
+        "--public-health", "--footgun", "--i-know-what-im-doing",
         "--mcp", "--mcp-timeout", "--mcp-token",
         "--temperature", "--top-p", "--seed", "--max-tokens", "--permissive",
         "--retry",
@@ -308,7 +310,7 @@ extension CLIArguments {
         // tuning flag was parsed and then silently ignored. Reject it loudly
         // rather than pretend it took effect. (.serve still honors --permissive,
         // --retry, --mcp, and the server flags - those are consumed.)
-        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen, .agent]
+        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen]
         if inputIgnoringModes.contains(mode) {
             var offender: String? = nil
             if !prompt.isEmpty { offender = "a positional prompt" }
@@ -323,6 +325,21 @@ extension CLIArguments {
             else if contextOutputReserve != nil { offender = "--context-output-reserve" }
             if let offender {
                 throw CLIParseError("--\(mode.rawValue) does not accept \(offender) - it would be ignored in this mode")
+            }
+        }
+        if mode == .agent {
+            var offender: String? = nil
+            if !prompt.isEmpty { offender = "a positional prompt" }
+            else if !fileContents.isEmpty || !fileAttachments.isEmpty { offender = "-f/--file content" }
+            else if temperature != nil { offender = "--temperature" }
+            else if topP != nil { offender = "--top-p" }
+            else if maxTokens != nil { offender = "--max-tokens" }
+            else if seed != nil { offender = "--seed" }
+            else if contextStrategy != nil { offender = "--context-strategy" }
+            else if contextMaxTurns != nil { offender = "--context-max-turns" }
+            else if contextOutputReserve != nil { offender = "--context-output-reserve" }
+            if let offender {
+                throw CLIParseError("--agent does not accept \(offender) - use -s/--system for a steering prompt")
             }
         }
         // --context-status is a --chat-only display toggle; it does nothing in
@@ -770,6 +787,9 @@ extension CLIArguments {
             case "--footgun":
                 result.serverOriginCheckEnabled = false
                 result.serverCORS = true
+
+            case "--i-know-what-im-doing":
+                result.serverAllowInsecureBind = true
 
             // -- MCP --
 

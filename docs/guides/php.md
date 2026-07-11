@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from PHP using `openai-php/client`, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/php](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/php).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/php](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/php).
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing software on platforms like iOS, macOS, watchOS, and tvOS, known for its safety, performance, and simplicity.
 ```
 
-Lab script: [`01_oneshot.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/01_oneshot.php).
+Lab script: [`01_oneshot.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/01_oneshot.php).
 
 ## 2. Streaming
 
@@ -76,7 +76,7 @@ Apple M2
 Apple M2 Pro
 ```
 
-Lab script: [`02_stream.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/02_stream.php).
+Lab script: [`02_stream.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/02_stream.php).
 
 ## 3. JSON mode
 
@@ -112,7 +112,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/03_json.php).
+Lab script: [`03_json.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/03_json.php).
 
 ## 4. Error handling
 
@@ -139,7 +139,7 @@ Real output:
 Got expected error (HTTP 501): Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/04_errors.php).
+Lab script: [`04_errors.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/04_errors.php).
 
 ## 5. Tool calling
 
@@ -194,7 +194,7 @@ Real output:
 The current temperature in Vienna is 15°C.
 ```
 
-Lab script: [`05_tools.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/05_tools.php).
+Lab script: [`05_tools.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/05_tools.php).
 
 ## 6. Real example - summarize stdin
 
@@ -227,7 +227,7 @@ Real output:
 Apple's M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/06_example.php).
+Lab script: [`06_example.php`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/php/06_example.php).
 
 ## Troubleshooting
 
@@ -241,8 +241,8 @@ Lab script: [`06_example.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts
 - PHP 8.5.5 / openai-php/client 0.10.3 / Guzzle
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_php.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_php.py).
+Runnable tests: [tests/test_php.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_php.py).
 
 ## See also
 
-[python.md](python.md), [nodejs.md](nodejs.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[python.md](python.md), [nodejs.md](nodejs.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

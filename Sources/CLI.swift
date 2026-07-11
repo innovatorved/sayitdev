@@ -644,8 +644,8 @@ func printRelease() {
     \(styled("└", .dim)) strategies: newest-first, oldest-first, sliding-window, summarize, strict
 
     \(styled("LINKS:", .yellow, .bold))
-    \(styled("├", .dim)) repo:       __UPSTREAM_DEV_URL__
-    \(styled("├", .dim)) gui:        __UPSTREAM_DEV_URL__-gui
+    \(styled("├", .dim)) repo:       https://github.com/innovatorved/sayitdev
+    \(styled("├", .dim)) gui:        https://github.com/innovatorved/sayitdev-gui
     \(styled("└", .dim)) requires:   macOS 26+, Apple Silicon, Apple Intelligence enabled
     """)
 }
@@ -696,7 +696,7 @@ func performUpdate() {
     let brewExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/brew" }
         ?? findExecutableInPath("brew")
         ?? "brew"
-    let apfelExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/dev" }
+    let devExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/dev" }
         ?? findExecutableInPath("dev")
         ?? resolved
 
@@ -710,7 +710,7 @@ func performUpdate() {
     case .source:
         print("\(appName) v\(current) (installed from source)")
         print("To update: git pull && make install")
-        print("Or visit: __UPSTREAM_DEV_URL__/releases")
+        print("Or visit: https://github.com/innovatorved/sayitdev/releases")
         return
     }
 
@@ -751,7 +751,7 @@ func performUpdate() {
     print(styled("Running: brew upgrade dev", .dim))
     let result = shellPassthrough(brewExec, args: ["upgrade", "dev"])
     if result == 0 {
-        let newVersion = shellOutput(apfelExec, args: ["--version"]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let newVersion = shellOutput(devExec, args: ["--version"]).trimmingCharacters(in: .whitespacesAndNewlines)
         print(styled("Updated to \(newVersion)", .green))
     } else {
         printError("brew upgrade failed (exit \(result)). Try manually: brew upgrade dev")
@@ -900,6 +900,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
           --token-auto           Generate and print a random Bearer token
           --public-health        Keep /health unauthenticated on non-loopback binds
           --footgun              Disable all protections (--no-origin-check + --cors)
+          --i-know-what-im-doing Allow non-loopback --serve without --token (insecure)
           --max-concurrent <n>   Max concurrent model requests [default: 5]
 
 
@@ -919,6 +920,11 @@ func printUsage(to handle: FileHandle = .standardOutput) {
                                 Tokens reserved for output
       DEV_DEBUG               Enable debug logging (same as --debug)
       DEV_HISTFILE            Persist --chat history to this file (off by default)
+      DEV_TTS_VOICE           Default TTS voice id or 'personal'
+      DEV_STT_LOCALE          Default STT locale (e.g. en-US)
+      DEV_TTS_RATE            Default speaking rate (0.25–4.0)
+      DEV_TTS_FORMAT          Default TTS file format: wav, pcm, aac
+      DEV_AUDIO_INPUT         Default microphone device UID
       NO_COLOR                  Disable colored output (https://no-color.org)
 
     \(styled("EXIT CODES:", .yellow, .bold))
@@ -929,6 +935,10 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       4  Context overflow (input too long)
       5  Model unavailable (Apple Intelligence not enabled)
       6  Rate limited / busy
+      7  No code in response (--code)
+      8  Microphone permission denied
+      9  Speech asset / engine failure
+      10 No audio input device
       130  Interrupted (Ctrl-C at the chat prompt)
 
     \(styled("EXAMPLES:", .yellow, .bold))
@@ -945,6 +955,10 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) --count-tokens -o json "hello" | jq .
       DEV_SYSTEM_PROMPT="Be brief" \(appName) "Explain TCP"
       \(appName) --serve --port 3000 --host 0.0.0.0 --cors
+      \(appName) --speak "Hello from SayItDev"
+      echo "Read this" | \(appName) --speak
+      \(appName) --listen
+      \(appName) --agent
     """
     handle.write(Data((text + "\n").utf8))
 }

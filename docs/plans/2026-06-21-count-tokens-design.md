@@ -129,7 +129,7 @@ One-line summary to stdout. Optional per-component breakdown on stderr when not 
 3. **Green:** Implement `TokenBudgetReport` + `countTokens()` wiring
 4. **Integration:** `cli_e2e_test.py` model-free validation of flag presence and JSON shape
 5. **Local (Apple Intelligence Mac):** real count with `-f README.md` and `--mcp mcp/calculator/server.py`
-6. **Gate:** `swift run dev-tests` (CI) + `make test` (full local qualification)
+6. **Gate:** `swift run sayitdev-tests` (CI) + `make test` (full local qualification)
 
 ## Backwards Compatibility
 

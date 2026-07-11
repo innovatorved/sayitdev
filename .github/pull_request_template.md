@@ -3,5 +3,5 @@
 
 ## Test plan
 - [ ] `swift build -c release`
-- [ ] `swift run dev-tests`
+- [ ] `swift run sayitdev-tests`
 - [ ] `make install` and manual smoke test

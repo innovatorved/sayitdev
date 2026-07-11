@@ -95,6 +95,7 @@ public enum ShellCompletions {
             CompletionFlag(["--token-auto"], .none, "Generate a random Bearer token"),
             CompletionFlag(["--public-health"], .none, "Keep /health unauthenticated"),
             CompletionFlag(["--footgun"], .none, "Disable all protections"),
+            CompletionFlag(["--i-know-what-im-doing"], .none, "Allow exposed bind without token"),
             CompletionFlag(["--mcp"], .file, "Attach local or remote MCP server"),
             CompletionFlag(["--mcp-timeout"], .generic, "MCP timeout in seconds"),
             CompletionFlag(["--mcp-token"], .generic, "Bearer token for remote MCP servers"),

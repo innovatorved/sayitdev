@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from plain Bash with `curl` and `jq` - no SDK, no dependencies beyond what's already on macOS. 100% on-device, zero API cost.
 
-Perfect for CI pipelines, one-liners, and quick smoke tests. Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/bash-curl](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/bash-curl).
+Perfect for CI pipelines, one-liners, and quick smoke tests. Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/bash-curl](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/bash-curl).
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ Real output:
 Swift is a modern, high-performance programming language developed by Apple for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/01_oneshot.sh).
+Lab script: [`01_oneshot.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/01_oneshot.sh).
 
 ## 2. Streaming
 
@@ -56,7 +56,7 @@ Here are three Apple silicon chips:
 - M3
 ```
 
-Lab script: [`02_stream.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/02_stream.sh).
+Lab script: [`02_stream.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/02_stream.sh).
 
 ## 3. JSON mode
 
@@ -93,7 +93,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/03_json.sh).
+Lab script: [`03_json.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/03_json.sh).
 
 ## 4. Error handling
 
@@ -119,7 +119,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/04_errors.sh).
+Lab script: [`04_errors.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/04_errors.sh).
 
 ## 5. Tool calling
 
@@ -168,7 +168,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/05_tools.sh).
+Lab script: [`05_tools.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/05_tools.sh).
 
 ## 6. Real example - summarize a file
 
@@ -195,7 +195,7 @@ Real output:
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It features an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/bash-curl/06_example.sh).
+Lab script: [`06_example.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/bash-curl/06_example.sh).
 
 ## Troubleshooting
 
@@ -209,8 +209,8 @@ Lab script: [`06_example.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/
 - Bash 5.3 / jq 1.7 / curl (system)
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_bash_curl.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_bash_curl.py).
+Runnable tests: [tests/test_bash_curl.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_bash_curl.py).
 
 ## See also
 
-[zsh.md](zsh.md), [python.md](python.md), [nodejs.md](nodejs.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[zsh.md](zsh.md), [python.md](python.md), [nodejs.md](nodejs.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

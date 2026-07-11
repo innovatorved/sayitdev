@@ -1,6 +1,20 @@
-# dev - Project Instructions
+# SayItDev (dev) - Project Instructions
+
+**On-device voice + AI for Mac** — part of the [innovatorved](https://github.com/innovatorved) ecosystem. Fork of [apfel](https://github.com/Arthur-Ficial/apfel) with native speech capabilities.
 
 **The free AI already on your Mac.** This is our claim. Every surface (README, landing page, repo description) must reinforce it.
+
+## Voice modes (SayItDev 1.0)
+
+In addition to the apfel UNIX tool and HTTP server:
+
+- **`dev --speak`** — TTS only (no mic, no LLM). Apple Intelligence not required.
+- **`dev --listen`** — STT from default mic → stdout. Requires Microphone + Speech Recognition TCC.
+- **`dev --agent`** — listen → on-device LLM → speak loop (Ctrl-C to quit). No tools/skills in v1.
+
+Server audio routes: `POST /v1/audio/speech`, `POST /v1/audio/transcriptions`, `GET /v1/audio/voices`.
+
+Voice env: `DEV_TTS_VOICE`, `DEV_STT_LOCALE`, `DEV_TTS_RATE`, `DEV_TTS_FORMAT`, `DEV_AUDIO_INPUT`.
 
 ## The Golden Goal
 
@@ -39,7 +53,7 @@ These two modes are what the README.md leads with. Every design decision, test, 
    - API-breakage guarded in CI via `swift package diagnose-api-breaking-changes`
    - **Must NOT be front-and-center in README.md.** One single link to [docs/swift-library.md](docs/swift-library.md) further down the page - no install snippet, no `import SayItDevCore` sample, no types list. All Swift-library README content lives on dedicated docs pages.
 
-The Debug GUI has been extracted to its own repo: [dev-gui](__UPSTREAM_DEV_URL__-gui)
+The Debug GUI has been extracted to its own repo: [sayitdev-gui](https://github.com/innovatorved/sayitdev-gui)
 
 ### README.md structure rule
 
@@ -64,7 +78,7 @@ The README.md mirrors this priority - **violating this structure is a bug.**
 ### Documentation style:
 
 - **Links in docs and README:** Always use the URL/path as the anchor text, not generic phrases like "full guide" or "click here". Example: `[docs/background-service.md](docs/background-service.md)` not `[full guide](docs/background-service.md)`.
-- **One code block, one purpose - never mix mutually-exclusive commands.** A fenced code block must be safe to copy-paste verbatim into a terminal: every line either runs in sequence as part of the same workflow, or the block contains only one command. Alternatives (e.g. `brew install dev` vs `brew install Arthur-Ficial/tap/dev` vs `git clone … && make install`) get **separate** fenced blocks with a one-line prose lead-in describing when to use that block. Inline `#` comments labelling alternatives inside one block are not a substitute - users hit "copy" and run the lot. This applies to README.md, every file under `docs/`, and any future user-facing surface.
+- **One code block, one purpose - never mix mutually-exclusive commands.** A fenced code block must be safe to copy-paste verbatim into a terminal: every line either runs in sequence as part of the same workflow, or the block contains only one command. Alternatives (e.g. `brew install dev` vs `brew install innovatorved/tap/dev` vs `git clone … && make install`) get **separate** fenced blocks with a one-line prose lead-in describing when to use that block. Inline `#` comments labelling alternatives inside one block are not a substitute - users hit "copy" and run the lot. This applies to README.md, every file under `docs/`, and any future user-facing surface.
 
 ## Architecture
 
@@ -79,14 +93,14 @@ HTTP Server (/v1/*) ───────┘   ContextManager → Transcript API
 
 - `SayItDevCore` library: pure Swift, no FoundationModels dependency, unit-testable
 - Main target: FoundationModels integration, Hummingbird HTTP server
-- Tests: `swift run dev-tests` (pure Swift runner, no XCTest needed)
+- Tests: `swift run sayitdev-tests` (pure Swift runner, no XCTest needed)
 - No Xcode required - builds with Command Line Tools only
 
 ## Current Status
 
-- Version: `1.8.3` (source of truth: `.version`)
+- Version: `1.0.0` (source of truth: `.version`)
 - Tests: 1041 unit + 474 integration
-- Distribution: homebrew-core (`brew install dev`), nixpkgs (`nix profile install nixpkgs#dev-llm`), and the Arthur-Ficial/homebrew-tap
+- Distribution: homebrew-core (`brew install dev`), nixpkgs (`nix profile install nixpkgs#dev-llm`), and the innovatorved/homebrew-tap
 - Stability policy: [STABILITY.md](STABILITY.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 
@@ -98,7 +112,7 @@ make install                   # build release + install to /usr/local/bin (NO v
 make build                     # build release only (NO version bump)
 make version                   # print current version
 swift build                    # debug build
-swift run dev-tests          # unit tests only (1041 tests)
+swift run sayitdev-tests          # unit tests only (1041 tests)
 make preflight                 # light release gate: unit + model-free integration + policy (~1.5 min warm)
 make preflight FULL=1          # full qualification incl. the serial model phase (pre-#374 behavior)
 ```
@@ -132,7 +146,7 @@ bash scripts/generate-examples.sh          # ~2 minutes, overwrites docs/EXAMPLE
 | Security | `Sources/Core/OriginValidator.swift`, `Sources/SecurityMiddleware.swift` |
 | MCP client | `Sources/Core/MCPProtocol.swift`, `Sources/MCPClient.swift` |
 | MCP calculator | `mcp/calculator/server.py` |
-| Tests | `Tests/apfelTests/` (1041 unit), `Tests/integration/` (474 integration) |
+| Tests | `Tests/sayitdevTests/` (unit), `Tests/integration/` (integration) |
 
 | Docs | `docs/` (brew-install, EXAMPLES, release, tool-calling-guide) |
 | Scripts | `scripts/generate-examples.sh`, `scripts/write-homebrew-formula.sh`, `scripts/release-preflight.sh`, `scripts/post-release-verify.sh` |
@@ -141,7 +155,7 @@ bash scripts/generate-examples.sh          # ~2 minutes, overwrites docs/EXAMPLE
 
 When a new issue comes in, follow this process:
 
-1. **Fetch** the full issue with `gh issue view <n> --repo __UPSTREAM_DEV_REPO__ --json body,comments,title,author,labels`
+1. **Fetch** the full issue with `gh issue view <n> --repo innovatorved/sayitdev --json body,comments,title,author,labels`
 2. **Vet** - is it a real bug, valid feature request, or noise?
    - Does it align with the golden goal and non-negotiable principles?
    - Can you reproduce it?
@@ -150,32 +164,32 @@ When a new issue comes in, follow this process:
 3. **Fix** if valid:
    - Write tests first (TDD) for bugs
    - Keep changes minimal and KISS
-   - `make install` + run all tests (`swift run dev-tests` + `python3 -m pytest Tests/integration/ -v`)
+   - `make install` + run all tests (`swift run sayitdev-tests` + `python3 -m pytest Tests/integration/ -v`)
 4. **Release** if code changed - see "Publishing a Release" below
 5. **Close** the issue with a friendly, short, truthful comment:
    - What was the problem
    - What was fixed (or why it was closed without a fix)
    - How to update (`brew upgrade dev`)
-6. **Landing page** (dev.franzai.com) is a separate Cloudflare Pages project, not in this repo
+6. **Landing page** (github.com/innovatorved/sayitdev) is a separate Cloudflare Pages project, not in this repo
 
 ## Handling Pull Requests
 
 When a PR is opened, follow this process. Scale the rigor to the PR type - docs-only PRs skip the security audit and test coverage steps, code PRs get the full treatment.
 
-**Automated first-responder:** `__UPSTREAM_DEV_REPO__` has a Claude Code routine (`.claude/routines/02-pr-auto-review.md`) that runs this entire process on `pull_request.opened` / `pull_request.synchronize` and posts a `COMMENTED` review. The routine cannot `--approve`, cannot merge, cannot run `make test` (no Apple Intelligence on cloud runners), and cannot cut releases. It is a first-pass safety net, not a replacement for human judgement. Franz still merges, Franz still releases - always. See [docs/routines.md](docs/routines.md) and [.claude/routines/README.md](.claude/routines/README.md).
+**Automated first-responder:** `innovatorved/sayitdev` has a Claude Code routine (`.claude/routines/02-pr-auto-review.md`) that runs this entire process on `pull_request.opened` / `pull_request.synchronize` and posts a `COMMENTED` review. The routine cannot `--approve`, cannot merge, cannot run `make test` (no Apple Intelligence on cloud runners), and cannot cut releases. It is a first-pass safety net, not a replacement for human judgement. Franz still merges, Franz still releases - always. See [docs/routines.md](docs/routines.md) and [.claude/routines/README.md](.claude/routines/README.md).
 
 ### 1. Fetch everything
 
 ```bash
-gh pr view <n> --repo __UPSTREAM_DEV_REPO__ --json title,author,body,state,mergeable,mergeStateStatus,reviews,comments,commits,statusCheckRollup,files,headRefName,headRepositoryOwner
-gh pr diff <n> --repo __UPSTREAM_DEV_REPO__                             # full diff
-gh api repos/__UPSTREAM_DEV_REPO__/pulls/<n>/comments                   # inline review comments
+gh pr view <n> --repo innovatorved/sayitdev --json title,author,body,state,mergeable,mergeStateStatus,reviews,comments,commits,statusCheckRollup,files,headRefName,headRepositoryOwner
+gh pr diff <n> --repo innovatorved/sayitdev                             # full diff
+gh api repos/innovatorved/sayitdev/pulls/<n>/comments                   # inline review comments
 git fetch origin pull/<n>/head:pr-<n>-head && git checkout pr-<n>-head # actual tree
 ```
 
 ### 2. Vet the author
 
-- First-time contributor to dev? (`gh pr list --repo __UPSTREAM_DEV_REPO__ --state all --author <login>`)
+- First-time contributor to dev? (`gh pr list --repo innovatorved/sayitdev --state all --author <login>`)
 - Legitimate GitHub profile? Check `gh api users/<login>` for public_repos, followers, blog, creation date
 - Commit author email matches the GitHub account (spot typo-squatting)
 - Any red flags in prior public work
@@ -221,8 +235,8 @@ Priority-rank findings:
 
 ### 7. Test coverage check (code PRs)
 
-- New flag? Must have happy-path + every validation error test in `Tests/apfelTests/CLIArgumentsTests.swift`
-- New public API on a pure `SayItDevCore` type? Unit test in the corresponding `Tests/apfelTests/*Tests.swift`
+- New flag? Must have happy-path + every validation error test in `Tests/sayitdevTests/CLIArgumentsTests.swift`
+- New public API on a pure `SayItDevCore` type? Unit test in the corresponding `Tests/sayitdevTests/*Tests.swift`
 - New network or subprocess surface? Integration test wired into `Tests/integration/` using the existing conftest pattern - **standalone manual scripts in `mcp/`, `scripts/`, etc. do not count**
 - Error tests must use the tightened style: `catch let e as CLIParseError { assertTrue(e.message.contains("...")) }` - not just `threw = true`
 - **Any `Sources/**` change (except the generated `BuildInfo.swift`) MUST add a `## [Unreleased]` bullet to `CHANGELOG.md`.** CI enforces this via the `changelog-gate` job (`scripts/check-changelog.sh`, #369); a changelog-less code PR that merges anyway hard-blocks the next release at `stamp-changelog.sh` (gate #263) - this is what stalled v1.8.1.
@@ -232,7 +246,7 @@ Priority-rank findings:
 ```bash
 git checkout pr-<n>-head
 swift build                                              # must be clean, no warnings
-swift run dev-tests                                    # existing unit tests must still pass
+swift run sayitdev-tests                                    # existing unit tests must still pass
 # For code PRs, also:
 make install && dev --serve --port 11434 &
 dev --serve --port 11435 --mcp mcp/calculator/server.py &
@@ -243,12 +257,12 @@ pkill -f "dev --serve"
 
 ### 9. Verify CI on the PR
 
-- `gh pr view <n> --repo __UPSTREAM_DEV_REPO__ --json statusCheckRollup`
+- `gh pr view <n> --repo innovatorved/sayitdev --json statusCheckRollup`
 - First-time contributors trigger `action_required` on Actions - the CI run needs manual approval before it executes. Approve it before reviewing so the PR has real CI results to reference.
 
 ### 10. Review
 
-Post a structured review via `gh pr review <n> --repo __UPSTREAM_DEV_REPO__ --request-changes|--approve|--comment --body "..."`:
+Post a structured review via `gh pr review <n> --repo innovatorved/sayitdev --request-changes|--approve|--comment --body "..."`:
 
 - **Open with genuine praise** for what works. Reviews that lead with negatives make contributors defensive.
 - **Summary table** of findings (P0/P1/P2, severity, area, one-line summary)
@@ -312,7 +326,7 @@ This runs locally (not on GitHub Actions - GitHub runners lack Apple Intelligenc
 2. Bumps `.version` (patch/minor/major)
 3. Builds the release binary
 4. Runs ALL unit tests (1041)
-5. Runs ALL integration test suites under `Tests/integration/` with real Apple Intelligence via directory discovery (cli_e2e, performance, openai_client, openapi_spec, openapi_conformance, security, server_validation, mcp_server, mcp_remote, plus model-free helpers like test_chat, test_brew_service, test_man_page, test_build_info, test_apfelcore_*). `DEV_REQUIRE_FULL=1` fails the release on any skip (#227)
+5. Runs ALL integration test suites under `Tests/integration/` with real Apple Intelligence via directory discovery (cli_e2e, performance, openai_client, openapi_spec, openapi_conformance, security, server_validation, mcp_server, mcp_remote, plus model-free helpers like test_chat, test_brew_service, test_man_page, test_build_info, test_sayitdevcore_*). `DEV_REQUIRE_FULL=1` fails the release on any skip (#227)
 6. Stamps the `[Unreleased]` CHANGELOG section as the new version (`scripts/stamp-changelog.sh`), then commits `.version`, `README.md`, `Sources/BuildInfo.swift`, and `CHANGELOG.md` and pushes to `main`
 7. Creates git tag (`v<version>`) and pushes it
 8. Developer ID signs the binary under a hardened runtime, packages the tarball, notarizes it as a hard gate (#226), writes a `.sha256` checksum sidecar, and publishes the GitHub Release with the tarball, checksum asset, and changelog
@@ -329,10 +343,10 @@ Verifies: GitHub Release exists with tarball, git tag exists, `.version` matches
 
 ### Distribution channels
 
-dev ships through three channels. All pull the same tarball from each GitHub Release. The tarball's `dev` binary is Developer ID signed (Franz Enzenhofer, team 7D2YX5DQ6M) under a hardened runtime and the submission is notarized by Apple. It is NOT stapled - a bare CLI binary in a tarball cannot hold a stapled ticket (stapler needs a bundle/dmg/pkg), so Gatekeeper verifies notarization online. Each release also publishes an `dev-<v>-arm64-macos.tar.gz.sha256` checksum asset; `scripts/post-release-verify.sh` cross-checks it against the tarball and the tap formula sha256 and confirms the TeamIdentifier.
+dev ships through three channels. All pull the same tarball from each GitHub Release. The tarball's `dev` binary is Developer ID signed (Ved Gupta, team 7D2YX5DQ6M) under a hardened runtime and the submission is notarized by Apple. It is NOT stapled - a bare CLI binary in a tarball cannot hold a stapled ticket (stapler needs a bundle/dmg/pkg), so Gatekeeper verifies notarization online. Each release also publishes an `dev-<v>-arm64-macos.tar.gz.sha256` checksum asset; `scripts/post-release-verify.sh` cross-checks it against the tarball and the tap formula sha256 and confirms the TeamIdentifier.
 
 - **homebrew-core** - `brew install dev`. Autobump detects new releases; latency ~24h. We do not maintain the formula.
-- **Arthur-Ficial/homebrew-tap** - `brew install Arthur-Ficial/tap/dev`. Synchronous, pushed as part of `make release`. Secondary channel; also houses dev-family tools (dev-chat, dev-clip, dev-mcp, etc.).
+- **innovatorved/homebrew-tap** - `brew install innovatorved/tap/dev`. Synchronous, pushed as part of `make release`. Secondary channel; also houses dev-family tools (dev-chat, dev-clip, dev-mcp, etc.).
 - **nixpkgs** - `nix profile install nixpkgs#dev-llm`. Name is `dev-llm` because nixpkgs already has an unrelated physics `dev` package and the disambiguator landed upstream as `dev-llm` (PR NixOS/nixpkgs#508084). `make release` opens a build-verified bump PR on `NixOS/nixpkgs` via `scripts/publish-nixpkgs-bump.sh` (final non-fatal step), and a nixpkgs committer merges it. There is **no zero-touch auto-merge**: dev-llm is `aarch64-darwin`-only, so r-ryantm (Linux-only worker) can never evaluate it or open a PR, and the merge bot only merges PRs opened by r-ryantm or committers - maintainership lets us comment merge but not self-merge. The script build-verifies with `nix-build` on this Mac, opens one advancing PR following the nixpkgs Things-done + automation/AI-policy conventions, and re-runs twice daily via launchd (`com.innovatorved.sayitdev-nixpkgs-bump`) through the wrapper `scripts/nixpkgs-bump-cron.sh`, which emails Franz once per distinct failure. Silent failure mode to know: if the Arthur-Ficial GitHub account ever has an SMS 2FA factor, the NixOS org 403s ALL authenticated access (even reads), blocking PR creation and blinding `gh pr list` - remove SMS (authenticator TOTP is the anchor; `~/.claude/rules/services.md`). See [docs/nixpkgs.md](docs/nixpkgs.md).
 - Emergency Homebrew bump: `brew bump-formula-pr dev --url=<tarball-url> --sha256=<hash>`
 - Standalone nixpkgs bump (e.g. catch-up if a release skipped it): `./scripts/publish-nixpkgs-bump.sh --version X.Y.Z`. Manual recovery in [docs/nixpkgs.md](docs/nixpkgs.md) "Manual self-bump".
@@ -356,7 +370,7 @@ dev ships through three channels. All pull the same tarball from each GitHub Rel
 - [ ] `make release` (scripts/publish-release.sh) completed green
 - [ ] `./scripts/post-release-verify.sh` passed
 - [ ] CLAUDE.md version and test counts updated (if changed)
-- [ ] File a ticket on `__UPSTREAM_DEV_REPO__-web` if the landing page needs update
+- [ ] File a ticket on `innovatorved/sayitdev-web` if the landing page needs update
 
 ## CI / GitHub Actions
 

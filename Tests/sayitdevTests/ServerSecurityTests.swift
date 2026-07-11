@@ -49,6 +49,59 @@ func runServerSecurityTests() {
         try assertTrue(ServerSecurity.shouldWarnExposedWithoutToken(host: "192.168.1.10", hasToken: false))
     }
 
+    // MARK: - shouldRefuseExposedWithoutToken (#228 hardening)
+
+    test("refuse exposed: 0.0.0.0 without token is refused") {
+        try assertTrue(ServerSecurity.shouldRefuseExposedWithoutToken(host: "0.0.0.0", hasToken: false, allowInsecureOverride: false))
+    }
+
+    test("refuse exposed: override allows insecure bind") {
+        try assertTrue(!ServerSecurity.shouldRefuseExposedWithoutToken(host: "0.0.0.0", hasToken: false, allowInsecureOverride: true))
+    }
+
+    test("refuse exposed: token lifts refusal") {
+        try assertTrue(!ServerSecurity.shouldRefuseExposedWithoutToken(host: "0.0.0.0", hasToken: true, allowInsecureOverride: false))
+    }
+
+    // MARK: - shouldRefuseServeMCPWithoutToken
+
+    test("serve MCP: refused without token when MCP attached") {
+        try assertTrue(ServerSecurity.shouldRefuseServeMCPWithoutToken(hasMCPServers: true, hasToken: false))
+    }
+
+    test("serve MCP: allowed with token") {
+        try assertTrue(!ServerSecurity.shouldRefuseServeMCPWithoutToken(hasMCPServers: true, hasToken: true))
+    }
+
+    test("serve MCP: allowed without MCP servers") {
+        try assertTrue(!ServerSecurity.shouldRefuseServeMCPWithoutToken(hasMCPServers: false, hasToken: false))
+    }
+
+    // MARK: - isAllowedRemoteMCPHost (SSRF)
+
+    test("remote MCP host: public hostname allowed") {
+        try assertTrue(ServerSecurity.isAllowedRemoteMCPHost(hostname: "mcp.example.com", port: 443))
+    }
+
+    test("remote MCP host: loopback allowed") {
+        try assertTrue(ServerSecurity.isAllowedRemoteMCPHost(hostname: "127.0.0.1", port: 8080))
+        try assertTrue(ServerSecurity.isAllowedRemoteMCPHost(hostname: "localhost", port: nil))
+    }
+
+    test("remote MCP host: private IPv4 blocked") {
+        try assertTrue(!ServerSecurity.isAllowedRemoteMCPHost(hostname: "10.0.0.1", port: 443))
+        try assertTrue(!ServerSecurity.isAllowedRemoteMCPHost(hostname: "192.168.1.5", port: 443))
+        try assertTrue(!ServerSecurity.isAllowedRemoteMCPHost(hostname: "169.254.169.254", port: 80))
+    }
+
+    test("remote MCP host: metadata hostname blocked") {
+        try assertTrue(!ServerSecurity.isAllowedRemoteMCPHost(hostname: "metadata.google.internal", port: nil))
+    }
+
+    test("remote MCP host: non-standard port blocked") {
+        try assertTrue(!ServerSecurity.isAllowedRemoteMCPHost(hostname: "mcp.example.com", port: 8080))
+    }
+
     // MARK: - scrubbedMCPEnvironment (#229)
 
     let dirtyEnv: [String: String] = [
@@ -64,6 +117,7 @@ func runServerSecurityTests() {
         "DEV_MCP_TOKEN": "mcp-secret",
         "DEV_HOST": "0.0.0.0",
         "AWS_SECRET_ACCESS_KEY": "leak",
+        "AWS_REGION": "us-east-1",
         "OPENAI_API_KEY": "leak",
         "MY_ACCESS_TOKEN": "leak",
         "GITHUB_TOKEN": "leak",
@@ -80,6 +134,7 @@ func runServerSecurityTests() {
     test("scrub: TOKEN/KEY/SECRET vars are excluded") {
         let scrubbed = ServerSecurity.scrubbedMCPEnvironment(from: dirtyEnv)
         try assertNil(scrubbed["AWS_SECRET_ACCESS_KEY"])
+        try assertNil(scrubbed["AWS_REGION"])
         try assertNil(scrubbed["OPENAI_API_KEY"])
         try assertNil(scrubbed["MY_ACCESS_TOKEN"])
         try assertNil(scrubbed["GITHUB_TOKEN"])

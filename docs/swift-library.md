@@ -24,13 +24,13 @@ The first tagged release that contains `SayItDevCore` is `1.1.0`. Depend on the 
 
 ```swift
 dependencies: [
-    .package(url: "__UPSTREAM_DEV_URL__.git", from: "1.1.0")
+    .package(url: "https://github.com/innovatorved/sayitdev.git", from: "1.1.0")
 ],
 targets: [
     .executableTarget(
         name: "MyTool",
         dependencies: [
-            .product(name: "SayItDevCore", package: "dev")
+            .product(name: "SayItDevCore", package: "sayitdev")
         ]
     )
 ]

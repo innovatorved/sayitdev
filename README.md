@@ -14,22 +14,49 @@ SayItDev is a fork of [Arthur-Ficial/apfel](https://github.com/Arthur-Ficial/apf
 
 ## Install
 
+### Homebrew (easiest)
+
+```bash
+brew tap innovatorved/tap
+brew install innovatorved/tap/dev
+dev --version
+```
+
+Requires macOS 26+, Apple Silicon, Apple Intelligence (for LLM / `--agent`).
+
+### Build from source
+
 ```bash
 git clone https://github.com/innovatorved/sayitdev.git
 cd sayitdev
 make build
-sudo make install   # installs `dev` to /usr/local/bin
+codesign --force --sign - .build/release/dev
+sudo make install   # installs `dev` to /usr/local/bin — do NOT run make build with sudo
 ```
 
 Or run from the build directory:
 
 ```bash
-swift build
-codesign --force --sign - .build/debug/dev
-.build/debug/dev --help
+swift build -c release
+codesign --force --sign - .build/release/dev
+.build/release/dev --help
 ```
 
-> Grant **Microphone** and **Speech Recognition** to Terminal.app in System Settings → Privacy on first use.
+Install globally so `dev` is on your PATH:
+
+```bash
+sudo make install
+dev --version
+```
+
+Or for this shell only:
+
+```bash
+export PATH="$PWD/.build/release:$PATH"
+dev --version
+```
+
+> Grant **Microphone** and **Speech Recognition** to Terminal.app in System Settings → Privacy on first use. Voice features (especially `--listen`, `--agent`, and `/v1/audio/transcriptions`) must be tested from **Terminal.app** — the Cursor integrated terminal does not reliably inherit TCC permissions.
 
 ## Voice commands
 
@@ -75,6 +102,95 @@ curl -s http://127.0.0.1:11434/v1/audio/speech \
   -d '{"model":"sayitdev-on-device","input":"hello","voice":"default","response_format":"wav"}' \
   --output out.wav
 ```
+
+## Complete test checklist
+
+Use **Terminal.app** (not Cursor) for anything involving the microphone or speech recognition.
+
+### 1. Build and install
+
+```bash
+cd sayitdev
+make build
+codesign --force --sign - .build/release/dev
+.build/release/dev --version    # expect: dev v1.0.0
+```
+
+Optional: `sudo make install` then use `dev` from anywhere.
+
+### 2. Automated voice smoke test
+
+```bash
+chmod +x demo/voice-check
+./demo/voice-check
+```
+
+TTS + server audio routes (no mic).
+
+```bash
+./demo/voice-check --full
+```
+
+Also runs `dev --listen` (needs mic permission).
+
+### 3. CLI voice modes (manual)
+
+```bash
+dev --speak "Hello from SayItDev"
+echo "Read this aloud" | dev --speak
+dev --listen                    # speak, pause; transcript on stdout
+dev --agent                     # voice Q&A loop; Ctrl-C to quit
+```
+
+Voice flags:
+
+```bash
+dev --speak "hi" --voice-name personal --rate 1.1
+dev --listen --locale en-US
+dev --agent --system "You are a concise assistant"
+```
+
+### 4. Server + HTTP audio API
+
+```bash
+dev --serve --port 11434 &
+curl -s http://127.0.0.1:11434/health | jq .
+curl -s http://127.0.0.1:11434/v1/audio/voices | jq '.voices[:3]'
+curl -s -X POST http://127.0.0.1:11434/v1/audio/speech \
+  -H 'content-type: application/json' \
+  -d '{"input":"hello","voice":"default","response_format":"wav"}' \
+  --output out.wav
+curl -s -X POST http://127.0.0.1:11434/v1/audio/transcriptions \
+  -F file=@out.wav -F model=sayitdev-on-device | jq .
+kill %1
+```
+
+### 5. LLM + demos (unchanged from apfel)
+
+```bash
+dev "What is 2+2?"
+dev --stream "Write a haiku"
+dev --chat
+dev demos ./dev-demos && ./dev-demos/mac-narrator --say
+```
+
+### 6. Unit and integration tests
+
+```bash
+swift run sayitdev-tests                                    # 1048 unit tests
+/opt/homebrew/Caskroom/miniconda/base/bin/pytest \
+  Tests/integration/test_man_page.py -v                     # man page drift
+make preflight                                              # build + model-free integration
+```
+
+### Permissions (System Settings → Privacy)
+
+| Permission | Needed for |
+|------------|------------|
+| Microphone | `--listen`, `--agent`, mic capture |
+| Speech Recognition | `--listen`, `--agent`, `/v1/audio/transcriptions` |
+
+TTS (`--speak`, `/v1/audio/speech`) does not require Apple Intelligence.
 
 ## Credits
 

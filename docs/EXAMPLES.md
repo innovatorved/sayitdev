@@ -4,7 +4,7 @@ Every response below is **real, unedited output** from Apple's on-device model
 via `dev`. Nothing was cherry-picked, cleaned up, or re-run.
 This file was generated automatically by `scripts/generate-examples.sh`.
 
-> dev v1.8.3 | macOS 26.5.2 | M2 | 2026-07-09
+> dev v1.0.0 | macOS 26.5.2 | M2 | 2026-07-11
 
 ## Table of Contents
 
@@ -22,6 +22,7 @@ This file was generated automatically by `scripts/generate-examples.sh`.
 12. [Edge Cases](#12-edge-cases)
 13. [Formatting & Structure](#13-formatting--structure)
 14. [File Extraction (PDF, image OCR + understanding)](#14-file-extraction-pdf-image-ocr--understanding)
+15. [Voice (SayItDev)](#15-voice-sayitdev)
 
 ---
 
@@ -1016,7 +1017,7 @@ $ dev -o json "Capital of France? One word."
   "content" : "Paris",
   "metadata" : {
     "on_device" : true,
-    "version" : "1.8.2"
+    "version" : "1.0.0"
   },
   "model" : "sayitdev-on-device"
 }
@@ -1100,5 +1101,60 @@ AME IN PEACE FOR ALL MANKINE
   Tests/integration/fixtures/lesbar/apollo11_plaque.jpg=59
 59/3584 tokens (fits)
 ````
+
+---
+
+## 15. Voice (SayItDev)
+
+On-device TTS and STT. Run from **Terminal.app** (Cursor's terminal does not get mic/speech TCC reliably).
+
+```
+$ dev --speak "Hello from SayItDev"
+```
+
+*(Speaks through the default output device; no LLM call.)*
+
+---
+
+```
+$ echo "Read this aloud" | dev --speak
+```
+
+*(Reads stdin via TTS.)*
+
+---
+
+```
+$ dev --listen
+```
+
+*(Records from the default microphone; prints transcript on stdout when you stop speaking.)*
+
+---
+
+```
+$ dev --agent
+```
+
+*(Loop: listen → on-device LLM → speak answer. Ctrl-C to quit. Requires Apple Intelligence.)*
+
+---
+
+```
+$ curl -s http://127.0.0.1:11434/v1/audio/speech \
+    -H 'content-type: application/json' \
+    -d '{"input":"hello","voice":"default","response_format":"wav"}' \
+    --output hello.wav
+```
+
+*(Server TTS; start with `dev --serve` first.)*
+
+---
+
+```
+$ ./demo/voice-check
+```
+
+*(Automated smoke test: `--speak`, voices list, speech API, transcription round-trip.)*
 
 ---

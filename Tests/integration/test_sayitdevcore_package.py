@@ -12,7 +12,7 @@ import subprocess
 import pytest
 
 
-FIXTURE = pathlib.Path(__file__).resolve().parent / "fixtures" / "apfelcore-consumer"
+FIXTURE = pathlib.Path(__file__).resolve().parent / "fixtures" / "sayitdevcore-consumer"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,9 +25,9 @@ def guard_server_11435():
     yield
 
 
-def test_apfelcore_can_be_imported_by_a_downstream_package():
+def test_sayitdevcore_can_be_imported_by_a_downstream_package():
     result = subprocess.run(
-        ["swift", "run", "apfelcore-consumer"],
+        ["swift", "run", "sayitdevcore-consumer"],
         cwd=FIXTURE,
         capture_output=True,
         text=True,

@@ -130,12 +130,13 @@ oneliner demo scripts. Documentation was also rewritten for the README.
 
 ## mac-narrator
 
-Your Mac's inner monologue. Narrates system state in dry British humor.
+Your Mac's inner monologue. Narrates system state in dry British humor. With `--say`, speaks via `dev --speak` (SayItDev TTS).
 
 ```bash
 ./mac-narrator                    # one-shot observation
 ./mac-narrator --watch            # continuous, every 60s
 ./mac-narrator --watch -i 30      # every 30 seconds
+./mac-narrator --say              # speak the narration aloud
 ```
 
 **Example output:**
@@ -146,17 +147,34 @@ its human presumably waits for it to finish. Meanwhile, WindowServer
 soldiers on at 3.1%, dutifully rendering pixels that nobody is looking at.
 ```
 
+## voice-check
+
+Quick smoke test for SayItDev voice features (run from **Terminal.app** after `make build`):
+
+```bash
+./voice-check
+```
+
+TTS + server audio routes (no mic).
+
+```bash
+./voice-check --full
+```
+
+Also runs `--listen` once (needs mic permission).
+
 ## Requirements
 
-- `dev` installed and on PATH (`make install`)
-- Apple Intelligence enabled in System Settings
+- `dev` installed and on PATH (`make install` or use `.build/release/dev`)
+- Apple Intelligence enabled in System Settings (for LLM demos and `--agent`; not required for `--speak` / `--listen` alone)
 - macOS 26+, Apple Silicon
+- **Microphone + Speech Recognition** granted to Terminal.app (for `--listen`, `--agent`, transcriptions API)
 
 ## Install demos globally (optional)
 
-The demos are intentionally **not** installed by `brew install dev` or `make install`. Names like `cmd`, `port`, `explain`, and `naming` are too generic for global `$PATH` - `port` would shadow MacPorts, `cmd` is a common variable name in many shell scripts.
+`brew install innovatorved/tap/dev` installs companion scripts as `dev-cmd`, `dev-port`, etc. (see the formula). They live under Homebrew's `pkgshare` and are symlinked into `$(brew --prefix)/bin`.
 
-If you want them available system-wide, symlink each one with an `dev-` prefix:
+If you are developing from a source clone instead, you can symlink from `demo/` manually — names like `cmd`, `port`, and `explain` are too generic for unprefixed global `$PATH` (`port` would shadow MacPorts).
 
 ```bash
 mkdir -p "$HOME/.local/bin"

@@ -33,10 +33,10 @@ if [[ -z "$version" || -z "$sha256" || -z "$output" ]]; then
 fi
 
 cat > "$output" <<EOF
-class Apfel < Formula
+class Dev < Formula
   desc "On-device Apple FoundationModels CLI and OpenAI-compatible server"
-  homepage "__UPSTREAM_DEV_URL__"
-  url "__UPSTREAM_DEV_URL__/releases/download/v${version}/dev-${version}-arm64-macos.tar.gz"
+  homepage "https://github.com/innovatorved/sayitdev"
+  url "https://github.com/innovatorved/sayitdev/releases/download/v${version}/dev-${version}-arm64-macos.tar.gz"
   sha256 "${sha256}"
   license "MIT"
 
@@ -64,7 +64,7 @@ class Apfel < Formula
     # in the release tarball under completions/. Installed to the standard
     # per-shell completion directories so tab-completion works out of the box.
     bash_completion.install "completions/dev.bash" => "dev" if File.exist?("completions/dev.bash")
-    zsh_completion.install "completions/dev.zsh" => "_apfel" if File.exist?("completions/dev.zsh")
+    zsh_completion.install "completions/dev.zsh" => "_dev" if File.exist?("completions/dev.zsh")
     fish_completion.install "completions/dev.fish" if File.exist?("completions/dev.fish")
 
     # Ship the demo/ pipe-friendly examples (cmd, explain, gitsum, mac-narrator,
@@ -117,7 +117,7 @@ class Apfel < Formula
         Note: Homebrew reports this process as non-arm64. If you are on a real
         Apple Silicon Mac (M1+), dev will still run - your brew install may
         be running under Rosetta. See:
-        __UPSTREAM_DEV_URL__/issues/45
+        https://github.com/innovatorved/sayitdev/issues/45
       EOS
     end
     s

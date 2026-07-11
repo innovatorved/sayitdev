@@ -12,7 +12,7 @@
 If you believe you have found a security vulnerability in dev, please report it responsibly. Do NOT file a public GitHub issue.
 
 **Preferred:** Use GitHub's private vulnerability reporting:
-__UPSTREAM_DEV_URL__/security/advisories/new
+https://github.com/innovatorved/sayitdev/security/advisories/new
 
 **Alternative:** Email fe at f19n dot com with:
 - Description of the vulnerability

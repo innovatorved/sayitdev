@@ -50,7 +50,7 @@ Use local `dev` for safer chat/review work and a second model for edit/apply.
 Create or replace `~/.continue/config.yaml` with:
 
 ```yaml
-name: Apfel Review + OpenAI Apply
+name: SayItDev Review + OpenAI Apply
 version: 0.0.1
 schema: v1
 

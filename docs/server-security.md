@@ -437,7 +437,9 @@ dev --serve --host 0.0.0.0 --token-auto
 # Share the printed token with people on your network
 ```
 
-Binding a non-loopback host (`--host 0.0.0.0` or any LAN address) with **no** token starts the server with zero authentication - every host that can reach the socket can call the inference endpoints. dev prints a loud red startup warning in that case and points you here; it does not refuse to bind, so always add `--token` or `--token-auto` before exposing the server.
+Binding a non-loopback host (`--host 0.0.0.0` or any LAN address) with **no** token is **refused at startup** — dev exits with a usage error and tells you to set `--token`, `--token-auto`, or pass `--i-know-what-im-doing` if you truly accept unauthenticated network exposure.
+
+`--serve` with `--mcp` also requires a token so HTTP clients cannot trigger MCP tool execution without authentication.
 
 Other machines connect with:
 
@@ -508,3 +510,7 @@ Every combination explained:
 - "Who can connect" = whose requests get a 200 response
 - "Who can read responses" = whose browser JavaScript can read the response body (requires CORS headers)
 - "simple GET only" = browsers can read GET responses but POST requires full CORS preflight (`--cors`)
+
+### Rate limiting
+
+There is no built-in request rate limiting on `/v1/chat/completions` today. For network-exposed deployments, place dev behind a reverse proxy or firewall that enforces rate limits and TLS termination.

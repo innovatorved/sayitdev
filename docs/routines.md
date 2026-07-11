@@ -4,14 +4,14 @@ dev uses Anthropic Claude Code **routines** - scheduled or webhook-triggered Cla
 
 ## What you'll see
 
-If you open an issue or a pull request against `__UPSTREAM_DEV_REPO__`, a Claude-Code-driven automated reviewer may comment before a human does. Those comments:
+If you open an issue or a pull request against `innovatorved/sayitdev`, a Claude-Code-driven automated reviewer may comment before a human does. Those comments:
 
 - Say they are automated at the top and bottom
-- Always cc @franzenzenhofer
+- Always cc @innovatorved
 - Will not close your issue, will not merge your PR, will not approve your PR code
 - Focus on applying our published "Handling Issues" / "Handling Pull Requests" process from [CLAUDE.md](../CLAUDE.md)
 
-If anything the routine says is wrong, unclear, or comes across poorly - that's on us. Reply on the issue/PR and @franzenzenhofer will take a look.
+If anything the routine says is wrong, unclear, or comes across poorly - that's on us. Reply on the issue/PR and @innovatorved will take a look.
 
 ## What routines cannot do
 
@@ -22,7 +22,7 @@ Routines run on Anthropic's Linux cloud runners, so they cannot:
 - Merge a PR, approve a PR, cut a release, or update any distribution channel (Homebrew, nixpkgs, tap)
 - Change what you install via `brew install dev` or `nix profile install nixpkgs#dev-llm`
 
-Every code-PR review from a routine contains an explicit note that functional correctness was **not** verified and that @franzenzenhofer needs to run tests locally before merging.
+Every code-PR review from a routine contains an explicit note that functional correctness was **not** verified and that @innovatorved needs to run tests locally before merging.
 
 ## Why we use them
 
@@ -32,7 +32,7 @@ Every code-PR review from a routine contains an explicit note that functional co
 
 ## How to opt out
 
-If you'd prefer a human-only review on a specific PR, add the comment `cc @franzenzenhofer please review without the routine` and we'll disable routines for that PR. For issues, simply tag @franzenzenhofer in the body and we'll skip the auto-triage.
+If you'd prefer a human-only review on a specific PR, add the comment `cc @innovatorved please review without the routine` and we'll disable routines for that PR. For issues, simply tag @innovatorved in the body and we'll skip the auto-triage.
 
 ## Technical details
 
@@ -45,11 +45,11 @@ For the operator-level guide - how prompts are version-controlled, how kill-swit
 | 1 | PR auto-review | **Live** |
 | 2 | Issue triage | **Live** |
 | 3 | Distribution-channel sync watch | **Live** |
-| + | Bug solver (labels `bug` OR `@Arthur-Ficial investigate`) | **Live** - drafts a fix PR for real bugs |
+| + | Bug solver (labels `bug` OR `@innovatorved investigate`) | **Live** - drafts a fix PR for real bugs |
 | - | Stale issue sweep, first-time CI approval as standalone, post-release verify | Not planned |
 
-All four routines share the same identity (Arthur Ficial voice - warm, short, specific) and the same hard guardrails. The full prompt texts are committed under [`.claude/routines/`](../.claude/routines/).
+All four routines share the same identity (Ved Gupta voice - warm, short, specific) and the same hard guardrails. The full prompt texts are committed under [`.claude/routines/`](../.claude/routines/).
 
 ## Security note
 
-The Claude GitHub App is installed on `__UPSTREAM_DEV_REPO__` **only**, with minimum GitHub permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). It is explicitly NOT installed on `Arthur-Ficial/homebrew-tap` or `NixOS/nixpkgs` - those are release-side repos and routines must never reach them.
+The Claude GitHub App is installed on `innovatorved/sayitdev` **only**, with minimum GitHub permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). It is explicitly NOT installed on `innovatorved/homebrew-tap` or `NixOS/nixpkgs` - those are release-side repos and routines must never reach them.

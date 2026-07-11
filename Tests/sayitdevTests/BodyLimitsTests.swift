@@ -14,6 +14,10 @@ func runBodyLimitsTests() {
         try assertEqual(BodyLimits.maxRequestBodyBytes, 1024 * 1024)
     }
 
+    test("maxStdinBytes is 16 MiB") {
+        try assertEqual(BodyLimits.maxStdinBytes, 16 * 1024 * 1024)
+    }
+
     test("defaultOutputReserveTokens is 512") {
         try assertEqual(BodyLimits.defaultOutputReserveTokens, 512)
     }

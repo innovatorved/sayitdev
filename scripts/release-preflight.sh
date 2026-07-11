@@ -78,7 +78,7 @@ fi
 
 # --- 5. Unit tests ---
 step "Unit tests"
-if swift run dev-tests 2>&1; then
+if swift run sayitdev-tests 2>&1; then
     pass "unit tests"
 else
     fail "unit tests"

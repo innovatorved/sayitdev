@@ -2,7 +2,7 @@
 
 AWK can't do HTTP on its own - it was designed for text processing, not networking. The UNIX convention is to **pair AWK with curl**: curl handles transport, AWK parses the response. That's what every script in this guide does.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/awk](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/awk).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/awk](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/awk).
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing apps and systems across platforms, known for its safety, performance, and ease of use.
 ```
 
-Lab script: [`01_oneshot.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/01_oneshot.sh).
+Lab script: [`01_oneshot.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/01_oneshot.sh).
 
 ## 2. Streaming
 
@@ -73,7 +73,7 @@ Apple M1 Pro
 Apple M1 Max
 ```
 
-Lab script: [`02_stream.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/02_stream.sh).
+Lab script: [`02_stream.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/02_stream.sh).
 
 ## 3. JSON mode
 
@@ -107,7 +107,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/03_json.sh).
+Lab script: [`03_json.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/03_json.sh).
 
 ## 4. Error handling
 
@@ -138,7 +138,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/04_errors.sh).
+Lab script: [`04_errors.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/04_errors.sh).
 
 ## 5. Tool calling (delegate to Bash)
 
@@ -156,7 +156,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/05_tools.sh). For tool-heavy code, reach for [python.md](python.md) or [nodejs.md](nodejs.md).
+Lab script: [`05_tools.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/05_tools.sh). For tool-heavy code, reach for [python.md](python.md) or [nodejs.md](nodejs.md).
 
 ## 6. Real example - summarize stdin
 
@@ -193,7 +193,7 @@ Real output:
 The Apple M1 chip, launched in November 2020, marked Apple's first ARM-based system-on-a-chip for Macs. This chip features an 8-core CPU with four performance and four efficiency cores, along with an integrated GPU capable of up to 8 cores. By consolidating the CPU, GPU, memory, and neural engine on a single die, the M1 chip achieved notable performance-per-watt improvements compared to its Intel counterparts.
 ```
 
-Lab script: [`06_example.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/06_example.sh).
+Lab script: [`06_example.sh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/awk/06_example.sh).
 
 ## Troubleshooting
 
@@ -207,8 +207,8 @@ Lab script: [`06_example.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/
 - BSD awk 20200816 (system) / jq 1.7 / curl
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_awk.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_awk.py).
+Runnable tests: [tests/test_awk.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_awk.py).
 
 ## See also
 
-[bash-curl.md](bash-curl.md), [perl.md](perl.md), [zsh.md](zsh.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[bash-curl.md](bash-curl.md), [perl.md](perl.md), [zsh.md](zsh.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

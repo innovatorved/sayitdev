@@ -325,7 +325,7 @@ def test_completions_zsh_exit_and_content():
 def test_completions_bash_and_fish_content():
     bash = run_cli(["completions", "bash"], timeout=15)
     assert bash.returncode == 0
-    assert "complete -F _apfel dev" in bash.stdout
+    assert "complete -F _dev dev" in bash.stdout
     fish = run_cli(["completions", "fish"], timeout=15)
     assert fish.returncode == 0
     assert "complete -c dev" in fish.stdout

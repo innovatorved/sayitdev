@@ -13,10 +13,10 @@ FAILED=0
 
 # --- 1. GitHub Release exists ---
 step "GitHub Release"
-if gh release view "v$version" --repo __UPSTREAM_DEV_REPO__ >/dev/null 2>&1; then
+if gh release view "v$version" --repo innovatorved/sayitdev >/dev/null 2>&1; then
     pass "v$version release exists"
     # Check tarball asset
-    if gh release view "v$version" --repo __UPSTREAM_DEV_REPO__ --json assets --jq '.assets[].name' | grep -q "dev-$version-arm64-macos.tar.gz"; then
+    if gh release view "v$version" --repo innovatorved/sayitdev --json assets --jq '.assets[].name' | grep -q "dev-$version-arm64-macos.tar.gz"; then
         pass "tarball asset attached"
     else
         fail "tarball asset missing from release"
@@ -61,7 +61,7 @@ fi
 step "Checksum + Developer ID signature"
 tarball="dev-$version-arm64-macos.tar.gz"
 work=$(mktemp -d)
-if gh release download "v$version" --repo __UPSTREAM_DEV_REPO__ \
+if gh release download "v$version" --repo innovatorved/sayitdev \
         --pattern "$tarball" --pattern "$tarball.sha256" --dir "$work" 2>/dev/null; then
     # (a) tarball digest must match the published .sha256 asset
     if [ -f "$work/$tarball.sha256" ]; then
@@ -77,7 +77,7 @@ if gh release download "v$version" --repo __UPSTREAM_DEV_REPO__ \
     fi
 
     # (b) tarball digest must match the Homebrew tap formula sha256
-    formula=$(curl -fsSL "https://raw.githubusercontent.com/Arthur-Ficial/homebrew-tap/main/Formula/dev.rb" 2>/dev/null || true)
+    formula=$(curl -fsSL "https://raw.githubusercontent.com/innovatorved/homebrew-tap/main/Formula/dev.rb" 2>/dev/null || true)
     tap_sha=$(printf '%s\n' "$formula" | grep -oE 'sha256 "[0-9a-f]{64}"' | head -1 | grep -oE '[0-9a-f]{64}')
     actual=$(shasum -a 256 "$work/$tarball" | awk '{print $1}')
     if [ -n "$tap_sha" ]; then

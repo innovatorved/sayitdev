@@ -103,7 +103,12 @@ func handleAudioTranscription(_ request: Request, voiceConfig: VoiceConfig) asyn
     do {
         result = try await SpeechInput.transcribeFile(url: tempURL, config: cfg)
     } catch let e as SpeechInputError {
-        return openAIError(status: .badRequest, message: e.localizedDescription, type: "invalid_request_error")
+        switch e {
+        case .permissionDenied(let msg):
+            return openAIError(status: .forbidden, message: msg, type: "permission_error")
+        default:
+            return openAIError(status: .badRequest, message: e.localizedDescription, type: "invalid_request_error")
+        }
     }
     switch responseFormat {
     case "text":

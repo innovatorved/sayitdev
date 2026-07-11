@@ -80,7 +80,7 @@ final class MCPConnection: @unchecked Sendable {
             // Initialize handshake
             let initId = allocId()
             let initResp = try sendAndReceive(
-                MCPProtocol.initializeRequest(id: initId),
+                MCPProtocol.initializeRequest(id: initId, clientVersion: buildVersion),
                 id: initId,
                 timeoutMilliseconds: timeoutMilliseconds,
                 operationDescription: "initialize"
@@ -234,6 +234,19 @@ final class MCPConnection: @unchecked Sendable {
 /// Prevents a malicious server from OOM-ing the client.
 private let maxRemoteMCPResponseBytes = 10 * 1024 * 1024
 
+/// Refuse HTTP redirects for remote MCP — redirect chains are a common SSRF bypass.
+private final class MCPNoRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
+    }
+}
+
 /// Connection to a remote MCP server via Streamable HTTP transport (spec 2025-03-26).
 /// Actor isolation serialises sessionId/nextId mutations with no manual locking.
 actor RemoteMCPConnection: Sendable {
@@ -246,6 +259,7 @@ actor RemoteMCPConnection: Sendable {
     private let bearerToken: String?
     private let timeoutSeconds: Int
     private let session: URLSession
+    private let sessionDelegate = MCPNoRedirectDelegate()
     private var nextId = 1
     private var sessionId: String?
 
@@ -255,11 +269,16 @@ actor RemoteMCPConnection: Sendable {
               scheme == "http" || scheme == "https" else {
             throw MCPError.processError("Invalid MCP server URL: \(urlString) (must be http:// or https://)")
         }
+        let host = url.host ?? ""
+        guard ServerSecurity.isAllowedRemoteMCPHost(hostname: host, port: url.port) else {
+            throw MCPError.processError(
+                "refusing remote MCP URL with blocked host \(host) - private/link-local/metadata hosts are not allowed"
+            )
+        }
         // Security: refuse to send bearer token over non-loopback plaintext HTTP.
         // Loopback traffic (127.0.0.1, ::1, localhost) never leaves the machine,
         // so http:// is acceptable there. Remote http:// would expose the token in plaintext.
         if bearerToken != nil && scheme == "http" {
-            let host = url.host ?? ""
             let isLoopback = host == "127.0.0.1" || host == "::1" || host == "localhost"
             if !isLoopback {
                 throw MCPError.processError(
@@ -271,13 +290,14 @@ actor RemoteMCPConnection: Sendable {
         self.url = url
         self.bearerToken = bearerToken
         self.timeoutSeconds = timeoutSeconds
-        // Ephemeral session: no shared cookie jar, no disk cache.
+        // Ephemeral session: no shared cookie jar, no disk cache, no redirects.
         let config = URLSessionConfiguration.ephemeral
+        config.httpShouldSetCookies = false
         config.httpAdditionalHeaders = ["User-Agent": "dev/\(buildVersion)"]
-        self.session = URLSession(configuration: config)
+        self.session = URLSession(configuration: config, delegate: sessionDelegate, delegateQueue: nil)
 
         do {
-            let initResp = try await post(MCPProtocol.initializeRequest(id: allocId()))
+            let initResp = try await post(MCPProtocol.initializeRequest(id: allocId(), clientVersion: buildVersion))
             _ = try MCPProtocol.parseInitializeResponse(initResp)
             _ = try? await post(MCPProtocol.initializedNotification())
             let toolsResp = try await post(MCPProtocol.toolsListRequest(id: allocId()))

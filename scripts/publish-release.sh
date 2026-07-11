@@ -48,7 +48,7 @@ echo "Version: $version"
 
 # --- Unit tests ---
 step "Unit tests"
-swift run dev-tests
+swift run sayitdev-tests
 
 # --- Integration tests (ALL 7 suites, full qualification) ---
 step "Integration tests (full qualification)"
@@ -67,7 +67,7 @@ trap cleanup EXIT
 
 .build/release/dev --serve --port 11434 2>/dev/null &
 SERVER_PID=$!
-.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
+.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py --token integration-test-token 2>/dev/null &
 MCP_SERVER_PID=$!
 
 READY=0
@@ -113,22 +113,39 @@ trap - EXIT
 # keychain. On the release path signing is mandatory - a real release must not
 # ship an ad-hoc binary.
 step "Sign release binary"
-security find-identity -v -p codesigning 2>/dev/null | grep -q "Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)" \
-    || fail "no 'Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)' signing identity found - cannot publish a signed release (#226)"
-codesign --force --timestamp --options runtime \
-    --sign "Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)" \
-    ".build/release/dev" \
-    || fail "codesign failed - refusing to publish (#226)"
-codesign --verify --strict ".build/release/dev" || fail "codesign verification failed (#226)"
+CODESIGN_ID="${DEV_CODESIGN_IDENTITY:-}"
+NOTARY_TEAM="${DEV_NOTARY_TEAM_ID:-}"
+if [[ -z "$CODESIGN_ID" ]]; then
+    if security find-identity -v -p codesigning 2>/dev/null | grep -q 'Developer ID Application:'; then
+        CODESIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application:/ {print $2; exit}')
+        echo "Using codesign identity: $CODESIGN_ID"
+    else
+        echo "WARN: DEV_CODESIGN_IDENTITY not set and no Developer ID found; ad-hoc signing (local dev only)"
+        codesign --force --sign - ".build/release/dev" || fail "codesign failed"
+        NOTARY_SKIP=1
+    fi
+fi
+if [[ -z "${NOTARY_SKIP:-}" ]]; then
+    security find-identity -v -p codesigning 2>/dev/null | grep -Fq "$CODESIGN_ID" \
+        || fail "codesign identity not found: $CODESIGN_ID (set DEV_CODESIGN_IDENTITY)"
+    codesign --force --timestamp --options runtime \
+        --sign "$CODESIGN_ID" \
+        ".build/release/dev" \
+        || fail "codesign failed - refusing to publish (#226)"
+    codesign --verify --strict ".build/release/dev" || fail "codesign verification failed (#226)"
+fi
 
 # --- Notarization hard gate (#226) ---
+if [[ -z "${NOTARY_SKIP:-}" ]]; then
 # Refuse to publish an ad-hoc-signed binary, and notarize the signed binary so
 # Gatekeeper accepts non-brew downloads. A bare CLI binary cannot be stapled
 # (stapler needs a bundle/dmg/pkg), so we notarize the submission and ship
 # without a stapled ticket - Gatekeeper verifies notarization online.
 sig=$(codesign -dvv ".build/release/dev" 2>&1 || true)
-echo "$sig" | grep -q "TeamIdentifier=7D2YX5DQ6M" || \
-    fail "release binary is not Developer ID signed (need TeamIdentifier 7D2YX5DQ6M) - refusing to publish an ad-hoc release (#226)"
+if [[ -n "$NOTARY_TEAM" ]]; then
+    echo "$sig" | grep -q "TeamIdentifier=${NOTARY_TEAM}" || \
+        fail "release binary TeamIdentifier mismatch (expected ${NOTARY_TEAM}) - refusing to publish an ad-hoc release (#226)"
+fi
 echo "$sig" | grep -q "flags=.*runtime" || \
     fail "release binary is not signed with the hardened runtime - notarization will reject it (#226)"
 
@@ -138,12 +155,11 @@ cp ".build/release/dev" "$notarize_dir/payload/dev"
 COPYFILE_DISABLE=1 ditto -c -k "$notarize_dir/payload" "$notarize_dir/dev-notarize.zip"
 # Credentials: prefer explicit App Store Connect creds (works non-interactively,
 # e.g. when the notarytool keychain profile lives in a locked keychain), else
-# fall back to the documented "notarytool" keychain profile (see
-# ~/dev/apple-dev-id/README.md). team-id defaults to Franz's team.
+# fall back to the documented "notarytool" keychain profile. team-id from DEV_NOTARY_TEAM_ID when set.
 if [ -n "${DEV_NOTARY_APPLE_ID:-}" ] && [ -n "${DEV_NOTARY_PASSWORD:-}" ]; then
     xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
         --apple-id "$DEV_NOTARY_APPLE_ID" \
-        --team-id "${DEV_NOTARY_TEAM_ID:-7D2YX5DQ6M}" \
+        --team-id "${DEV_NOTARY_TEAM_ID:-}" \
         --password "$DEV_NOTARY_PASSWORD" --wait \
         || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226)."; }
 else
@@ -153,6 +169,7 @@ else
         || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226). Ensure the '$NOTARY_PROFILE' keychain profile exists (xcrun notarytool store-credentials) and its keychain is unlocked, or set DEV_NOTARY_APPLE_ID / DEV_NOTARY_PASSWORD."; }
 fi
 rm -rf "$notarize_dir"
+fi
 
 # --- Commit + tag + push ---
 step "Commit and tag v$version"
@@ -193,31 +210,31 @@ if [ -n "$prev_tag" ]; then
     notes+=$(git log --oneline "$prev_tag"..HEAD~1 -- | sed 's/^/- /')
 fi
 notes+=$'\n\n'"---"$'\n'
-notes+="Install: \`brew install dev\`"$'\n'
+notes+="Install: \`brew tap innovatorved/tap && brew install innovatorved/tap/dev\`"$'\n'
 notes+="Upgrade: \`brew upgrade dev\`"
 
-if gh release view "v$version" --repo __UPSTREAM_DEV_REPO__ >/dev/null 2>&1; then
-    gh release upload "v$version" "$asset" "$asset.sha256" --clobber --repo __UPSTREAM_DEV_REPO__
+if gh release view "v$version" --repo innovatorved/sayitdev >/dev/null 2>&1; then
+    gh release upload "v$version" "$asset" "$asset.sha256" --clobber --repo innovatorved/sayitdev
 else
     gh release create "v$version" "$asset" "$asset.sha256" \
         --title "v$version" \
         --notes "$notes" \
-        --repo __UPSTREAM_DEV_REPO__
+        --repo innovatorved/sayitdev
 fi
 
 # --- Update Homebrew tap ---
 step "Update Homebrew tap"
 
 TAP_DIR=$(mktemp -d)
-git clone "https://x-access-token:$(gh auth token)@github.com/Arthur-Ficial/homebrew-tap.git" "$TAP_DIR" --quiet
+git clone "https://x-access-token:$(gh auth token)@github.com/innovatorved/homebrew-tap.git" "$TAP_DIR" --quiet
 
 make update-homebrew-formula \
     HOMEBREW_FORMULA_OUTPUT="$TAP_DIR/Formula/dev.rb" \
     HOMEBREW_FORMULA_SHA256="$sha256"
 
 cd "$TAP_DIR"
-git config user.name "Arthur Ficial"
-git config user.email "arti.ficial@fullstackoptimization.com"
+git config user.name "Ved Gupta"
+git config user.email "vedgupta@protonmail.com"
 if ! git diff --quiet -- Formula/dev.rb; then
     git add Formula/dev.rb
     git commit -m "dev v$version"
@@ -245,7 +262,7 @@ fi
 # --- Done ---
 step "Release v$version complete"
 echo ""
-echo "  GitHub Release: __UPSTREAM_DEV_URL__/releases/tag/v$version"
+echo "  GitHub Release: https://github.com/innovatorved/sayitdev/releases/tag/v$version"
 echo "  Homebrew tap:   updated"
 echo "  homebrew-core:  autobump will pick this up within ~24h"
 echo "  nixpkgs:        PR opened (or warning above)"

@@ -27,7 +27,7 @@ VERIFY = (ROOT / "scripts" / "post-release-verify.sh").read_text()
 CLAUDE = (ROOT / "CLAUDE.md").read_text()
 
 TEAM_ID = "7D2YX5DQ6M"
-IDENTITY = f"Developer ID Application: Franz Enzenhofer ({TEAM_ID})"
+IDENTITY = f"Developer ID Application: Ved Gupta ({TEAM_ID})"
 
 
 def test_release_signs_with_developer_id_and_hardened_runtime():

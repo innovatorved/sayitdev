@@ -22,6 +22,8 @@ import json
 import httpx
 import pytest
 
+from conftest import MCP_AUTH_HEADERS
+
 # Whole-suite marker: these tests drive real on-device generation (or, for
 # the permit/benchmark suites, need Apple Intelligence up); GitHub CI cannot
 # run them (CLAUDE.md "What GitHub CI CANNOT run"). Keeps -m "not model" a
@@ -201,6 +203,7 @@ class TestToolCallConformance:
         tool_calls in the message, matching the OpenAI spec structure."""
         resp = httpx.post(
             f"{MCP_URL}/v1/chat/completions",
+            headers=MCP_AUTH_HEADERS,
             json={
                 "model": MODEL,
                 "messages": [{"role": "user", "content": "What is 15 times 27?"}],

@@ -29,7 +29,7 @@ If you update `_golden-goal.md`, you must re-paste into **every** live routine. 
 ## Setting up a new routine
 
 1. Confirm the routine's prompt is committed to this directory and reviewed (same bar as code).
-2. Ensure the Claude GitHub App is installed on `__UPSTREAM_DEV_REPO__` **only**, with minimum permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). Verify it is NOT on `Arthur-Ficial/homebrew-tap` or any release-side repo.
+2. Ensure the Claude GitHub App is installed on `innovatorved/sayitdev` **only**, with minimum permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). Verify it is NOT on `innovatorved/homebrew-tap` or any release-side repo.
 3. Go to [claude.ai/code/routines](https://claude.ai/code/routines) → New routine.
 4. Name it exactly as the filename minus extension (`02-pr-auto-review`).
 5. Trigger: the GitHub trigger described at the top of the routine file.
@@ -46,7 +46,7 @@ Three ways, in descending preference:
 2. **Uninstall the Claude GitHub App from dev** - revokes access entirely. Nuclear option.
 3. **Revoke the fine-grained PATs** related to the routine - same effect.
 
-After disabling a misbehaving routine, file an issue on `__UPSTREAM_DEV_REPO__` describing: what triggered the run, what the routine did wrong, the run ID from claude.ai, and the prompt change needed to prevent recurrence.
+After disabling a misbehaving routine, file an issue on `innovatorved/sayitdev` describing: what triggered the run, what the routine did wrong, the run ID from claude.ai, and the prompt change needed to prevent recurrence.
 
 ## Tuning a routine's prompt
 
@@ -62,7 +62,7 @@ Never edit the live prompt in claude.ai without also updating this directory. Dr
 
 - claude.ai → Code → Routines → click routine → Run history
 - Each run has a session URL; clicking it shows the full transcript
-- Cross-reference routine runs against PR review IDs via `gh api repos/__UPSTREAM_DEV_REPO__/pulls/<n>/reviews`
+- Cross-reference routine runs against PR review IDs via `gh api repos/innovatorved/sayitdev/pulls/<n>/reviews`
 
 ## Budget
 
@@ -73,7 +73,7 @@ Max 20x plan: 15 routine runs per day. Webhook routines only burn budget when ev
 - **Phase 1 - live:** `02-pr-auto-review.md` - first responder on every PR.
 - **Phase 2 - live:** `01-issue-triage.md` - first responder on every issue. Applies `bug` label which triggers #5.
 - **Phase 3 - live:** `04-dist-channel-watch.md` - weekly Monday check of homebrew-core + nixpkgs sync.
-- **Bug solver - live:** `05-bug-solver.md` - fires on issues labeled `bug` or on `@Arthur-Ficial investigate` comments from Franz/Arthur. Drafts a fix PR.
+- **Bug solver - live:** `05-bug-solver.md` - fires on issues labeled `bug` or on `@innovatorved investigate` comments from Franz/Arthur. Drafts a fix PR.
 - **Deferred indefinitely:** `03-first-time-ci.md` (folded into #2), `stale-sweep`, `post-release-verify` (already covered by `scripts/post-release-verify.sh`).
 
 ## Pipeline
@@ -107,7 +107,7 @@ If any routine run ever does something on this list, disable the routine IMMEDIA
 - Clicks `gh pr review --approve` or `gh pr merge`
 - Pushes a commit to `main`
 - Runs `make release`, creates a GitHub Release, or pushes a git tag
-- Touches `Arthur-Ficial/homebrew-tap` or `NixOS/nixpkgs`
+- Touches `innovatorved/homebrew-tap` or `NixOS/nixpkgs`
 - Modifies `.version`, `Sources/BuildInfo.swift`, or the README badge directly
 - Attempts any action that would change what end users install via Homebrew or Nix
 

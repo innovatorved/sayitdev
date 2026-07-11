@@ -12,7 +12,7 @@ let package = Package(
         .executableTarget(
             name: "sayitdevcore-consumer",
             dependencies: [
-                .product(name: "SayItDevCore", package: "dev"),
+                .product(name: "SayItDevCore", package: "sayitdev"),
             ]
         )
     ]

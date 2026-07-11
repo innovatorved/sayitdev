@@ -6,7 +6,7 @@
 #         port 8080
 #         port 5432 -c    # copy to clipboard
 #
-# Requires: dev installed (__UPSTREAM_DEV_URL__)
+# Requires: dev installed (https://github.com/innovatorved/sayitdev)
 
 COPY=false
 
@@ -47,7 +47,7 @@ fi
 
 # Check dev is installed
 if ! command -v dev &>/dev/null; then
-    echo "Error: dev not found. Install from __UPSTREAM_DEV_URL__"
+    echo "Error: dev not found. Install from https://github.com/innovatorved/sayitdev"
     exit 1
 fi
 

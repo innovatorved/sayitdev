@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from AppleScript via `do shell script` + `curl`. 100% on-device - perfect for Shortcuts, Automator, and macOS system automation.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/applescript](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/applescript).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/applescript](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/applescript).
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/01_oneshot.applescript).
+Lab script: [`01_oneshot.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/01_oneshot.applescript).
 
 ## 2. Streaming
 
@@ -54,7 +54,7 @@ Apple M1 Pro
 Apple M1 Max
 ```
 
-Lab script: [`02_stream.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/02_stream.applescript).
+Lab script: [`02_stream.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/02_stream.applescript).
 
 ## 3. JSON mode
 
@@ -70,7 +70,7 @@ Real output (note AppleScript collapses newlines when returning from `do shell s
 {  "chip": "Apple M1",  "year": 2020,  "cores": 8}
 ```
 
-Lab script: [`03_json.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/03_json.applescript).
+Lab script: [`03_json.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/03_json.applescript).
 
 ## 4. Error handling
 
@@ -85,7 +85,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/04_errors.applescript).
+Lab script: [`04_errors.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/04_errors.applescript).
 
 ## 5. Tool calling (delegate to Bash)
 
@@ -102,7 +102,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/05_tools.applescript). For production tool-calling, use [python.md](python.md) or [nodejs.md](nodejs.md).
+Lab script: [`05_tools.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/05_tools.applescript). For production tool-calling, use [python.md](python.md) or [nodejs.md](nodejs.md).
 
 ## 6. Real example - summarize a file
 
@@ -127,7 +127,7 @@ Real output:
 In November 2020, Apple released the M1 chip, the first ARM-based system-on-a-chip for Mac computers. The chip features an 8-core CPU with four performance and four efficiency cores, an integrated GPU with up to 8 cores, and a unified CPU, GPU, memory, and neural engine on a single die. The M1 chip offers significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/06_example.applescript).
+Lab script: [`06_example.applescript`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/applescript/06_example.applescript).
 
 ## Shortcuts integration
 
@@ -145,8 +145,8 @@ Paste any of these into a **Run AppleScript** action in Shortcuts. Combine with 
 - osascript / AppleScript (system) / jq 1.7
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_applescript.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_applescript.py).
+Runnable tests: [tests/test_applescript.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_applescript.py).
 
 ## See also
 
-[bash-curl.md](bash-curl.md), [zsh.md](zsh.md), [swift-scripting.md](swift-scripting.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[bash-curl.md](bash-curl.md), [zsh.md](zsh.md), [swift-scripting.md](swift-scripting.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

@@ -24,7 +24,7 @@ import subprocess
 import tempfile
 import time
 
-from conftest import GUARDRAIL_SEEDS, is_guardrail_refusal, post_chat_rotating_seeds
+from conftest import GUARDRAIL_SEEDS, is_guardrail_refusal, post_chat_rotating_seeds, MCP_AUTH_HEADERS
 
 # Whole-suite marker: these tests drive real on-device generation (or, for
 # the permit/benchmark suites, need Apple Intelligence up); GitHub CI cannot
@@ -137,7 +137,7 @@ def running_mcp_servers(mcp_scripts):
     """
     port = find_free_port()
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as log_file:
-        args = [str(BINARY), "--serve", "--port", str(port)]
+        args = [str(BINARY), "--serve", "--port", str(port), "--token", "integration-test-token"]
         for script in mcp_scripts:
             args += ["--mcp", str(script)]
         proc = subprocess.Popen(args, stdout=log_file, stderr=log_file, text=True)
@@ -175,7 +175,7 @@ def running_mcp_server_with_env(mcp_script, extra_env):
     env.update(extra_env)
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as log_file:
         proc = subprocess.Popen(
-            [str(BINARY), "--serve", "--port", str(port), "--mcp", str(mcp_script)],
+            [str(BINARY), "--serve", "--port", str(port), "--mcp", str(mcp_script), "--token", "integration-test-token"],
             stdout=log_file,
             stderr=log_file,
             text=True,
@@ -260,7 +260,7 @@ def multiply_streaming_response():
     guardrail refusals so consuming tests assert on a real answer."""
     content = ""
     for seed in GUARDRAIL_SEEDS:
-        resp = httpx.post(f"{API_URL}/chat/completions", json={
+        resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
             "model": MODEL,
             "messages": [
                 {"role": "user", "content": "Use the multiply tool to compute 13 times 7. Reply with just the number."}
@@ -279,7 +279,7 @@ def multiply_streaming_response():
 @pytest.fixture(scope="module")
 def normal_nonstreaming_response():
     """Non-streaming plain text -- shared by normal-response, id, and structure tests."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [{"role": "user", "content": "What is the capital of France? Reply in one word, no tools needed."}],
     }, timeout=TIMEOUT)
@@ -290,7 +290,7 @@ def normal_nonstreaming_response():
 @pytest.fixture(scope="module")
 def normal_streaming_response():
     """Streaming 'Say hello.' -- shared by normal-streaming and SSE structure tests."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [{"role": "user", "content": "Say hello."}],
         "stream": True,
@@ -384,7 +384,7 @@ def test_normal_streaming_not_affected_by_mcp(normal_streaming_response):
 
 def test_system_prompt_preserved_with_mcp():
     """System prompt still works when MCP tools are injected."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [
             {"role": "system", "content": "Always respond in French."},
@@ -400,7 +400,7 @@ def test_system_prompt_preserved_with_mcp():
 
 def test_multi_turn_conversation_with_mcp():
     """Multi-turn conversation returns 200 with MCP tools enabled."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [
             {"role": "user", "content": "What is 2+2?"},
@@ -483,7 +483,7 @@ def test_mcp_tool_timeout_returns_structured_error():
     """
     with running_custom_mcp_server(FIXTURES / "hanging_mcp_server.py") as api_url:
         started = time.time()
-        resp = httpx.post(f"{api_url}/chat/completions", json={
+        resp = httpx.post(f"{api_url}/chat/completions", headers=MCP_AUTH_HEADERS, json={
             "model": MODEL,
             "messages": [
                 {"role": "user", "content": "Use the multiply tool to compute 247 times 83. Reply with just the number."}
@@ -515,7 +515,7 @@ def test_mcp_crashed_server_does_not_kill_apfel():
         base_url = api_url.rsplit("/", 1)[0]
         # A large product the on-device model will route to the tool rather than
         # computing in-head, so the write to the dead pipe actually happens.
-        resp = httpx.post(f"{api_url}/chat/completions", json={
+        resp = httpx.post(f"{api_url}/chat/completions", headers=MCP_AUTH_HEADERS, json={
             "model": MODEL,
             "messages": [
                 {"role": "user", "content": "Use the multiply tool to compute 247 times 83. Reply with just the number."}
@@ -616,7 +616,7 @@ def test_mcp_timed_out_connection_is_deregistered():
     """
     with running_custom_mcp_server(FIXTURES / "hanging_mcp_server.py") as api_url:
         base_url = api_url.rsplit("/", 1)[0]
-        first = httpx.post(f"{api_url}/chat/completions", json={
+        first = httpx.post(f"{api_url}/chat/completions", headers=MCP_AUTH_HEADERS, json={
             "model": MODEL,
             "messages": [
                 {"role": "user", "content": "Use the multiply tool to compute 247 times 83. Reply with just the number."}
@@ -632,7 +632,7 @@ def test_mcp_timed_out_connection_is_deregistered():
 
         # Second call must NOT route to the dead connection. Deregistration
         # removed the tool, so the model answers directly (247*83 = 20501).
-        second = httpx.post(f"{api_url}/chat/completions", json={
+        second = httpx.post(f"{api_url}/chat/completions", headers=MCP_AUTH_HEADERS, json={
             "model": MODEL,
             "messages": [
                 {"role": "user", "content": "Use the multiply tool to compute 247 times 83. Reply with just the number."}
@@ -854,7 +854,7 @@ def test_mcp_non_streaming_response_structure(normal_nonstreaming_response):
 
 def test_mcp_models_endpoint():
     """GET /v1/models still works with MCP enabled."""
-    resp = httpx.get(f"{API_URL}/models", timeout=TIMEOUT)
+    resp = httpx.get(f"{API_URL}/models", headers=MCP_AUTH_HEADERS, timeout=TIMEOUT)
     assert resp.status_code == 200
     data = resp.json()
     assert data["object"] == "list"
@@ -877,7 +877,7 @@ def test_mcp_health_endpoint(health_response):
 
 def test_mcp_invalid_model_rejected():
     """Invalid model name returns 404 model_not_found (OpenAI parity, #236)."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": "gpt-4o",
         "messages": [{"role": "user", "content": "Say OK."}],
     }, timeout=TIMEOUT)
@@ -891,7 +891,7 @@ def test_mcp_invalid_model_rejected():
 
 def test_mcp_empty_messages_rejected():
     """Empty messages array returns 400 error."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [],
     }, timeout=TIMEOUT)
@@ -902,7 +902,7 @@ def test_mcp_invalid_json_rejected():
     """Malformed JSON body returns 400 error."""
     resp = httpx.post(f"{API_URL}/chat/completions",
                       content=b"not json",
-                      headers={"Content-Type": "application/json"},
+                      headers={"Content-Type": "application/json", **MCP_AUTH_HEADERS},
                       timeout=TIMEOUT)
     assert resp.status_code == 400
 
@@ -916,7 +916,7 @@ def test_json_mode_with_mcp():
 
     Per #101, json_object content must be directly parseable, no markdown fence.
     """
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [
             {"role": "user", "content": "Return a JSON object with key 'answer' and value 42."}
@@ -935,7 +935,7 @@ def test_json_mode_with_mcp():
 
 def test_max_tokens_respected_with_mcp():
     """max_tokens limits response length even with MCP auto-execute."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [{"role": "user", "content": "Write a long essay about mathematics."}],
         "max_tokens": 10,
@@ -950,7 +950,7 @@ def test_max_tokens_respected_with_mcp():
 
 def test_temperature_zero_with_mcp():
     """temperature=0 works with MCP-enabled server."""
-    resp = httpx.post(f"{API_URL}/chat/completions", json={
+    resp = httpx.post(f"{API_URL}/chat/completions", headers=MCP_AUTH_HEADERS, json={
         "model": MODEL,
         "messages": [{"role": "user", "content": "What is 2+2? Reply with just the number."}],
         "temperature": 0,

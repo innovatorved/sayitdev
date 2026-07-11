@@ -1,7 +1,7 @@
 // ============================================================================
 // main.swift — Entry point for dev
 // Apple Intelligence from the command line.
-// __UPSTREAM_DEV_URL__
+// https://github.com/innovatorved/sayitdev
 // ============================================================================
 
 import Foundation
@@ -66,8 +66,22 @@ func stdinIsPipe() -> Bool {
 }
 
 /// Read all of stdin as raw bytes — works for piped text and piped binary files alike.
-func readStdinData() -> Data {
-    (try? FileHandle.standardInput.readToEnd()) ?? Data()
+/// Bounded by `BodyLimits.maxStdinBytes` to prevent OOM from unbounded pipes.
+func readStdinData() throws -> Data {
+    let handle = FileHandle.standardInput
+    let limit = BodyLimits.maxStdinBytes
+    var data = Data()
+    data.reserveCapacity(min(limit, 65536))
+    while true {
+        guard let chunk = try handle.read(upToCount: 65536) else { break }
+        if chunk.isEmpty { break }
+        data.append(chunk)
+        if data.count > limit {
+            printError("stdin exceeds \(limit / (1024 * 1024)) MiB limit")
+            throw ExitSignal.usage
+        }
+    }
+    return data
 }
 
 /// Turn piped stdin into prompt text: a piped PDF or image is extracted via lesbar
@@ -178,7 +192,15 @@ if parsed.messagesFromStdin {
         printError("--messages - requires a piped JSON conversation on stdin")
         exit(exitUsageError)
     }
-    let raw = String(data: readStdinData(), encoding: .utf8) ?? ""
+    let raw: String
+    do {
+        raw = String(data: try readStdinData(), encoding: .utf8) ?? ""
+    } catch ExitSignal.usage {
+        exit(exitUsageError)
+    } catch {
+        printError("failed to read stdin: \(error.localizedDescription)")
+        exit(exitUsageError)
+    }
     do {
         _ = try MessagesInput.decode(raw)
     } catch let e as MessagesInput.Error {
@@ -190,9 +212,13 @@ if parsed.messagesFromStdin {
 
 // Read stdin when piped (single/stream/count-tokens) -- as the prompt (no args) or prepended to the prompt.
 if messagesJSON == nil && parsed.mode.acceptsStdinInput && isatty(STDIN_FILENO) == 0 {
+    let readPipedStdin = StdinReadPolicy.shouldReadPipedStdin(mode: parsed.mode, promptEmpty: parsed.prompt.isEmpty)
+    if readPipedStdin {
     let stdinContent: String
     do {
-        stdinContent = try stdinPromptText(readStdinData())
+        stdinContent = try stdinPromptText(try readStdinData())
+    } catch ExitSignal.usage {
+        exit(exitUsageError)
     } catch let error as CLIParseError {
         printError(error.message)
         exit(exitUsageError)
@@ -209,6 +235,7 @@ if messagesJSON == nil && parsed.mode.acceptsStdinInput && isatty(STDIN_FILENO) 
         // prompt was given, so the bare-pipe case (`somecmd | dev`, no args)
         // still gets the hint now that it flows through this path (#152, #222).
         printStderr("\(styledErr("dev:", .yellow)) piped input was empty - if the command prints to stderr, try: command 2>&1 | dev")
+    }
     }
 }
 
@@ -320,6 +347,31 @@ do {
         if parsed.serverTokenAuto && serverToken == nil {
             serverToken = UUID().uuidString
         }
+        if ServerSecurity.shouldRefuseExposedWithoutToken(
+            host: parsed.serverHost,
+            hasToken: serverToken != nil,
+            allowInsecureOverride: parsed.serverAllowInsecureBind
+        ) {
+            printError(
+                "refusing to bind to \(parsed.serverHost) without a token: " +
+                "any host on your network could access inference endpoints unauthenticated. " +
+                "Set --token <secret>, --token-auto, or pass --i-know-what-im-doing to override. " +
+                "See docs/server-security.md"
+            )
+            await shutdownMCP()
+            exit(exitUsageError)
+        }
+        if ServerSecurity.shouldRefuseServeMCPWithoutToken(
+            hasMCPServers: !parsed.mcpServerPaths.isEmpty,
+            hasToken: serverToken != nil
+        ) {
+            printError(
+                "--serve with --mcp requires a bearer token so HTTP clients cannot trigger MCP tool execution. " +
+                "Set --token <secret>, --token-auto, or DEV_TOKEN."
+            )
+            await shutdownMCP()
+            exit(exitUsageError)
+        }
         let config = ServerConfig(
             host: parsed.serverHost,
             port: parsed.serverPort,
@@ -333,9 +385,10 @@ do {
             publicHealth: parsed.serverPublicHealth,
             retryEnabled: parsed.retryEnabled,
             retryCount: parsed.retryCount,
-            permissive: parsed.permissive
+            permissive: parsed.permissive,
+            allowInsecureBind: parsed.serverAllowInsecureBind
         )
-        try await startServer(config: config, mcpManager: mcpManager)
+        try await startServer(config: config, mcpManager: mcpManager, voiceConfig: voiceConfig)
 
     case .update:
         performUpdate()
@@ -349,10 +402,6 @@ do {
     case .speak:
         do {
             try await VoiceCommands.runSpeak(text: prompt, config: voiceConfig)
-        } catch SpeechInputError.permissionDenied(let msg) {
-            printError(msg)
-            await shutdownMCP()
-            exit(SayItDevExitCodes.micPermissionDenied)
         } catch ExitSignal.usage {
             await shutdownMCP()
             exit(exitUsageError)
@@ -365,6 +414,10 @@ do {
             printError(msg)
             await shutdownMCP()
             exit(SayItDevExitCodes.micPermissionDenied)
+        } catch SpeechInputError.assetInstallFailed {
+            printError(SpeechInputError.assetInstallFailed.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.speechAssetFailed)
         } catch SpeechInputError.noInputDevice {
             printError(SpeechInputError.noInputDevice.localizedDescription)
             await shutdownMCP()
@@ -382,6 +435,14 @@ do {
             printError(msg)
             await shutdownMCP()
             exit(SayItDevExitCodes.micPermissionDenied)
+        } catch SpeechInputError.assetInstallFailed {
+            printError(SpeechInputError.assetInstallFailed.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.speechAssetFailed)
+        } catch SpeechInputError.noInputDevice {
+            printError(SpeechInputError.noInputDevice.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.noInputDevice)
         }
 
     case .chat:

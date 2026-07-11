@@ -11,7 +11,7 @@ import pytest
 
 EXAMPLES = [
     (
-        "apfelcore-context-strategies-example",
+        "sayitdevcore-context-strategies-example",
         [
             "strategy=sliding-window",
             "max_turns=8",
@@ -19,21 +19,21 @@ EXAMPLES = [
         ],
     ),
     (
-        "apfelcore-openai-types-example",
+        "sayitdevcore-openai-types-example",
         [
             "model=sayitdev-on-device",
             "messages=2",
         ],
     ),
     (
-        "apfelcore-tool-calling-example",
+        "sayitdevcore-tool-calling-example",
         [
             "## Tool Calling Format",
             '"name" : "add"',
         ],
     ),
     (
-        "apfelcore-error-handling-example",
+        "sayitdevcore-error-handling-example",
         [
             "[rate limited]",
             "[context overflow]",
@@ -41,7 +41,7 @@ EXAMPLES = [
         ],
     ),
     (
-        "apfelcore-mcp-protocol-example",
+        "sayitdevcore-mcp-protocol-example",
         [
             '"method":"initialize"',
             '"method":"tools\\/list"',
@@ -61,7 +61,7 @@ def guard_server_11435():
 
 
 @pytest.mark.parametrize(("target", "expected_fragments"), EXAMPLES)
-def test_apfelcore_examples_build_and_run(target, expected_fragments):
+def test_sayitdevcore_examples_build_and_run(target, expected_fragments):
     result = subprocess.run(
         ["swift", "run", target],
         capture_output=True,

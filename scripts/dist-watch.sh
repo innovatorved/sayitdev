@@ -14,13 +14,13 @@
 #   exit non-zero             -> hard failure (network, missing tools)
 #
 # The script never opens issues, never edits formulae, never pushes anything.
-# Distribution-channel side effects are reserved for Franz running the bump
+# Distribution-channel side effects are reserved for the maintainer running the bump
 # tooling locally.
 
 set -euo pipefail
 
-REPO_OWNER="Arthur-Ficial"
-REPO_NAME="dev"
+REPO_OWNER="innovatorved"
+REPO_NAME="sayitdev"
 REPO="${REPO_OWNER}/${REPO_NAME}"
 GRACE_HOURS="${DIST_WATCH_GRACE_HOURS:-48}"
 
@@ -76,7 +76,7 @@ if [[ -z "$hb_raw" ]]; then
   exit 2
 fi
 hb_version=$(printf '%s\n' "$hb_raw" \
-  | grep -E '^\s*url\s+"https://github\.com/__UPSTREAM_DEV_REPO__/archive/refs/tags/v' \
+  | grep -E '^\s*url\s+"https://github\.com/innovatorved/sayitdev/archive/refs/tags/v' \
   | head -1 \
   | sed -E 's|.*/tags/v([0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz.*|\1|')
 
@@ -164,7 +164,7 @@ Routine check this morning - looks like ${lagging_joined//,/ and } trailing v${c
 
 \`\`\`bash
 brew bump-formula-pr dev \\
-  --url=__UPSTREAM_DEV_URL__/releases/download/v${canonical}/dev-${canonical}-arm64-macos.tar.gz
+  --url=https://github.com/innovatorved/sayitdev/releases/download/v${canonical}/dev-${canonical}-arm64-macos.tar.gz
 \`\`\`
 
 **nixpkgs (\`dev-llm\`):** darwin-only, so \`r-ryantm\` can NEVER auto-bump it and the merge bot will not accept our self-opened PR - a committer has to merge it (days to weeks; that wait is normal, not a bug). \`make release\` plus a twice-daily launchd job (\`scripts/nixpkgs-bump-cron.sh\`) already open/advance one build-verified PR and email Franz if that fails. If nixpkgs lags with no open PR, the local bump is failing - check \`~/Library/Logs/dev-nixpkgs-bump.log\` (most common cause: the GitHub 2FA-compliance block, i.e. an SMS factor on the account; remove it). Re-run on demand:
@@ -177,6 +177,6 @@ brew bump-formula-pr dev \\
 
 No bump PRs, no pushes, no formula edits. Routines never touch distribution channels - that's yours.
 
-Cheers, Arthur
-cc @franzenzenhofer
+Cheers, Ved
+cc @innovatorved
 MARKDOWN

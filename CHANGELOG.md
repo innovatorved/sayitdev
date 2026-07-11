@@ -7,9 +7,32 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `dev --speak` no longer blocks on piped stdin when speak text is provided as an argument (IDE terminals).
+- CI/test runner target renamed to `sayitdev-tests`; SayItDevCore example integration tests aligned with Package.swift.
+
+## [1.0.0] - 2026-07-11
+
+### Added
+
+- **SayItDev voice modes** (fork of [apfel](https://github.com/Arthur-Ficial/apfel) under [innovatorved/sayitdev](https://github.com/innovatorved/sayitdev)): `dev --speak` (TTS), `dev --listen` (STT from default mic), and `dev --agent` (listen → on-device LLM → speak loop). Voice flags: `--voice-name`, `--locale`, `--rate`, `--audio-format`, `--timestamps`, `--input-device` (planned device selection). Environment: `DEV_TTS_VOICE`, `DEV_STT_LOCALE`, `DEV_TTS_RATE`, `DEV_TTS_FORMAT`, `DEV_AUDIO_INPUT`.
+- **OpenAI-compatible audio routes** on `dev --serve`: `POST /v1/audio/speech`, `POST /v1/audio/transcriptions` (multipart upload), `GET /v1/audio/voices`.
+- Exit codes **8** (mic permission denied), **9** (speech asset failure), **10** (no input device).
+- `SayItDevCore.MultipartFormData` parser for transcription uploads; unit tests included.
+- Ad-hoc `codesign` in `Makefile` after release build for TCC permission persistence.
+
 ### Changed
 
-- Integration tests run in two marker-partitioned phases (#374): the model-free, parallel-safe partition first (`-m "not model and not serial"`, parallelized with pytest-xdist one-worker-per-file when installed), then the serial on-device-model phase (`-m "model or serial"`). Every test still runs exactly once and `DEV_REQUIRE_FULL=1` still forbids skips; cheap doc-drift gates now fail in seconds instead of after ~10 minutes of model tests. `make preflight` is light by default (build + unit + model-free phase, ~1.5 min warm; `FULL=1` restores the full qualification) because `make release` runs the complete suite against the stamped release binary anyway - one full model pass per release instead of two. Marker hygiene enforced by the new `test_marker_discipline.py` source-scan suite (runs on CI): whole-suite `pytestmark` declarations for the generation-driven files (incl. the previously unmarked `test_chat.py`), a single shared `require_model()` in `conftest.py`, and a new `serial` marker for suites that mutate machine-global state (`test_brew_service.py`). Benchmark medians default to 3 runs (`DEV_BENCH_RUNS=5` to restore the #264-era count).
+- Rebrand: `apfel` → `dev`, `ApfelCore` → `SayItDevCore`, `APFEL_*` → `DEV_*`, bundle id `com.innovatorved.sayitdev`, model id `sayitdev-on-device`.
+- `--speak` and `--listen` bypass the Apple Intelligence availability gate (TTS/STT only).
+- README, man page, shell completions, and server banner updated for SayItDev.
+
+### Fixed
+
+- Server TTS (`POST /v1/audio/speech`) no longer hangs when `AVSpeechSynthesizer.write` delivers only PCM buffers.
+- Server transcriptions no longer request microphone permission for file uploads; legacy recognizer is tried before SpeechAnalyzer to avoid crashes on uploaded audio.
+- `dev --speak` no longer exits before audio plays; exits cleanly when speech finishes (no hung terminal).
 
 ## [1.8.3] - 2026-07-09
 
@@ -81,7 +104,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ### Changed
 
-- Release tarballs now ship a Developer ID signed, notarized `dev` binary and a checksum asset. The binary is signed with the "Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)" identity under a hardened runtime and the submission is notarized by Apple, so downloads outside Homebrew are no longer Gatekeeper-quarantined. It is intentionally not stapled - a bare CLI binary in a tarball cannot carry a stapled ticket, so Gatekeeper verifies notarization online. Each release also publishes `dev-<version>-arm64-macos.tar.gz.sha256` as a second asset; `scripts/post-release-verify.sh` cross-checks the tarball digest against it and the Homebrew tap formula and confirms the TeamIdentifier. `make release` hard-fails if signing or notarization fails; local `make build`/`make package-release-asset` on a machine without the identity still produce an ad-hoc binary (#226).
+- Release tarballs now ship a Developer ID signed, notarized `dev` binary and a checksum asset. The binary is signed with the "Developer ID Application: Ved Gupta (7D2YX5DQ6M)" identity under a hardened runtime and the submission is notarized by Apple, so downloads outside Homebrew are no longer Gatekeeper-quarantined. It is intentionally not stapled - a bare CLI binary in a tarball cannot carry a stapled ticket, so Gatekeeper verifies notarization online. Each release also publishes `dev-<version>-arm64-macos.tar.gz.sha256` as a second asset; `scripts/post-release-verify.sh` cross-checks the tarball digest against it and the Homebrew tap formula and confirms the TeamIdentifier. `make release` hard-fails if signing or notarization fails; local `make build`/`make package-release-asset` on a machine without the identity still produce an ad-hoc binary (#226).
 - JSON output now ends with a single trailing newline. `dev -o json ...`, `dev --count-tokens -o json ...`, and `dev --benchmark -o json` previously printed the final JSON object with no terminating newline (last byte `}`), which made `while read` loops and `wc -l` awkward. This reverses the earlier GH-9 no-trailing-newline behavior; JSONL chat lines already ended with a newline and are unchanged (no double newline). Covered by a model-free cli_e2e test on `--count-tokens -o json` and an updated single-prompt JSON test (#259).
 - STABILITY.md now documents enum evolution for the SayItDevCore library: public enums are non-frozen and may gain new cases in minor releases (always switch with a `default` branch); removals and signature changes remain major. The CI API-breakage gate enforces exactly this split instead of failing on every added case.
 - The tool-schema conversion cache (`SchemaConversionCache`) is now a bounded LRU: when full it evicts only the single least-recently-used entry instead of wiping all 64. Previously the 65th distinct tool set flushed the entire cache, so two alternating clients each with more than 32 distinct tool sets caused pathological full-cache churn. Backed by a new pure `LRUCache` in SayItDevCore with unit coverage of eviction and the hot-entry-survives property (#247).
@@ -89,7 +112,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 ### Fixed
 
 - A chat-completions request with a negative `seed` no longer crashes the entire server process. `seed: -1` trapped the `UInt64` conversion in the request handler - a remote, unauthenticated denial of service on the default loopback bind (one malformed curl killed `dev --serve`). The validator now rejects negative seeds with HTTP 400 before the conversion is reached (#212).
-- Documentation test-count and release-step claims are back in sync with reality. `CLAUDE.md` (Current Status, Build & Test, the CI section, and the release-step list) and `docs/release.md` had drifted: they cited 687 unit / 301 integration (now 890 unit / 393 integration), an arithmetically impossible CI subtotal, and release steps that omitted the CHANGELOG stamp and the whole nixpkgs bump step. Counts were recomputed from `swift run dev-tests` and a full `make test`, the CI numbers were derived from `ci.yml` plus `-m "not model"` collect counts (890 unit + 127 model-free integration), and the release-step lists now describe `publish-release.sh` faithfully (CHANGELOG stamp, signing, notarization, sha256 sidecar, nixpkgs bump) (#270).
+- Documentation test-count and release-step claims are back in sync with reality. `CLAUDE.md` (Current Status, Build & Test, the CI section, and the release-step list) and `docs/release.md` had drifted: they cited 687 unit / 301 integration (now 890 unit / 393 integration), an arithmetically impossible CI subtotal, and release steps that omitted the CHANGELOG stamp and the whole nixpkgs bump step. Counts were recomputed from `swift run sayitdev-tests` and a full `make test`, the CI numbers were derived from `ci.yml` plus `-m "not model"` collect counts (890 unit + 127 model-free integration), and the release-step lists now describe `publish-release.sh` faithfully (CHANGELOG stamp, signing, notarization, sha256 sidecar, nixpkgs bump) (#270).
 - The `--help` ENVIRONMENT section now lists `DEV_MCP_TOKEN` (the bearer token for remote MCP servers) and describes `DEV_MCP` as comma-separated with colon accepted for local paths, matching the parser (commas are canonical because a colon would split remote URLs like `https://host:8080`) and the man page. Previously the token was only mentioned in the `--mcp-token` flag description and `--help` called `DEV_MCP` colon-separated, contradicting both the parser and the man page. A new section-scoped man-page test asserts the ENVIRONMENT lists in `--help` and the man page contain the same variables (#257).
 - The relative link to the CLI reference in `docs/tool-calling-guide.md` no longer 404s on GitHub. The target was written as `docs/cli-reference.md`, but since the file already lives in `docs/`, it resolved to `docs/docs/cli-reference.md`; it now points at `cli-reference.md`. A scripted sweep of the whole `docs/` tree confirmed this was the only self-referencing `docs/` link (#267).
 - `dev --update` no longer hardcodes `/opt/homebrew/bin/{brew,dev}`, which broke on non-default Homebrew prefixes (Intel `/usr/local`, a custom `~/homebrew`, etc.): `detectInstallMethod` correctly returned `.homebrew`, but the update shelled out to a nonexistent `/opt/homebrew/bin/brew` ("Could not check for updates.") and the post-upgrade version echo ran the wrong/absent binary (printing "Updated to " with an empty version). The brew prefix is now derived from the resolved binary path (the component before `/Cellar/` or `/opt/dev/`) via a pure `homebrewPrefix(fromBinaryPath:)` in SayItDevCLI with unit coverage, with a `PATH` lookup of `brew`/`dev` as fallback; the post-upgrade echo uses the same derived prefix (#260).
@@ -190,7 +213,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ### Removed
 
-- Removed the `dev tag` subcommand - feature creep, moved to sister tool [__UPSTREAM_DEV_URL__-tag](__UPSTREAM_DEV_URL__-tag).
+- Removed the `dev tag` subcommand - feature creep, moved to sister tool [https://github.com/innovatorved/sayitdev-tag](https://github.com/innovatorved/sayitdev-tag).
 
 ## [1.5.0] - 2026-06-01
 
@@ -387,6 +410,8 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 - Read piped stdin in `--stream` mode (#82).
 - Harden release process and `make install` PATH handling.
 
+## Upstream (apfel) history
+
 ## [1.0.0] - 2026-04-12
 
 First stable release. CLI flags, exit codes, API endpoints, and response schemas are now semver-protected (see [STABILITY.md](STABILITY.md)).
@@ -400,4 +425,4 @@ First stable release. CLI flags, exit codes, API endpoints, and response schemas
 
 ---
 
-For pre-1.0 release history, see [__UPSTREAM_DEV_URL__/releases](__UPSTREAM_DEV_URL__/releases).
+For pre-1.0 release history, see [https://github.com/innovatorved/sayitdev/releases](https://github.com/innovatorved/sayitdev/releases).

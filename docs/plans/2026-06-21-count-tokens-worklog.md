@@ -26,7 +26,7 @@
 - Integration tests: help, JSON shape, strict exit
 
 **Tests run:**
-- `swift run dev-tests` → pass (687 tests)
+- `swift run sayitdev-tests` → pass (687 tests)
 - `swift build -c release` → pass
 - `make generate-man-page` → pass
 - Release smoke test on Mac with Apple Intelligence: first `tokenCount` call can be slow (model load)

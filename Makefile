@@ -46,12 +46,17 @@ check-toolchain:
 
 # --- Build ---
 
+# Build as your user (never sudo). Then: sudo make install
 build: check-toolchain
 	swift build -c release
 	@codesign --force --sign - .build/release/$(BINARY) 2>/dev/null || true
 	@$(MAKE) --no-print-directory generate-man-page
 
-install: build
+install:
+	@if [ ! -f .build/release/$(BINARY) ]; then \
+		echo "error: missing .build/release/$(BINARY). Run 'make build' first (without sudo)."; \
+		exit 1; \
+	fi
 	@pkill -f "dev --serve" 2>/dev/null || true
 	@sleep 1
 	@# If Homebrew dev is linked and would shadow our install, unlink it.
@@ -169,7 +174,8 @@ generate-build-info:
 update-readme:
 	@v=$$(cat $(VERSION_FILE)); \
 	sed -i '' 's/Version [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/Version '"$$v"'/' README.md; \
-	sed -i '' 's/version-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-blue/version-'"$$v"'-blue/' README.md
+	sed -i '' 's/version-[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-blue/version-'"$$v"'-blue/' README.md; \
+	sed -i '' 's/expect: dev v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/expect: dev v'"$$v"'/' README.md
 
 generate-man-page:
 	@v=$$(cat $(VERSION_FILE)); \
@@ -204,13 +210,13 @@ release:
 test: build
 	@echo ""
 	@echo "=== Unit tests ==="
-	@swift run dev-tests
+	@swift run sayitdev-tests
 	@echo ""
 	@echo "=== Integration tests ==="
 	@pkill -f "dev --serve" 2>/dev/null || true
 	@sleep 1
 	@.build/release/dev --serve --port 11434 2>/dev/null & echo $$! > /tmp/dev-test-server.pid; \
-	.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null & echo $$! > /tmp/dev-test-mcp.pid; \
+	.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py --token integration-test-token 2>/dev/null & echo $$! > /tmp/dev-test-mcp.pid; \
 	READY=0; for i in $$(seq 1 15); do \
 		curl -sf http://localhost:11434/health >/dev/null 2>&1 && \
 		curl -sf http://localhost:11435/health >/dev/null 2>&1 && \

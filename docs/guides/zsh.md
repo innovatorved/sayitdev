@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from Zsh - the default shell on modern macOS. Zsh's parameter expansion, associative arrays, and `print -r` make raw HTTP calls more concise than the Bash equivalent.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/zsh](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/zsh).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/zsh](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/zsh).
 
 ## Prerequisites
 
@@ -36,7 +36,7 @@ Real output:
 Swift is a modern, high-performance programming language developed by Apple for developing apps and systems on iOS, macOS, watchOS, and tvOS.
 ```
 
-Lab script: [`01_oneshot.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/01_oneshot.zsh).
+Lab script: [`01_oneshot.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/01_oneshot.zsh).
 
 ## 2. Streaming
 
@@ -65,7 +65,7 @@ Apple M2
 Apple M2 Pro
 ```
 
-Lab script: [`02_stream.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/02_stream.zsh).
+Lab script: [`02_stream.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/02_stream.zsh).
 
 ## 3. JSON mode
 
@@ -107,7 +107,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/03_json.zsh).
+Lab script: [`03_json.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/03_json.zsh).
 
 ## 4. Error handling
 
@@ -136,7 +136,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/04_errors.zsh).
+Lab script: [`04_errors.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/04_errors.zsh).
 
 ## 5. Tool calling
 
@@ -190,7 +190,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/05_tools.zsh).
+Lab script: [`05_tools.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/05_tools.zsh).
 
 ## 6. Real example - summarize stdin
 
@@ -222,7 +222,7 @@ Real output:
 The Apple M1 chip, released in 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It features an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores, providing significant performance-per-watt improvements over Intel chips.
 ```
 
-Lab script: [`06_example.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/zsh/06_example.zsh).
+Lab script: [`06_example.zsh`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/zsh/06_example.zsh).
 
 ## Troubleshooting
 
@@ -235,8 +235,8 @@ Lab script: [`06_example.zsh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts
 - zsh 5.9 (system) / jq 1.7
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_zsh.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_zsh.py).
+Runnable tests: [tests/test_zsh.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_zsh.py).
 
 ## See also
 
-[bash-curl.md](bash-curl.md), [applescript.md](applescript.md), [swift-scripting.md](swift-scripting.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[bash-curl.md](bash-curl.md), [applescript.md](applescript.md), [swift-scripting.md](swift-scripting.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

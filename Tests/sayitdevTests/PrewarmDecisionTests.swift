@@ -32,6 +32,18 @@ func runPrewarmDecisionTests() {
         try assertTrue(!PrewarmDecision.shouldPrewarm(mode: .benchmark))
     }
 
+    test("agent mode prewarms (voice loop uses the model)") {
+        try assertTrue(PrewarmDecision.shouldPrewarm(mode: .agent))
+    }
+
+    test("speak mode does not prewarm (TTS only)") {
+        try assertTrue(!PrewarmDecision.shouldPrewarm(mode: .speak))
+    }
+
+    test("listen mode does not prewarm (STT only)") {
+        try assertTrue(!PrewarmDecision.shouldPrewarm(mode: .listen))
+    }
+
     test("non-generating modes do not prewarm") {
         for mode: CLIArguments.Mode in [.modelInfo, .update, .demos, .completions, .help, .version, .release] {
             try assertTrue(!PrewarmDecision.shouldPrewarm(mode: mode), "mode \(mode) must not prewarm")

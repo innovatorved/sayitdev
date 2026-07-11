@@ -11,7 +11,7 @@
 #       [--tarball path/to/local.tar.gz] [--dry-run]
 #
 # If --tarball is omitted, the script downloads
-#   __UPSTREAM_DEV_URL__/releases/download/vX.Y.Z/dev-X.Y.Z-arm64-macos.tar.gz
+#   https://github.com/innovatorved/sayitdev/releases/download/vX.Y.Z/dev-X.Y.Z-arm64-macos.tar.gz
 #
 # --dry-run prints the would-be diff and does not modify the target file.
 
@@ -60,7 +60,7 @@ trap cleanup EXIT
 if [[ -z "$tarball" ]]; then
   tmpdir=$(mktemp -d)
   tarball="$tmpdir/dev-${version}-arm64-macos.tar.gz"
-  url="__UPSTREAM_DEV_URL__/releases/download/v${version}/dev-${version}-arm64-macos.tar.gz"
+  url="https://github.com/innovatorved/sayitdev/releases/download/v${version}/dev-${version}-arm64-macos.tar.gz"
   echo "downloading: $url" >&2
   if ! curl -sSfL -o "$tarball" "$url"; then
     echo "error: failed to download $url" >&2

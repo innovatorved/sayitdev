@@ -1,6 +1,6 @@
 # CLI Reference
 
-`dev` has four primary modes: single prompt, `--stream`, `--chat`, and `--serve`. This page is the full flag, exit-code, and environment reference for the installed CLI.
+`dev` has seven primary modes: single prompt, `--stream`, `--chat`, `--serve`, and the SayItDev voice modes `--speak`, `--listen`, and `--agent`. This page is the full flag, exit-code, and environment reference for the installed CLI.
 
 ## Modes
 
@@ -10,6 +10,9 @@ MODES
   dev --stream <prompt>                 Stream response tokens
   dev --chat                            Interactive conversation
   dev --serve                           Start OpenAI-compatible server
+  dev --speak [text]                    Text-to-speech (stdin or argument)
+  dev --listen                          Speech-to-text from default microphone
+  dev --agent                           Voice agent: listen → LLM → speak
   dev --benchmark                       Run internal performance benchmarks
   dev --count-tokens <prompt>           Preflight token count (no inference)
 
@@ -191,6 +194,14 @@ dev --help
 # --demos: write the bundled demo scripts out (works on every install channel)
 dev demos ./dev-demos
 dev --demos ./dev-demos
+
+# --speak, --listen, --agent (SayItDev voice modes)
+dev --speak "Hello from SayItDev"
+echo "Read this aloud" | dev --speak
+dev --listen
+dev --agent
+dev --speak "Hi" --voice-name personal --rate 1.1
+dev --listen --locale en-US
 ```
 
 Security details live in [server-security.md](server-security.md). Background-service usage lives in [background-service.md](background-service.md).
@@ -208,7 +219,7 @@ dev completions bash | sudo tee "$(brew --prefix)/etc/bash_completion.d/dev" >/d
 zsh (a directory already on your `$fpath`):
 
 ```bash
-dev completions zsh > "${fpath[1]}/_apfel"
+dev completions zsh > "${fpath[1]}/_dev"
 ```
 
 fish:
@@ -228,6 +239,10 @@ dev completions fish > ~/.config/fish/completions/dev.fish
 | 4 | Context overflow |
 | 5 | Model unavailable |
 | 6 | Rate limited |
+| 7 | No code in response (`--code`) |
+| 8 | Microphone permission denied |
+| 9 | Speech asset / engine failure |
+| 10 | No audio input device |
 | 130 | Interrupted (Ctrl-C at chat prompt) |
 
 ## Environment Variables
@@ -248,4 +263,9 @@ dev completions fish > ~/.config/fish/completions/dev.fish
 | `DEV_MCP_TIMEOUT` | MCP timeout in seconds (default: 5, max: 300) |
 | `DEV_DEBUG` | Enable debug logging (same as `--debug`) |
 | `DEV_HISTFILE` | Persist `--chat` line-editing history to this file across sessions (off by default; bounded to 500 entries, mode 0600) |
+| `DEV_TTS_VOICE` | Default TTS voice id or `personal` |
+| `DEV_STT_LOCALE` | Default STT locale (e.g. `en-US`) |
+| `DEV_TTS_RATE` | Default speaking rate (0.25–4.0) |
+| `DEV_TTS_FORMAT` | Default server TTS format: `wav`, `pcm`, or `aac` |
+| `DEV_AUDIO_INPUT` | Default microphone device UID |
 | `NO_COLOR` | Disable colors ([https://no-color.org](https://no-color.org)) |

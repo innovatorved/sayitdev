@@ -1,5 +1,5 @@
-// dev-tests — pure Swift test runner, no XCTest/Testing framework needed
-// Run: swift run dev-tests
+// sayitdev-tests — pure Swift test runner, no XCTest/Testing framework needed
+// Run: swift run sayitdev-tests
 
 import Foundation
 import SayItDevCLI
@@ -127,6 +127,7 @@ suite("SchemaFlagTests") { runSchemaFlagTests() }
 suite("MessagesFlagTests") { runMessagesFlagTests() }
 suite("CodeFlagTests") { runCodeFlagTests() }
 suite("PrewarmDecisionTests") { runPrewarmDecisionTests() }
+suite("StdinReadPolicyTests") { runStdinReadPolicyTests() }
 suite("MultipartFormDataTests") { runMultipartFormDataTests() }
 suite("ResponsesModelsTests") { runResponsesModelsTests() }
 

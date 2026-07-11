@@ -21,7 +21,7 @@
 #   BAD:  cmd "kill all node processes"
 #   GOOD: cmd "stop all running node processes"
 #
-# Requires: dev installed (__UPSTREAM_DEV_URL__)
+# Requires: dev installed (https://github.com/innovatorved/sayitdev)
 
 EXECUTE=false
 COPY=false
@@ -60,7 +60,7 @@ fi
 
 # Check dev is installed
 if ! command -v dev &>/dev/null; then
-    echo "Error: dev not found. Install from __UPSTREAM_DEV_URL__"
+    echo "Error: dev not found. Install from https://github.com/innovatorved/sayitdev"
     exit 1
 fi
 

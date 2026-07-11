@@ -3,7 +3,7 @@
 // SystemLanguageModel.Availability from FoundationModels.
 //
 // Living in SayItDevCore (no FoundationModels import) so it's unit-testable
-// from dev-tests and reusable. TokenCounter.swift in the main target
+// from sayitdev-tests and reusable. TokenCounter.swift in the main target
 // adapts the real Apple enum into this type.
 // ============================================================================
 

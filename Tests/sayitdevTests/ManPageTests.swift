@@ -63,7 +63,7 @@ func runManPageTests() {
 
     test("man page has .TH header with @VERSION@ placeholder") {
         let text = (try? String(contentsOfFile: manPath, encoding: .utf8)) ?? ""
-        try assertTrue(text.contains(".TH APFEL 1"),
+        try assertTrue(text.contains(".TH DEV 1"),
                        "missing .TH header")
         try assertTrue(text.contains("@VERSION@"),
                        "expected @VERSION@ placeholder in .TH header")
@@ -90,8 +90,8 @@ func runManPageTests() {
     test("man page starts with a properly formed .TH line") {
         let text = (try? String(contentsOfFile: manPath, encoding: .utf8)) ?? ""
         let firstLine = text.split(separator: "\n").first.map(String.init) ?? ""
-        // Expect: .TH APFEL 1 "YYYY-MM-DD" "dev @VERSION@" "User Commands"
-        try assertTrue(firstLine.hasPrefix(".TH APFEL 1"),
+        // Expect: .TH DEV 1 "YYYY-MM-DD" "dev @VERSION@" "User Commands"
+        try assertTrue(firstLine.hasPrefix(".TH DEV 1"),
                        "first line should be .TH header, got: \(firstLine)")
         try assertTrue(firstLine.contains("\"User Commands\""),
                        "expected section label \"User Commands\" in .TH")
@@ -99,7 +99,7 @@ func runManPageTests() {
 
     test("man page documents every declared exit code") {
         let text = (try? String(contentsOfFile: manPath, encoding: .utf8)) ?? ""
-        for code in ["0", "1", "2", "3", "4", "5", "6"] {
+        for code in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] {
             try assertTrue(text.contains(".B \(code)\n"),
                            "EXIT STATUS section missing \".B \(code)\" entry")
         }

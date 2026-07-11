@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from Ruby using the `ruby-openai` gem, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/ruby](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/ruby).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/ruby](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/ruby).
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ Real output:
 Swift is a modern, high-performance, and versatile programming language designed for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/01_oneshot.rb).
+Lab script: [`01_oneshot.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/01_oneshot.rb).
 
 ## 2. Streaming
 
@@ -74,7 +74,7 @@ Apple M2
 Apple M3
 ```
 
-Lab script: [`02_stream.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/02_stream.rb).
+Lab script: [`02_stream.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/02_stream.rb).
 
 ## 3. JSON mode
 
@@ -111,7 +111,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/03_json.rb).
+Lab script: [`03_json.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/03_json.rb).
 
 ## 4. Error handling
 
@@ -136,7 +136,7 @@ Real output:
 Got expected error: HTTP 501 - the server responded with status 501
 ```
 
-Lab script: [`04_errors.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/04_errors.rb).
+Lab script: [`04_errors.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/04_errors.rb).
 
 ## 5. Tool calling
 
@@ -185,7 +185,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/05_tools.rb).
+Lab script: [`05_tools.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/05_tools.rb).
 
 ## 6. Real example - summarize stdin
 
@@ -219,7 +219,7 @@ Real output:
 The Apple M1 chip, launched in November 2020, marked Apple's first ARM-based system-on-a-chip for Mac computers. It features an 8-core CPU with four performance and four efficiency cores, along with an integrated GPU that can have up to 8 cores. The chip integrates CPU, GPU, memory, and neural engine on a single die, offering significant performance-per-watt improvements over its Intel predecessors.
 ```
 
-Lab script: [`06_example.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/06_example.rb).
+Lab script: [`06_example.rb`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/ruby/06_example.rb).
 
 ## Troubleshooting
 
@@ -233,8 +233,8 @@ Lab script: [`06_example.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/
 - Ruby 2.6.10 (system) / ruby-openai 7.4.0
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_ruby.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_ruby.py).
+Runnable tests: [tests/test_ruby.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_ruby.py).
 
 ## See also
 
-[python.md](python.md), [nodejs.md](nodejs.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[python.md](python.md), [nodejs.md](nodejs.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

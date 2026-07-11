@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from Perl using `HTTP::Tiny` + `JSON::PP` - both ship with the system Perl on macOS, so no CPAN needed.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/perl](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/perl).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/perl](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/perl).
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ Real output:
 Swift is a modern, safe, and efficient programming language developed by Apple for building user interfaces, server-side applications, and command-line tools.
 ```
 
-Lab script: [`01_oneshot.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/01_oneshot.pl).
+Lab script: [`01_oneshot.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/01_oneshot.pl).
 
 ## 2. Streaming
 
@@ -93,7 +93,7 @@ Apple M2
 Apple M3
 ```
 
-Lab script: [`02_stream.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/02_stream.pl).
+Lab script: [`02_stream.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/02_stream.pl).
 
 ## 3. JSON mode
 
@@ -132,7 +132,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/03_json.pl).
+Lab script: [`03_json.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/03_json.pl).
 
 ## 4. Error handling
 
@@ -159,11 +159,11 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/04_errors.pl).
+Lab script: [`04_errors.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/04_errors.pl).
 
 ## 5. Tool calling
 
-Full round-trip; see [`05_tools.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/05_tools.pl) for the complete script. Key snippet:
+Full round-trip; see [`05_tools.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/05_tools.pl) for the complete script. Key snippet:
 
 ```perl
 binmode STDOUT, ':encoding(UTF-8)';  # avoid issues with °C, EUR etc.
@@ -218,7 +218,7 @@ Real output:
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/06_example.pl).
+Lab script: [`06_example.pl`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/perl/06_example.pl).
 
 ## Troubleshooting
 
@@ -232,8 +232,8 @@ Lab script: [`06_example.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/
 - Perl 5.34.1 (system) / HTTP::Tiny 0.076 / JSON::PP 4.06
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_perl.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_perl.py).
+Runnable tests: [tests/test_perl.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_perl.py).
 
 ## See also
 
-[python.md](python.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [awk.md](awk.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[python.md](python.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [awk.md](awk.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

@@ -1,6 +1,6 @@
-.TH APFEL 1 "2026-04-17" "dev @VERSION@" "User Commands"
+.TH DEV 1 "2026-07-11" "dev @VERSION@" "User Commands"
 .SH NAME
-dev \- Apple Intelligence from the command line
+dev \- on-device voice and Apple Intelligence from the command line
 .SH SYNOPSIS
 .B dev
 .RI [ options ]
@@ -49,17 +49,30 @@ dev \- Apple Intelligence from the command line
 .RI [ dir ]
 .br
 .B dev
+.B \-\-speak
+.RI [ text ]
+.br
+.B dev
+.B \-\-listen
+.RI [ options ]
+.br
+.B dev
+.B \-\-agent
+.RI [ options ]
+.br
+.B dev
 .B completions
 .I shell
 .SH DESCRIPTION
 .B dev
 is a command-line interface and OpenAI-compatible HTTP server for
-Apple's on-device FoundationModels large language model. Inference
-runs entirely on-device on Apple Silicon Macs that have Apple
-Intelligence enabled. No data leaves the machine for inference.
+Apple's on-device FoundationModels large language model, extended with
+native text-to-speech and speech-to-text. Inference runs entirely
+on-device on Apple Silicon Macs that have Apple Intelligence enabled
+(for LLM modes). No data leaves the machine for inference.
 .PP
 .B dev
-has three modes:
+has six modes:
 .TP
 .B unix tool
 Send a single prompt from arguments or standard input and receive
@@ -75,6 +88,28 @@ history, and automatic context trimming.
 Expose an OpenAI-compatible HTTP API on a loopback or public port,
 suitable as a drop-in replacement for code written against
 .I openai.OpenAI(base_url=...) .
+Includes
+.BR /v1/audio/speech ", "
+.BR /v1/audio/transcriptions ", and "
+.BR /v1/audio/voices .
+.TP
+.B text-to-speech
+With
+.BR \-\-speak ", read text from an argument or standard input and speak"
+it through the default output device. Does not require Apple
+Intelligence.
+.TP
+.B speech-to-text
+With
+.BR \-\-listen ", capture audio from the default microphone and print"
+the transcript on standard output. Requires Microphone and Speech
+Recognition permissions.
+.TP
+.B voice agent
+With
+.BR \-\-agent ", run a loop: listen from the microphone, send the"
+transcript to the on-device model, and speak the answer. Press
+Ctrl-C to quit. Requires Apple Intelligence and speech permissions.
 .PP
 The model's context window is approximately 4096 tokens. Requests
 that exceed it are trimmed according to the active context strategy
@@ -303,6 +338,60 @@ Print the version string and exit.
 .TP
 .B \-\-release
 Print detailed release and build information and exit.
+.SH "VOICE OPTIONS"
+Voice options apply to
+.BR \-\-speak ", "
+.BR \-\-listen ", "
+.BR \-\-agent ", and the "
+.BR /v1/audio/* "
+server routes.
+.TP
+.BI \-\-speak " [text]"
+Speak
+.I text
+through the default output device. When
+.I text
+is omitted, read from standard input. Does not call the LLM.
+.TP
+.B \-\-listen
+Capture speech from the default microphone and print the transcript
+on standard output.
+.TP
+.B \-\-agent
+Run a voice Q&A loop: listen, ask the on-device model, speak the
+answer. Press Ctrl-C to quit.
+.TP
+.BI \-\-input-device " uid"
+Microphone device UID. When omitted, the system default input is used.
+.TP
+.BI \-\-voice-name " id"
+TTS voice identifier, a BCP-47 language tag, or
+.B personal
+for Personal Voice. Default: system voice for the active locale.
+.TP
+.BI \-\-locale " id"
+Speech recognition locale (e.g.
+.BR en-US ).
+.TP
+.BI \-\-rate " n"
+Speaking rate from
+.B 0.25
+to
+.BR 4.0 .
+.TP
+.BI \-\-audio-format " fmt"
+File format for server TTS rendering:
+.BR wav " (default), "
+.BR pcm ", or "
+.BR aac .
+.B mp3
+and
+.B opus
+are not supported on-device.
+.TP
+.B \-\-timestamps
+Include timing segments in transcription responses
+.RB ( verbose_json ", " srt ", " vtt ).
 .SH "CONTEXT OPTIONS"
 .TP
 .BI \-\-context-strategy " strategy"
@@ -449,6 +538,29 @@ A leading
 .B ~
 is expanded to the home directory.
 .TP
+.B DEV_TTS_VOICE
+Default TTS voice identifier or
+.B personal
+for Personal Voice.
+.TP
+.B DEV_STT_LOCALE
+Default speech recognition locale (e.g.
+.BR en-US ).
+.TP
+.B DEV_TTS_RATE
+Default speaking rate (0.25–4.0).
+.TP
+.B DEV_TTS_FORMAT
+Default server TTS file format:
+.BR wav ", "
+.BR pcm ", or "
+.BR aac .
+.TP
+.B DEV_AUDIO_INPUT
+Default microphone device UID for
+.BR \-\-listen " and "
+.BR \-\-agent .
+.TP
 .B NO_COLOR
 When set to any non-empty value, disables ANSI color output. See
 .UR https://no-color.org
@@ -488,6 +600,16 @@ or a concurrent session lock is held.
 No code in response. With
 .BR \-\-code ,
 the model returned an empty response, so there is no code to print.
+.TP
+.B 8
+Microphone permission denied. Grant Microphone access to the calling
+terminal in System Settings.
+.TP
+.B 9
+Speech recognition asset or engine failure.
+.TP
+.B 10
+No suitable audio input device found.
 .TP
 .B 130
 Interrupted. The user pressed Ctrl-C (SIGINT) at the interactive chat
@@ -565,10 +687,46 @@ Attach an MCP calculator server and ask a math question:
 dev --mcp mcp/calculator/server.py "What is 127 * 31?"
 .fi
 .RE
+.PP
+Speak text aloud:
+.PP
+.RS 4
+.nf
+dev --speak "Hello from SayItDev"
+echo "Read this" | dev --speak
+.fi
+.RE
+.PP
+Transcribe from the default microphone:
+.PP
+.RS 4
+.nf
+dev --listen
+.fi
+.RE
+.PP
+Run a voice Q&A agent (requires Apple Intelligence):
+.PP
+.RS 4
+.nf
+dev --agent
+.fi
+.RE
+.PP
+Synthesize speech over the HTTP API:
+.PP
+.RS 4
+.nf
+curl -X POST http://127.0.0.1:11434/v1/audio/speech \\
+  -H "Content-Type: application/json" \\
+  -d '{"input":"hello","voice":"default","response_format":"wav"}' \\
+  --output hello.wav
+.fi
+.RE
 .SH BUGS
 Report bugs at
-.UR __UPSTREAM_DEV_URL__/issues
-__UPSTREAM_DEV_URL__/issues
+.UR https://github.com/innovatorved/sayitdev/issues
+https://github.com/innovatorved/sayitdev/issues
 .UE .
 .PP
 Known limitations:
@@ -583,6 +741,16 @@ for those endpoints.
 .IP \[bu]
 Requires Apple Silicon, macOS 26 (Tahoe) or newer, and Apple
 Intelligence enabled in System Settings.
+.IP \[bu]
+On-device TTS supports
+.BR wav ", "
+.BR pcm ", and "
+.BR aac
+only; request
+.B mp3
+or
+.B opus
+over the HTTP API returns 400.
 .SH "SEE ALSO"
 .BR jq (1),
 .BR curl (1),
@@ -590,8 +758,12 @@ Intelligence enabled in System Settings.
 .BR man (1).
 .PP
 Project homepage and full documentation:
-.UR __UPSTREAM_DEV_URL__
-__UPSTREAM_DEV_URL__
+.UR https://github.com/innovatorved/sayitdev
+https://github.com/innovatorved/sayitdev
 .UE .
 .SH AUTHORS
-Franz Enzenhofer and contributors.
+SayItDev / innovatorved (vedgupta@protonmail.com).
+.PP
+Built on
+.B dev
+by Ved Gupta and contributors; voice extensions by SayItDev.

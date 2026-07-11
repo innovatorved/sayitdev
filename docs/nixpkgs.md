@@ -49,7 +49,7 @@ Because r-ryantm never opens a PR, the [nixpkgs merge bot](https://github.com/Ni
 
 ### The pipeline (self-opened, build-verified PR)
 
-1. **`make release`** runs `scripts/publish-nixpkgs-bump.sh` after the GitHub Release and Homebrew tap are updated. It forks `NixOS/nixpkgs` to `Arthur-Ficial/nixpkgs` (one-time), syncs from upstream master, edits `pkgs/by-name/ap/dev-llm/package.nix`, **build-verifies the result with `nix-build -A dev-llm` on this aarch64-darwin host** (r-ryantm cannot do this; we can, because the host matches `meta.platforms`), pushes, and opens/advances one PR on `NixOS/nixpkgs`. Idempotent at every layer (fork, branch, PR) and **non-fatal**: a bump failure does not fail the release. A failed `nix-build` aborts before any PR is opened, so we never submit a broken hash.
+1. **`make release`** runs `scripts/publish-nixpkgs-bump.sh` after the GitHub Release and Homebrew tap are updated. It forks `NixOS/nixpkgs` to `innovatorved/nixpkgs` (one-time), syncs from upstream master, edits `pkgs/by-name/ap/dev-llm/package.nix`, **build-verifies the result with `nix-build -A dev-llm` on this aarch64-darwin host** (r-ryantm cannot do this; we can, because the host matches `meta.platforms`), pushes, and opens/advances one PR on `NixOS/nixpkgs`. Idempotent at every layer (fork, branch, PR) and **non-fatal**: a bump failure does not fail the release. A failed `nix-build` aborts before any PR is opened, so we never submit a broken hash.
 2. It runs **twice daily via launchd** (`~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist`, logs at `~/Library/Logs/dev-nixpkgs-bump.log`) as a catch-up, keeping the single open PR pointed at the latest GitHub release even if a release run skipped the bump. The launchd job runs it through `scripts/nixpkgs-bump-cron.sh`, which classifies the outcome and emails Franz once per distinct failure - so a silent break (see "Recognizing the 2FA-compliance failure" below) can never again sit unnoticed.
 3. The PR follows nixpkgs best practice: `dev-llm: <old> -> <new>` commit/title, touches only `pkgs/by-name`, fills the **Things done** checklist with the real aarch64-darwin build, and carries an **automation/AI disclosure** per [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy). The bump commit carries **no `Assisted-by:` trailer** - a deterministic version+hash bump is exempt as standard update-script automation (the same exemption r-ryantm's own commits rely on).
 4. A **nixpkgs committer merges it** when they get to it. We can only reduce friction (clean PR, green CI, maintained package); we cannot remove the wait.
@@ -60,7 +60,7 @@ Each run reuses the existing open dev-llm bump PR (it force-pushes the same bran
 
 ### Why nixpkgs lags
 
-In the normal case the bump automation is not the bottleneck - it opens a correct, build-verified PR on every release. The lag is then **merge latency**: only nixpkgs committers can merge, and a maintainer-opened bump for a darwin-only package cannot use the merge bot (the "opened by r-ryantm or a committer" rule), so it sits in the committer queue for days to weeks. Being a maintainer helps a committer merge it faster but does not remove the wait, and no automation can - it is inherent to darwin-only + non-committer. Treat nixpkgs as the slower channel: Homebrew (`brew install dev`, autobumped) and the [Arthur-Ficial tap](https://github.com/Arthur-Ficial/homebrew-tap) (pushed synchronously by `make release`) are the fast paths we fully control.
+In the normal case the bump automation is not the bottleneck - it opens a correct, build-verified PR on every release. The lag is then **merge latency**: only nixpkgs committers can merge, and a maintainer-opened bump for a darwin-only package cannot use the merge bot (the "opened by r-ryantm or a committer" rule), so it sits in the committer queue for days to weeks. Being a maintainer helps a committer merge it faster but does not remove the wait, and no automation can - it is inherent to darwin-only + non-committer. Treat nixpkgs as the slower channel: Homebrew (`brew install dev`, autobumped) and the [Arthur-Ficial tap](https://github.com/innovatorved/homebrew-tap) (pushed synchronously by `make release`) are the fast paths we fully control.
 
 But "automation is not the bottleneck" only holds while the automation can actually reach GitHub. There is a second, nastier failure mode that once stranded nixpkgs at 1.0.5 for days while dev shipped 1.6.0.
 
@@ -93,7 +93,7 @@ We tried a release-triggered GitHub Actions workflow (`.github/workflows/bump-ni
 
 Prerequisites: `nix` (for `nix-prefetch-url` and the `nix-build` verification), `gh` CLI logged into Arthur-Ficial, `python3`, `git`. The script verifies these and skips with a warning if anything is missing - it never blocks the release.
 
-The fork `Arthur-Ficial/nixpkgs` is created on first run via `gh repo fork`. The local checkout lives at `~/dev/nixpkgs-bump` (override with `NIXPKGS_BUMP_DIR`).
+The fork `innovatorved/nixpkgs` is created on first run via `gh repo fork`. The local checkout lives at `~/dev/nixpkgs-bump` (override with `NIXPKGS_BUMP_DIR`).
 
 ## Manual self-bump (recovery, if the script breaks)
 
@@ -107,7 +107,7 @@ cd /tmp/nixpkgs-bump
 git remote add fork git@github.com:YOUR_USER/nixpkgs.git
 
 VERSION="X.Y.Z"   # e.g. 1.3.4
-URL="__UPSTREAM_DEV_URL__/releases/download/v${VERSION}/dev-${VERSION}-arm64-macos.tar.gz"
+URL="https://github.com/innovatorved/sayitdev/releases/download/v${VERSION}/dev-${VERSION}-arm64-macos.tar.gz"
 HASH=$(nix-prefetch-url --type sha256 "$URL" | xargs nix-hash --to-sri --type sha256)
 
 git checkout -b "dev-llm-${VERSION}"

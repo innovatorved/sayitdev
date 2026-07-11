@@ -3,7 +3,7 @@
 // Part of dev - Apple Intelligence from the command line
 // ============================================================================
 // Moved from Sources/Retry.swift (root target) into SayItDevCore so the pure
-// Swift unit-test runner (dev-tests) can exercise it (#214).
+// Swift unit-test runner (sayitdev-tests) can exercise it (#214).
 // ============================================================================
 
 import Foundation

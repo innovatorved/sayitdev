@@ -2,7 +2,7 @@
 
 Call Apple's on-device Foundation Model from a Swift script using `URLSession`. This is the "shell script written in Swift" pattern - fast, native, and pointed at a local `dev --serve`.
 
-Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/swift-scripting](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/swift-scripting).
+Runnable scripts + tests: [innovatorved/sayitdev-guides-lab/scripts/swift-scripting](https://github.com/innovatorved/sayitdev-guides-lab/tree/main/scripts/swift-scripting).
 
 > For **in-app** use, you can skip dev entirely and call `FoundationModels` directly via Apple's own Swift SDK. This guide is for **scripts** - anything you'd run with `swift path/to/file.swift` from the command line.
 
@@ -62,7 +62,7 @@ Real output:
 Swift is a modern, open-source programming language known for its safety features, ease of use, and performance, primarily used for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/01_oneshot.swift).
+Lab script: [`01_oneshot.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/01_oneshot.swift).
 
 ## 2. Streaming
 
@@ -114,7 +114,7 @@ Sure! Here are three Apple silicon chips:
 - M3
 ```
 
-Lab script: [`02_stream.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/02_stream.swift).
+Lab script: [`02_stream.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/02_stream.swift).
 
 ## 3. JSON mode
 
@@ -155,7 +155,7 @@ Real output:
 }
 ```
 
-Full script: [`03_json.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/03_json.swift).
+Full script: [`03_json.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/03_json.swift).
 
 ## 4. Error handling
 
@@ -181,11 +181,11 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Full script: [`04_errors.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/04_errors.swift).
+Full script: [`04_errors.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/04_errors.swift).
 
 ## 5. Tool calling
 
-Standard OpenAI tool-calling round-trip via two `URLSession` POSTs. See the full script: [`05_tools.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/05_tools.swift).
+Standard OpenAI tool-calling round-trip via two `URLSession` POSTs. See the full script: [`05_tools.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/05_tools.swift).
 
 Real output:
 
@@ -218,7 +218,7 @@ Real output:
 Apple released their first ARM-based system-on-a-chip for Mac computers in November 2020. It has an 8-core CPU with four performance cores and four efficiency cores, plus an integrated GPU with up to 8 cores. It unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Full script: [`06_example.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/swift-scripting/06_example.swift).
+Full script: [`06_example.swift`](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/scripts/swift-scripting/06_example.swift).
 
 ## Troubleshooting
 
@@ -232,8 +232,8 @@ Full script: [`06_example.swift`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scri
 - Swift 6.3 (system)
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_swift_scripting.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_swift_scripting.py).
+Runnable tests: [tests/test_swift_scripting.py](https://github.com/innovatorved/sayitdev-guides-lab/blob/main/tests/test_swift_scripting.py).
 
 ## See also
 
-[applescript.md](applescript.md), [python.md](python.md), [nodejs.md](nodejs.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)
+[applescript.md](applescript.md), [python.md](python.md), [nodejs.md](nodejs.md), [dev-guides-lab](https://github.com/innovatorved/sayitdev-guides-lab)

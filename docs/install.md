@@ -11,18 +11,28 @@
 ## Option 1: Homebrew (recommended)
 
 ```bash
-brew install dev
+brew tap innovatorved/tap
+brew install innovatorved/tap/dev
 ```
 
-The tap publishes same-day releases (homebrew-core autobump can lag up to ~24h) and bundles the demo scripts as `dev-<name>` commands:
+Verify:
 
 ```bash
-brew install Arthur-Ficial/tap/dev
+dev --version
+dev --model-info
 ```
 
-The tap installs eight companion commands alongside `dev`: `dev-cmd`, `dev-explain`, `dev-gitsum`, `dev-mac-narrator`, `dev-naming`, `dev-oneliner`, `dev-port`, `dev-wtd`. Source in [`demo/`](../demo/README.md). The `dev-` prefix avoids global PATH collisions (`port` would shadow MacPorts).
+The tap bundles demo scripts as `dev-<name>` commands: `dev-cmd`, `dev-explain`, `dev-gitsum`, `dev-mac-narrator`, `dev-naming`, `dev-oneliner`, `dev-port`, `dev-wtd`. See [`demo/`](../demo/README.md).
 
 No build tools needed. See [brew-install.md](brew-install.md) for troubleshooting.
+
+### Homebrew core (optional)
+
+If `dev` lands in homebrew-core later:
+
+```bash
+brew install dev
+```
 
 ## Option 2: Nix (nixpkgs)
 
@@ -37,7 +47,7 @@ Attribute name is `dev-llm` because nixpkgs already has an unrelated `dev` packa
 Requires Swift 6.3+ with developer tools that include the **macOS 26.4 SDK**. Xcode is **not** required - Command Line Tools are enough.
 
 ```bash
-git clone __UPSTREAM_DEV_URL__.git
+git clone https://github.com/innovatorved/sayitdev.git
 cd dev
 make install
 ```
@@ -92,16 +102,16 @@ make install
 ### Mint
 
 ```bash
-mint install __UPSTREAM_DEV_REPO__
+mint install innovatorved/sayitdev
 ```
 
 ### mise
 
 ```bash
-mise use -g github:__UPSTREAM_DEV_REPO__
+mise use -g github:innovatorved/sayitdev
 ```
 
-Supports project-scoped installs (`mise use github:__UPSTREAM_DEV_REPO__` without `-g`). Installs directly from GitHub releases.
+Supports project-scoped installs (`mise use github:innovatorved/sayitdev` without `-g`). Installs directly from GitHub releases.
 
 ## Verify
 

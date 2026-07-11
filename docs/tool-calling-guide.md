@@ -5,9 +5,9 @@ and dev's OpenAI-compatible tool calling implementation.
 
 **Findings from:** 2026-03-26 (dev v0.5.0, macOS 26.3) | **Last verified:** 2026-07-02 (dev v1.7.1, macOS 26.5.2). The documented behaviors are exercised by the MCP integration suites (`Tests/integration/mcp_server_test.py`, `Tests/integration/mcp_remote_test.py`) on every release.
 
-> **Looking for ready-made MCPs?** [dev-mcp.franzai.com](https://dev-mcp.franzai.com/) ships three token-budget-optimized MCP servers designed for dev's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. `brew install Arthur-Ficial/tap/dev-mcp`. The repo is open for contributions of new dev-optimized MCPs - see [dev-mcp.franzai.com/#contribute](https://dev-mcp.franzai.com/#contribute).
+> **Looking for ready-made MCPs?** [github.com/innovatorved/sayitdev](https://github.com/innovatorved/sayitdev/) ships three token-budget-optimized MCP servers designed for dev's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. `brew install innovatorved/tap/dev-mcp`. The repo is open for contributions of new dev-optimized MCPs - see [github.com/innovatorved/sayitdev/#contribute](https://github.com/innovatorved/sayitdev/#contribute).
 
-> **Managing many MCPs?** [__UPSTREAM_DEV_REPO__-run](__UPSTREAM_DEV_URL__-run) is an MIT wrapper that keeps an enabled/disabled list in `~/.config/dev/mcps.conf` (comment out with `-` to disable), builds `DEV_MCP`, and `execve`s dev. Stop typing `--mcp` on every call; edit the file instead.
+> **Managing many MCPs?** [innovatorved/sayitdev-run](https://github.com/innovatorved/sayitdev-run) is an MIT wrapper that keeps an enabled/disabled list in `~/.config/dev/mcps.conf` (comment out with `-` to disable), builds `DEV_MCP`, and `execve`s dev. Stop typing `--mcp` on every call; edit the file instead.
 
 > **Preflight your token budget:** MCP tool schemas consume context fast. Run `dev --count-tokens --mcp ./server.py "prompt"` before attaching tools in scripts or integrations. See [cli-reference.md](cli-reference.md).
 
