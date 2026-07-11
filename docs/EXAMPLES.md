@@ -4,7 +4,7 @@ Every response below is **real, unedited output** from Apple's on-device model
 via `dev`. Nothing was cherry-picked, cleaned up, or re-run.
 This file was generated automatically by `scripts/generate-examples.sh`.
 
-> dev v1.0.0 | macOS 26.5.2 | M2 | 2026-07-11
+> dev v1.0.2 | macOS 26.5.2 | M2 | 2026-07-11
 
 ## Table of Contents
 
