@@ -20,7 +20,7 @@ import time
 import httpx
 import pytest
 
-from conftest import post_chat_rotating_seeds
+from conftest import post_chat_rotating_seeds, MCP_AUTH_HEADERS
 
 # Whole-suite marker: these tests drive real on-device generation (or, for
 # the permit/benchmark suites, need Apple Intelligence up); GitHub CI cannot
@@ -265,7 +265,7 @@ def test_remote_mcp_apfel_healthy(apfel_remote_mcp_url):
 
 
 def test_remote_mcp_models_endpoint(apfel_remote_mcp_url):
-    resp = httpx.get(f"{apfel_remote_mcp_url}/models", timeout=10)
+    resp = httpx.get(f"{apfel_remote_mcp_url}/models", headers=MCP_AUTH_HEADERS, timeout=10)
     assert resp.status_code == 200
 
 
@@ -338,6 +338,7 @@ def test_remote_mcp_streaming_tool_auto_execute(apfel_remote_mcp_url):
         with httpx.stream(
             "POST",
             f"{apfel_remote_mcp_url}/chat/completions",
+            headers=MCP_AUTH_HEADERS,
             json={
                 "model": MODEL,
                 "messages": [
