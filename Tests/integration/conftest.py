@@ -137,18 +137,20 @@ def is_guardrail_refusal(text):
     return lowered.startswith(starters) or any(m in lowered for m in markers)
 
 
-def post_chat_rotating_seeds(url, payload, timeout, seeds=GUARDRAIL_SEEDS, accept=None):
+def post_chat_rotating_seeds(url, payload, timeout, seeds=GUARDRAIL_SEEDS, accept=None, headers=None):
     """POST a non-streaming chat completion, rotating seeds past guardrail
     refusals. Returns the parsed JSON of the first usable response; fails the
     test loudly if every seed refuses (that would be a real problem to see).
 
     `accept`: optional predicate(data) for callers whose notion of "usable"
     is stricter than non-refusal (e.g. tool_calls must be present)."""
+    if headers is None and ":11435" in url:
+        headers = MCP_AUTH_HEADERS
     last_content = None
     for seed in seeds:
         body = dict(payload)
         body["seed"] = seed
-        resp = httpx.post(url, json=body, timeout=timeout)
+        resp = httpx.post(url, json=body, timeout=timeout, headers=headers)
         assert resp.status_code == 200, \
             f"HTTP {resp.status_code} (seed {seed}): {resp.text[:200]}"
         data = resp.json()

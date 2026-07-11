@@ -12,6 +12,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 - `dev --agent` and `dev --listen` no longer abort with a heap "freed pointer" error: `MicCaptureSession` stops the mic graph before resuming the caller (`.isFinal` and silence paths), keeps `SFSpeechRecognizer` alive for the recognition task lifetime, and avoids cancelling the monitor during `Task.sleep`.
 - `make preflight` MCP test server startup now passes `--token` (required since MCP auth hardening).
 - `POST /v1/audio/speech` no longer hangs: server TTS render yields the MainActor instead of blocking `RunLoop.main`.
+- Integration tests pass Bearer auth to the standing MCP server on port 11435 (`post_chat_rotating_seeds`).
 
 ## [1.0.1] - 2026-07-11
 

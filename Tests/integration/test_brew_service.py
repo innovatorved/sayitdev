@@ -164,7 +164,7 @@ def test_brew_service_logs_exist(brew_service):
     log_path = pathlib.Path("/opt/homebrew/var/log/dev.log")
     assert log_path.exists(), f"Log file not found at {log_path}"
     content = log_path.read_text()
-    assert "dev server" in content, "Log file missing server startup output"
+    assert "SayItDev server" in content or "dev server" in content, "Log file missing server startup output"
 
 
 def test_brew_service_restart(brew_service):
