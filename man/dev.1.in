@@ -459,6 +459,13 @@ Keep
 unauthenticated when a token is required. Useful for load balancers
 and uptime checks on non-loopback binds.
 .TP
+.B \-\-i-know-what-im-doing
+Allow non-loopback
+.B \-\-serve
+without
+.BR \-\-token .
+Insecure; intended only when you explicitly accept the exposure risk.
+.TP
 .B \-\-footgun
 Disable all protections. Equivalent to
 .B \-\-no-origin-check

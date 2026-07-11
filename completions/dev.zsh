@@ -39,6 +39,7 @@ _dev() {
     '--token-auto[Generate a random Bearer token]' \
     '--public-health[Keep /health unauthenticated]' \
     '--footgun[Disable all protections]' \
+    '--i-know-what-im-doing[Allow exposed bind without token]' \
     '--mcp[Attach local or remote MCP server]:file:_files' \
     '--mcp-timeout[MCP timeout in seconds]:value:' \
     '--mcp-token[Bearer token for remote MCP servers]:value:' \

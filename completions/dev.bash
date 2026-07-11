@@ -25,7 +25,7 @@ _dev() {
     esac
 
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $(compgen -W "--agent --allowed-origins --audio-format --benchmark --chat --code --context-max-turns --context-output-reserve --context-status --context-strategy --cors --count-tokens --debug --demos --file --footgun --help --host --input-device --listen --locale --max-concurrent --max-tokens --mcp --mcp-timeout --mcp-token --messages --model-info --no-color --no-origin-check --output --permissive --port --public-health --quiet --rate --release --retry --schema --seed --serve --speak --stream --strict --system --system-file --temperature --timestamps --token --token-auto --top-p --update --version --voice-name -f -h -o -q -s -v completions" -- "$cur") ); return 0
+        COMPREPLY=( $(compgen -W "--agent --allowed-origins --audio-format --benchmark --chat --code --context-max-turns --context-output-reserve --context-status --context-strategy --cors --count-tokens --debug --demos --file --footgun --help --host --i-know-what-im-doing --input-device --listen --locale --max-concurrent --max-tokens --mcp --mcp-timeout --mcp-token --messages --model-info --no-color --no-origin-check --output --permissive --port --public-health --quiet --rate --release --retry --schema --seed --serve --speak --stream --strict --system --system-file --temperature --timestamps --token --token-auto --top-p --update --version --voice-name -f -h -o -q -s -v completions" -- "$cur") ); return 0
     fi
     COMPREPLY=( $(compgen -f -- "$cur") ); return 0
 }

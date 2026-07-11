@@ -107,14 +107,15 @@ trap - EXIT
 # Signing and notarization run BEFORE the release commit/tag is pushed: they
 # only need the built binary, and a signing/notarization failure must abort
 # with zero published side effects (no stranded tag, no double version bump).
-# Sign with the Developer ID identity under a hardened runtime BEFORE packaging
+# Default release signing identity: Developer ID Application: Ved Gupta (7D2YX5DQ6M)
+# Override with DEV_CODESIGN_IDENTITY / DEV_NOTARY_TEAM_ID.
 # so the tarred binary is the signed one. Signing lives here (not in
 # package-release-asset) so plain `make build`/dev packaging never touches the
 # keychain. On the release path signing is mandatory - a real release must not
 # ship an ad-hoc binary.
 step "Sign release binary"
 CODESIGN_ID="${DEV_CODESIGN_IDENTITY:-}"
-NOTARY_TEAM="${DEV_NOTARY_TEAM_ID:-}"
+NOTARY_TEAM="${DEV_NOTARY_TEAM_ID:-7D2YX5DQ6M}"
 if [[ -z "$CODESIGN_ID" ]]; then
     if security find-identity -v -p codesigning 2>/dev/null | grep -q 'Developer ID Application:'; then
         CODESIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application:/ {print $2; exit}')
