@@ -110,6 +110,8 @@ def running_custom_mcp_server(mcp_script):
                 str(port),
                 "--mcp",
                 str(mcp_script),
+                "--token",
+                "integration-test-token",
             ],
             stdout=log_file,
             stderr=log_file,

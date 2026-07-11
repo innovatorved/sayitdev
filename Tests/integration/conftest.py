@@ -144,7 +144,7 @@ def post_chat_rotating_seeds(url, payload, timeout, seeds=GUARDRAIL_SEEDS, accep
 
     `accept`: optional predicate(data) for callers whose notion of "usable"
     is stricter than non-refusal (e.g. tool_calls must be present)."""
-    if headers is None and ":11435" in url:
+    if headers is None and ":11434" not in url:
         headers = MCP_AUTH_HEADERS
     last_content = None
     for seed in seeds:

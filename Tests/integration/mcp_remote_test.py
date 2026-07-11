@@ -129,6 +129,8 @@ def apfel_remote_mcp_url(http_mcp_port):
         str(apfel_port),
         "--mcp",
         mcp_url,
+        "--token",
+        "integration-test-token",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ):
@@ -205,6 +207,8 @@ def apfel_auth_mcp_url(auth_mcp_port):
         mcp_url,
         "--mcp-token",
         "test-secret",
+        "--token",
+        "integration-test-token",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ):
@@ -236,6 +240,8 @@ def apfel_mixed_mcp_url(http_mcp_port):
         str(STDIO_MCP_SERVER),
         "--mcp",
         mcp_url,
+        "--token",
+        "integration-test-token",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ):
