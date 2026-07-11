@@ -229,38 +229,18 @@ enum SpeechInput {
         onPartial: (@Sendable (String) -> Void)?
     ) async throws -> String {
         try ensureInputDeviceAvailable(config: config)
-        guard let recognizer = SFSpeechRecognizer(locale: config.locale), recognizer.isAvailable else {
-            throw SpeechInputError.transcriptionFailed("Speech recognizer unavailable")
-        }
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        let engine = AVAudioEngine()
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        let bridge = MicCaptureBridge(
-            startedAt: Date.timeIntervalSinceReferenceDate,
-            listenConfig: listenConfig,
-            request: request
-        )
-        bridge.installTap(on: input, format: format)
-        engine.prepare()
-        try engine.start()
 
-        defer {
-            if !bridge.captureStopped {
-                input.removeTap(onBus: 0)
-                engine.stop()
-                request.endAudio()
-            }
-        }
+        let session = try MicCaptureSession(locale: config.locale, listenConfig: listenConfig)
+        try session.start()
+        defer { session.stopIfNeeded() }
 
         return try await withCheckedThrowingContinuation { cont in
             final class State: @unchecked Sendable {
                 var resumed = false
-                var task: SFSpeechRecognitionTask?
             }
             let state = State()
 
+            @MainActor
             func resumeOnce(with result: Result<String, Error>) {
                 guard !state.resumed else { return }
                 state.resumed = true
@@ -272,6 +252,7 @@ enum SpeechInput {
                 }
             }
 
+            @MainActor
             func finalize(with text: String) {
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
@@ -281,47 +262,62 @@ enum SpeechInput {
                 }
             }
 
-            func stopCapture() {
-                guard !bridge.captureStopped else { return }
-                bridge.markCaptureStopped()
-                input.removeTap(onBus: 0)
-                engine.stop()
-                request.endAudio()
-                state.task?.finish()
-            }
-
-            state.task = recognizer.recognitionTask(with: request) { result, error in
-                if state.resumed { return }
+            @MainActor
+            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) {
+                guard !state.resumed else { return }
                 if let error {
                     let ns = error as NSError
-                    if ns.domain == "kAFAssistantErrorDomain", ns.code == 216, !bridge.lastPartial.isEmpty {
-                        finalize(with: bridge.lastPartial)
+                    if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 {
+                        session.endedNaturally = true
+                        session.stop(endAudio: false)
+                        finalize(with: session.lastPartial)
                         return
                     }
+                    session.endedNaturally = true
+                    session.stop(endAudio: true)
                     resumeOnce(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
                     return
                 }
                 guard let result else { return }
                 let text = result.bestTranscription.formattedString
-                bridge.notePartial(text)
+                session.notePartial(text)
                 onPartial?(text)
                 if result.isFinal {
+                    session.endedNaturally = true
+                    session.stop(endAudio: false)
                     finalize(with: text)
                 }
             }
 
-            Task { @MainActor in
+            let captureBridge = session.bridge
+            session.recognitionTask = session.recognizer.recognitionTask(with: session.request) { result, error in
+                let isTerminal = error != nil || result?.isFinal == true
+                if isTerminal {
+                    captureBridge.stopAcceptingAudioFromCallback()
+                }
+                Task { @MainActor in
+                    handleRecognition(result: result, error: error)
+                }
+            }
+
+            session.monitorTask = Task { @MainActor in
                 while !state.resumed {
                     try? await Task.sleep(for: .milliseconds(100))
                     if state.resumed { break }
-                    if let reason = bridge.pollStopReason() {
-                        bridge.markShouldStop(reason: reason)
+                    if let reason = session.pollStopReason() {
+                        session.markShouldStop(reason: reason)
                     }
-                    if bridge.shouldStop {
-                        stopCapture()
-                        try? await Task.sleep(for: .milliseconds(800))
+                    if session.shouldStop {
+                        let heardSpeech = session.stopReason != .initialSilence
+                            || !session.lastPartial.isEmpty
+                        session.stop(endAudio: heardSpeech)
+                        if heardSpeech {
+                            for _ in 0..<8 where !state.resumed {
+                                try? await Task.sleep(for: .milliseconds(100))
+                            }
+                        }
                         if !state.resumed {
-                            finalize(with: bridge.lastPartial)
+                            finalize(with: session.lastPartial)
                         }
                         break
                     }

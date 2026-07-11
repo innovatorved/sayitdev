@@ -55,6 +55,13 @@ func runMicListenPolicyTests() {
     test("LiveTranscriptLine overwrites the current terminal row") {
         try assertEqual(LiveTranscriptLine.overwrite("hi"), "\r\u{001B}[Khi")
     }
+
+    test("TeardownLatch claim succeeds once only") {
+        let latch = TeardownLatch()
+        try assertTrue(latch.claim())
+        try assertTrue(!latch.claim())
+        try assertTrue(!latch.claim())
+    }
 }
 
 private func assertEqual<T: FloatingPoint>(

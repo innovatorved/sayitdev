@@ -4,6 +4,7 @@
 // ============================================================================
 
 import Foundation
+import os
 
 /// Tunables for `dev --listen` / agent mic capture.
 public struct MicListenConfig: Sendable, Equatable {
@@ -91,6 +92,22 @@ public enum MicListenPolicy {
             sum += sample * sample
         }
         return sqrt(sum / Float(samples.count))
+    }
+}
+
+/// One-shot claim for mic graph teardown (defer vs monitor vs recognizer callback).
+public final class TeardownLatch: @unchecked Sendable {
+    private let lock = OSAllocatedUnfairLock(initialState: false)
+
+    public init() {}
+
+    /// Returns `true` exactly once; subsequent calls return `false`.
+    public func claim() -> Bool {
+        lock.withLock { claimed in
+            guard !claimed else { return false }
+            claimed = true
+            return true
+        }
     }
 }
 

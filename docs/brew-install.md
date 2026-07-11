@@ -36,10 +36,13 @@ If you installed `dev` both via Homebrew and `sudo make install`, the first matc
 which -a dev
 ```
 
-To prefer the Homebrew build:
+To prefer the Homebrew build after a local `make install`:
 
 ```bash
-brew link --overwrite innovatorved/tap/dev
+sudo make uninstall
+brew upgrade innovatorved/tap/dev
+which dev
+dev --version
 ```
 
 To prefer a local `make install` build, ensure `/usr/local/bin` (or your `PREFIX`) appears before Homebrew in `PATH`, or run `brew unlink dev`.
