@@ -112,35 +112,26 @@ enum SpeechOutput {
         let voice = await resolveVoice(config: config)
         let utterance = makeUtterance(trimmed, config: config, voice: voice)
         final class BufferBox: @unchecked Sendable {
+            var finished = false
             var buffers: [AVAudioPCMBuffer] = []
         }
         let box = BufferBox()
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            var finished = false
-            func finish() {
-                guard !finished else { return }
-                finished = true
-                delegate.onFinish = nil
-                cont.resume()
-            }
-            delegate.onFinish = finish
-            synthesizer.write(utterance) { buffer in
-                if let pcm = buffer as? AVAudioPCMBuffer {
-                    if pcm.frameLength > 0 {
-                        box.buffers.append(pcm)
-                    } else {
-                        finish()
-                    }
+        synthesizer.write(utterance) { buffer in
+            if let pcm = buffer as? AVAudioPCMBuffer {
+                if pcm.frameLength > 0 {
+                    box.buffers.append(pcm)
                 } else {
-                    finish()
+                    box.finished = true
                 }
+            } else {
+                box.finished = true
             }
-            let deadline = Date(timeIntervalSinceNow: 120)
-            while !finished && Date() < deadline {
-                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
-            }
-            finish()
         }
+        let deadline = Date(timeIntervalSinceNow: 120)
+        while !box.finished && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        guard box.finished else { throw SpeechOutputError.renderFailed }
         guard let first = box.buffers.first else { throw SpeechOutputError.renderFailed }
         let format = first.format
         let tempURL = FileManager.default.temporaryDirectory
