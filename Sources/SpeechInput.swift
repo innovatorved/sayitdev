@@ -236,98 +236,97 @@ enum SpeechInput {
         let session = try MicCaptureSession(locale: config.locale, listenConfig: listenConfig)
         try session.start()
 
-        return try await withCheckedThrowingContinuation { cont in
-            final class State: @unchecked Sendable {
-                var resumed = false
-            }
-            let state = State()
+        final class CaptureState: @unchecked Sendable {
+            var resumed = false
+            var result: Result<String, Error>?
+        }
+        let state = CaptureState()
 
-            @MainActor
-            func finishCapture(with result: Result<String, Error>) {
-                guard !state.resumed else { return }
-                state.resumed = true
-                session.finishTeardown()
-                switch result {
-                case .success(let text):
-                    cont.resume(returning: text)
-                case .failure(let error):
-                    cont.resume(throwing: error)
-                }
-            }
+        @MainActor
+        func finishCapture(with result: Result<String, Error>) {
+            guard !state.resumed else { return }
+            state.resumed = true
+            session.finishTeardown()
+            state.result = result
+        }
 
-            @MainActor
-            func finalize(with text: String) {
-                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty {
-                    finishCapture(with: .failure(SpeechInputError.emptyAudio))
-                } else {
-                    finishCapture(with: .success(trimmed))
-                }
+        @MainActor
+        func finalize(with text: String) {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                finishCapture(with: .failure(SpeechInputError.emptyAudio))
+            } else {
+                finishCapture(with: .success(trimmed))
             }
+        }
 
-            @MainActor
-            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) {
-                guard !state.resumed else { return }
-                if let error {
-                    let ns = error as NSError
-                    if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 {
-                        session.endedNaturally = true
-                        session.stop(endAudio: false)
-                        finalize(with: session.lastPartial)
-                        return
-                    }
-                    session.endedNaturally = true
-                    session.stop(endAudio: true)
-                    finishCapture(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
-                    return
-                }
-                guard let result else { return }
-                let text = result.bestTranscription.formattedString
-                session.notePartial(text)
-                onPartial?(text)
-                if result.isFinal {
+        @MainActor
+        func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) {
+            guard !state.resumed else { return }
+            if let error {
+                let ns = error as NSError
+                if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 {
                     session.endedNaturally = true
                     session.stop(endAudio: false)
-                    finalize(with: text)
+                    finalize(with: session.lastPartial)
+                    return
                 }
+                session.endedNaturally = true
+                session.stop(endAudio: true)
+                finishCapture(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
+                return
             }
-
-            let captureBridge = session.bridge
-            session.recognitionTask = session.recognizer.recognitionTask(with: session.request) { result, error in
-                let isTerminal = error != nil || result?.isFinal == true
-                if isTerminal {
-                    captureBridge.stopAcceptingAudioFromCallback()
-                }
-                Task { @MainActor in
-                    handleRecognition(result: result, error: error)
-                }
+            guard let result else { return }
+            let text = result.bestTranscription.formattedString
+            session.notePartial(text)
+            onPartial?(text)
+            if result.isFinal {
+                session.endedNaturally = true
+                session.stop(endAudio: false)
+                finalize(with: text)
             }
+        }
 
-            // Single orchestrator: poll silence in this task only (never cancelled).
+        let captureBridge = session.bridge
+        session.recognitionTask = session.recognizer.recognitionTask(with: session.request) { result, error in
+            let isTerminal = error != nil || result?.isFinal == true
+            if isTerminal {
+                captureBridge.stopAcceptingAudioFromCallback()
+            }
             Task { @MainActor in
-                while !state.resumed {
-                    try? await Task.sleep(for: .milliseconds(100))
-                    if state.resumed { break }
+                handleRecognition(result: result, error: error)
+            }
+        }
 
-                    if let reason = session.pollStopReason() {
-                        session.markShouldStop(reason: reason)
-                    }
-                    if session.shouldStop {
-                        let heardSpeech = session.stopReason != .initialSilence
-                            || !session.lastPartial.isEmpty
-                        session.stop(endAudio: heardSpeech)
-                        if heardSpeech {
-                            for _ in 0..<8 where !state.resumed {
-                                try? await Task.sleep(for: .milliseconds(100))
-                            }
-                        }
-                        if !state.resumed {
-                            finalize(with: session.lastPartial)
-                        }
-                        break
+        // Poll silence in this same @MainActor async function (no nested monitor Task).
+        while !state.resumed {
+            try await Task.sleep(for: .milliseconds(100))
+            if state.resumed { break }
+
+            if let reason = session.pollStopReason() {
+                session.markShouldStop(reason: reason)
+            }
+            if session.shouldStop {
+                let heardSpeech = session.stopReason != .initialSilence
+                    || !session.lastPartial.isEmpty
+                session.stop(endAudio: heardSpeech)
+                if heardSpeech {
+                    for _ in 0..<8 where !state.resumed {
+                        try await Task.sleep(for: .milliseconds(100))
                     }
                 }
+                if !state.resumed {
+                    finalize(with: session.lastPartial)
+                }
+                break
             }
+        }
+
+        switch state.result! {
+        case .success(let text):
+            return text
+        case .failure(let error):
+            throw error
         }
     }
 }

@@ -17,7 +17,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ### Fixed
 
-- `dev --listen` no longer aborts at end-of-speech with `freed pointer was not the last allocation`: mic teardown follows Apple order (`removeTap` before `engine.stop`), never cancels `SFSpeechRecognitionTask`, calls `endAudio()` at most once after the tap stops, and uses synchronous CoreAudio settle (no nested `Task.sleep` in teardown).
+- `dev --listen` silence polling runs in the same `@MainActor` async function as capture setup (no nested monitor `Task`), eliminating child-task deallocation races at end-of-speech.
 - The mic tap appends to the recognition request under the same lock as stop/end, so a realtime callback cannot `append` after `endAudio()`.
 - First-capture reliability on Bluetooth mics: `MicCaptureSession.start()` waits (up to 2s, zero delay on the normal path) for a usable input format during A2DP→HFP profile switch.
 - `make preflight` MCP test server startup passes `--token` (required since MCP auth hardening).
