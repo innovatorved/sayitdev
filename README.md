@@ -2,8 +2,6 @@
 
 On-device AI and voice for Mac. The **`dev`** CLI runs Apple Intelligence locally — speak, listen, chat, and serve an OpenAI-compatible API. No cloud, no API keys.
 
-**Maintainer:** [Ved Gupta](mailto:vedgupta@protonmail.com) · [innovatorved](https://github.com/innovatorved)
-
 ## Requirements
 
 - macOS 26+ on Apple Silicon
