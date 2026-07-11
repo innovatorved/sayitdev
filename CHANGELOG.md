@@ -7,6 +7,8 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-11
+
 ### Fixed
 
 - `dev --speak` no longer blocks on piped stdin when speak text is provided as an argument (IDE terminals).
