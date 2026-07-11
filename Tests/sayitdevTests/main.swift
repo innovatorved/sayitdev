@@ -130,6 +130,7 @@ suite("PrewarmDecisionTests") { runPrewarmDecisionTests() }
 suite("StdinReadPolicyTests") { runStdinReadPolicyTests() }
 suite("MultipartFormDataTests") { runMultipartFormDataTests() }
 suite("ResponsesModelsTests") { runResponsesModelsTests() }
+suite("MicListenPolicyTests") { runMicListenPolicyTests() }
 
 // MARK: - Summary
 

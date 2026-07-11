@@ -7,6 +7,8 @@ import AVFAudio
 import AVFoundation
 import Foundation
 import SayItDevCLI
+import SayItDevCore
+import os
 
 struct TranscriptionSegment: Sendable, Equatable {
     var text: String
@@ -69,11 +71,19 @@ enum SpeechInput {
         }
     }
 
-    static func transcribeMic(config: VoiceConfig, maxDuration: TimeInterval = 45) async throws -> String {
+    static func transcribeMic(
+        config: VoiceConfig,
+        listenConfig: MicListenConfig = .interactive,
+        onPartial: (@Sendable (String) -> Void)? = nil
+    ) async throws -> String {
         try await onMainActor {
             try await ensureSpeechAuthorized()
             try await ensureMicAuthorized()
-            return try await transcribeMicLegacy(config: config, maxDuration: maxDuration)
+            return try await transcribeMicLegacy(
+                config: config,
+                listenConfig: listenConfig,
+                onPartial: onPartial
+            )
         }
     }
 
@@ -213,7 +223,11 @@ enum SpeechInput {
     }
 
     @MainActor
-    private static func transcribeMicLegacy(config: VoiceConfig, maxDuration: TimeInterval) async throws -> String {
+    private static func transcribeMicLegacy(
+        config: VoiceConfig,
+        listenConfig: MicListenConfig,
+        onPartial: (@Sendable (String) -> Void)?
+    ) async throws -> String {
         try ensureInputDeviceAvailable(config: config)
         guard let recognizer = SFSpeechRecognizer(locale: config.locale), recognizer.isAvailable else {
             throw SpeechInputError.transcriptionFailed("Speech recognizer unavailable")
@@ -223,45 +237,95 @@ enum SpeechInput {
         let engine = AVAudioEngine()
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-            request.append(buffer)
-        }
+        let bridge = MicCaptureBridge(
+            startedAt: Date.timeIntervalSinceReferenceDate,
+            listenConfig: listenConfig,
+            request: request
+        )
+        bridge.installTap(on: input, format: format)
         engine.prepare()
         try engine.start()
 
         defer {
-            input.removeTap(onBus: 0)
-            engine.stop()
-            request.endAudio()
+            if !bridge.captureStopped {
+                input.removeTap(onBus: 0)
+                engine.stop()
+                request.endAudio()
+            }
         }
 
         return try await withCheckedThrowingContinuation { cont in
             final class State: @unchecked Sendable {
-                var finished = false
+                var resumed = false
                 var task: SFSpeechRecognitionTask?
             }
             let state = State()
-            state.task = recognizer.recognitionTask(with: request) { result, error in
-                if state.finished { return }
-                if let error {
-                    state.finished = true
-                    cont.resume(throwing: SpeechInputError.transcriptionFailed(error.localizedDescription))
-                    return
-                }
-                guard let result, result.isFinal else { return }
-                state.finished = true
-                let text = result.bestTranscription.formattedString.trimmingCharacters(in: .whitespacesAndNewlines)
-                if text.isEmpty {
-                    cont.resume(throwing: SpeechInputError.emptyAudio)
-                } else {
+
+            func resumeOnce(with result: Result<String, Error>) {
+                guard !state.resumed else { return }
+                state.resumed = true
+                switch result {
+                case .success(let text):
                     cont.resume(returning: text)
+                case .failure(let error):
+                    cont.resume(throwing: error)
                 }
             }
-            DispatchQueue.global().asyncAfter(deadline: .now() + maxDuration) {
-                if state.finished { return }
-                state.finished = true
-                state.task?.cancel()
-                cont.resume(throwing: SpeechInputError.transcriptionFailed("Listening timed out"))
+
+            func finalize(with text: String) {
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    resumeOnce(with: .failure(SpeechInputError.emptyAudio))
+                } else {
+                    resumeOnce(with: .success(trimmed))
+                }
+            }
+
+            func stopCapture() {
+                guard !bridge.captureStopped else { return }
+                bridge.markCaptureStopped()
+                input.removeTap(onBus: 0)
+                engine.stop()
+                request.endAudio()
+                state.task?.finish()
+            }
+
+            state.task = recognizer.recognitionTask(with: request) { result, error in
+                if state.resumed { return }
+                if let error {
+                    let ns = error as NSError
+                    if ns.domain == "kAFAssistantErrorDomain", ns.code == 216, !bridge.lastPartial.isEmpty {
+                        finalize(with: bridge.lastPartial)
+                        return
+                    }
+                    resumeOnce(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
+                    return
+                }
+                guard let result else { return }
+                let text = result.bestTranscription.formattedString
+                bridge.notePartial(text)
+                onPartial?(text)
+                if result.isFinal {
+                    finalize(with: text)
+                }
+            }
+
+            Task { @MainActor in
+                while !state.resumed {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    if state.resumed { break }
+                    if let reason = bridge.pollStopReason() {
+                        bridge.markShouldStop(reason: reason)
+                    }
+                    if bridge.shouldStop {
+                        stopCapture()
+                        try? await Task.sleep(for: .milliseconds(800))
+                        if !state.resumed {
+                            finalize(with: bridge.lastPartial)
+                        }
+                        break
+                    }
+                }
             }
         }
     }

@@ -1239,4 +1239,10 @@ func runCLIArgumentsTests() {
         let cfg = VoiceConfig.resolve(from: args, env: [:])
         try assertEqual(cfg.locale.identifier, "ja-JP")
     }
+
+    test("VoiceConfig defaults locale to en-US for --listen") {
+        let args = try CLIArguments.parse(["--listen"])
+        let cfg = VoiceConfig.resolve(from: args, env: [:])
+        try assertEqual(cfg.locale.identifier, "en-US")
+    }
 }

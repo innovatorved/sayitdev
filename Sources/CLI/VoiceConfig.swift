@@ -17,6 +17,9 @@ public enum AudioOutputFormat: String, Sendable, Equatable {
 
 /// Resolved voice settings shared by CLI and server handlers.
 public struct VoiceConfig: Sendable, Equatable {
+    /// Default STT/TTS locale when `--locale` / `DEV_STT_LOCALE` are omitted.
+    public static let defaultLocale = Locale(identifier: "en-US")
+
     public var inputDeviceUID: String?
     public var voiceName: String?
     public var locale: Locale
@@ -27,7 +30,7 @@ public struct VoiceConfig: Sendable, Equatable {
     public init(
         inputDeviceUID: String? = nil,
         voiceName: String? = nil,
-        locale: Locale = .current,
+        locale: Locale = VoiceConfig.defaultLocale,
         rate: Float? = nil,
         audioFormat: AudioOutputFormat = .wav,
         timestamps: Bool = false

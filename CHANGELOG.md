@@ -11,6 +11,12 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 - `dev --speak` no longer blocks on piped stdin when speak text is provided as an argument (IDE terminals).
 - CI/test runner target renamed to `sayitdev-tests`; SayItDevCore example integration tests aligned with Package.swift.
+- `dev --listen` no longer crashes with `trace trap` on macOS 26: mic tap silence monitoring runs off the realtime audio queue (Swift 6 executor check).
+
+### Changed
+
+- `dev --listen` streams live partial transcript to stdout and stops on pause (~1.5s silence) or after ~8s with no speech, instead of a fixed 30s timeout.
+- Default STT/TTS locale is `en-US` when `--locale` / `DEV_STT_LOCALE` are omitted (`dev --listen` works without `--locale en-US`).
 
 ## [1.0.0] - 2026-07-11
 

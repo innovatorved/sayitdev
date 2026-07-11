@@ -13,7 +13,7 @@ enum AgentLoop {
             printStderr("Listening...")
             let transcript: String
             do {
-                transcript = try await SpeechInput.transcribeMic(config: config, maxDuration: 30)
+                transcript = try await SpeechInput.transcribeMic(config: config)
             } catch SpeechInputError.emptyAudio {
                 printStderr("(no speech detected, listening again...)")
                 continue

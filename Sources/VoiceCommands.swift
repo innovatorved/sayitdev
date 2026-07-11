@@ -4,6 +4,7 @@
 
 import Foundation
 import SayItDevCLI
+import SayItDevCore
 
 enum VoiceCommands {
     static func runSpeak(text: String, config: VoiceConfig) async throws {
@@ -16,9 +17,24 @@ enum VoiceCommands {
     }
 
     static func runListen(config: VoiceConfig) async throws {
-        printStderr("Listening on default microphone (up to 30s)...")
-        let text = try await SpeechInput.transcribeMic(config: config, maxDuration: 30)
-        print(text)
+        printStderr("Listening… speak now (live transcript; stops when you pause)")
+        final class DisplayState: @unchecked Sendable {
+            var lastDisplayed = ""
+        }
+        let display = DisplayState()
+        let text = try await SpeechInput.transcribeMic(config: config) { partial in
+            let trimmed = partial.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, trimmed != display.lastDisplayed else { return }
+            display.lastDisplayed = trimmed
+            fputs(LiveTranscriptLine.overwrite(trimmed), stdout)
+            fflush(stdout)
+        }
+        if display.lastDisplayed.isEmpty {
+            print(text)
+        } else {
+            fputs("\n", stdout)
+            fflush(stdout)
+        }
     }
 }
 
