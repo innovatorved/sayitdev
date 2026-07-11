@@ -115,7 +115,7 @@ public enum ShellCompletions {
             CompletionFlag(["--code"], .none, "Print only the first fenced code block of the response"),
             CompletionFlag(["--speak"], .none, "Text-to-speech"),
             CompletionFlag(["--listen"], .none, "Speech-to-text from microphone"),
-            CompletionFlag(["--agent"], .none, "Voice agent loop"),
+            CompletionFlag(["--transcribe"], .file, "Speech-to-text from an audio file"),
             CompletionFlag(["--input-device"], .generic, "Microphone device UID"),
             CompletionFlag(["--voice-name"], .generic, "TTS voice id or personal"),
             CompletionFlag(["--locale"], .generic, "STT locale"),

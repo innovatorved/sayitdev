@@ -832,7 +832,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) --serve                  Start OpenAI-compatible HTTP server
       \(appName) --speak <text>           Text-to-speech (stdin or argument)
       \(appName) --listen                 Speech-to-text from default microphone
-      \(appName) --agent                  Voice agent: listen → LLM → speak (Ctrl+C to quit)
+      \(appName) --transcribe <file>      Speech-to-text from an audio file
       \(appName) --benchmark              Run internal performance benchmarks
       \(appName) --count-tokens <prompt>  Preflight token count (no inference)
       \(appName) completions <shell>      Print shell completions (bash, zsh, fish)
@@ -958,7 +958,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) --speak "Hello from SayItDev"
       echo "Read this" | \(appName) --speak
       \(appName) --listen
-      \(appName) --agent
+      \(appName) --transcribe recording.wav
     """
     handle.write(Data((text + "\n").utf8))
 }

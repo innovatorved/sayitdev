@@ -236,8 +236,6 @@ enum SpeechInput {
         let session = try MicCaptureSession(locale: config.locale, listenConfig: listenConfig)
         try session.start()
 
-        let noAudioWatchdogSeconds: TimeInterval = 1.5
-
         return try await withCheckedThrowingContinuation { cont in
             final class State: @unchecked Sendable {
                 var resumed = false
@@ -245,11 +243,10 @@ enum SpeechInput {
             let state = State()
 
             @MainActor
-            func finishCapture(with result: Result<String, Error>) async {
+            func finishCapture(with result: Result<String, Error>) {
                 guard !state.resumed else { return }
                 state.resumed = true
-                session.monitorTask?.cancel()
-                await session.finishTeardown()
+                session.finishTeardown()
                 switch result {
                 case .success(let text):
                     cont.resume(returning: text)
@@ -259,29 +256,29 @@ enum SpeechInput {
             }
 
             @MainActor
-            func finalize(with text: String) async {
+            func finalize(with text: String) {
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
-                    await finishCapture(with: .failure(SpeechInputError.emptyAudio))
+                    finishCapture(with: .failure(SpeechInputError.emptyAudio))
                 } else {
-                    await finishCapture(with: .success(trimmed))
+                    finishCapture(with: .success(trimmed))
                 }
             }
 
             @MainActor
-            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) async {
+            func handleRecognition(result: SFSpeechRecognitionResult?, error: Error?) {
                 guard !state.resumed else { return }
                 if let error {
                     let ns = error as NSError
                     if ns.domain == "kAFAssistantErrorDomain", ns.code == 216 {
                         session.endedNaturally = true
                         session.stop(endAudio: false)
-                        await finalize(with: session.lastPartial)
+                        finalize(with: session.lastPartial)
                         return
                     }
                     session.endedNaturally = true
                     session.stop(endAudio: true)
-                    await finishCapture(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
+                    finishCapture(with: .failure(SpeechInputError.transcriptionFailed(error.localizedDescription)))
                     return
                 }
                 guard let result else { return }
@@ -291,7 +288,7 @@ enum SpeechInput {
                 if result.isFinal {
                     session.endedNaturally = true
                     session.stop(endAudio: false)
-                    await finalize(with: text)
+                    finalize(with: text)
                 }
             }
 
@@ -302,23 +299,15 @@ enum SpeechInput {
                     captureBridge.stopAcceptingAudioFromCallback()
                 }
                 Task { @MainActor in
-                    await handleRecognition(result: result, error: error)
+                    handleRecognition(result: result, error: error)
                 }
             }
 
-            session.monitorTask = Task { @MainActor in
+            // Single orchestrator: poll silence in this task only (never cancelled).
+            Task { @MainActor in
                 while !state.resumed {
                     try? await Task.sleep(for: .milliseconds(100))
                     if state.resumed { break }
-
-                    let now = Date.timeIntervalSinceReferenceDate
-                    if session.startedAt > 0,
-                       now - session.startedAt >= noAudioWatchdogSeconds,
-                       !session.hasReceivedAudio {
-                        session.stop(endAudio: false)
-                        await finishCapture(with: .failure(SpeechInputError.microphoneNoAudio))
-                        break
-                    }
 
                     if let reason = session.pollStopReason() {
                         session.markShouldStop(reason: reason)
@@ -333,7 +322,7 @@ enum SpeechInput {
                             }
                         }
                         if !state.resumed {
-                            await finalize(with: session.lastPartial)
+                            finalize(with: session.lastPartial)
                         }
                         break
                     }

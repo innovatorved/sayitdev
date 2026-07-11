@@ -60,7 +60,7 @@ _dev() {
     '--code[Print only the first fenced code block of the response]' \
     '--speak[Text-to-speech]' \
     '--listen[Speech-to-text from microphone]' \
-    '--agent[Voice agent loop]' \
+    '--transcribe[Speech-to-text from an audio file]:file:_files' \
     '--input-device[Microphone device UID]:value:' \
     '--voice-name[TTS voice id or personal]:value:' \
     '--locale[STT locale]:value:' \

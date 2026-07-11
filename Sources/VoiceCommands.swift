@@ -1,5 +1,5 @@
 // ============================================================================
-// VoiceCommands.swift — CLI entry points for --speak / --listen / --agent
+// VoiceCommands.swift — CLI entry points for --speak / --listen / --transcribe
 // ============================================================================
 
 import Foundation
@@ -14,6 +14,28 @@ enum VoiceCommands {
             throw ExitSignal.usage
         }
         try await SpeechOutput.speak(trimmed, config: config)
+    }
+
+    static func runTranscribe(path: String, config: VoiceConfig) async throws {
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            printError("no audio file provided for --transcribe")
+            throw ExitSignal.usage
+        }
+        let url = URL(fileURLWithPath: (trimmed as NSString).expandingTildeInPath)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            printError("file not found: \(url.path)")
+            throw ExitSignal.usage
+        }
+        let result = try await SpeechInput.transcribeFile(url: url, config: config)
+        if config.timestamps, let segments = result.segments, !segments.isEmpty {
+            for seg in segments {
+                let stamp = String(format: "[%.2f-%.2f] ", seg.start, seg.end)
+                print(stamp + seg.text)
+            }
+        } else {
+            print(result.text)
+        }
     }
 
     static func runListen(config: VoiceConfig) async throws {

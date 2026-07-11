@@ -48,15 +48,20 @@ final class MicCaptureBridge: @unchecked Sendable {
         let flagsLock = self.flagsLock
         let acceptsAudio = self.acceptsAudio
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-            let stillAccepting = acceptsAudio.withLock { accepting -> Bool in
+            // Hold `acceptsAudio` across the append so it cannot interleave with
+            // `endAudio()` on the main thread. Appending after endAudio corrupts
+            // the recognition request's heap ("freed pointer was not the last
+            // allocation"), so the append and the endAudio must be mutually
+            // exclusive under the same lock.
+            let appended = acceptsAudio.withLock { accepting -> Bool in
                 guard accepting else { return false }
+                if buffer.frameLength > 0 {
+                    flagsLock.withLock { $0.audioBufferCount += 1 }
+                }
+                request.append(buffer)
                 return true
             }
-            guard stillAccepting else { return }
-            if buffer.frameLength > 0 {
-                flagsLock.withLock { $0.audioBufferCount += 1 }
-            }
-            request.append(buffer)
+            guard appended else { return }
             let rms = MicCaptureBridge.rmsLevel(from: buffer)
             let now = Date.timeIntervalSinceReferenceDate
             sessionLock.withLock { session in
@@ -114,6 +119,14 @@ final class MicCaptureBridge: @unchecked Sendable {
         acceptsAudio.withLock { $0 = false }
     }
 
+    /// End the recognition request once, only after the tap has stopped appending.
+    func endAudioOnce() {
+        acceptsAudio.withLock { accepting in
+            guard !accepting else { return }
+            request.endAudio()
+        }
+    }
+
     /// Realtime-safe; callable from the audio or speech recognition callback queue.
     nonisolated func stopAcceptingAudioFromCallback() {
         acceptsAudio.withLock { $0 = false }
@@ -149,7 +162,6 @@ final class MicCaptureSession {
     let recognizer: SFSpeechRecognizer
     let bridge: MicCaptureBridge
     var recognitionTask: SFSpeechRecognitionTask?
-    var monitorTask: Task<Void, Never>?
     /// Set when the recognizer delivered `.isFinal` (skip redundant `endAudio`).
     var endedNaturally = false
     private(set) var startedAt: TimeInterval = 0
@@ -171,56 +183,58 @@ final class MicCaptureSession {
     }
 
     func start() throws {
-        let format = input.outputFormat(forBus: 0)
+        // Wait briefly for the input to report a usable format before installing
+        // the tap. A fresh engine after teardown, or a Bluetooth input mid
+        // A2DP->HFP profile switch, can momentarily report a 0-channel/0-Hz
+        // format; installing a tap with that traps. When the format is already
+        // valid (the normal first-capture case) this loop does not run, so there
+        // is zero added latency on the working path. Never hard-fails on a slow
+        // warmup - the 8s initial-silence path handles a genuinely quiet mic.
+        var format = input.outputFormat(forBus: 0)
+        var waited = 0
+        while !MicListenPolicy.isValidCaptureFormat(
+            channelCount: format.channelCount,
+            sampleRate: format.sampleRate
+        ) && waited < 40 {
+            Thread.sleep(forTimeInterval: 0.05)
+            waited += 1
+            format = input.outputFormat(forBus: 0)
+        }
         guard MicListenPolicy.isValidCaptureFormat(
             channelCount: format.channelCount,
             sampleRate: format.sampleRate
         ) else {
-            voiceDebug("start rejected: invalid pre-start format ch=\(format.channelCount) sr=\(format.sampleRate)")
+            voiceDebug("no valid input format after \(waited * 50)ms ch=\(format.channelCount) sr=\(format.sampleRate)")
             throw SpeechInputError.noInputDevice
         }
         bridge.installTap(on: input, format: format)
         engine.prepare()
         try engine.start()
         startedAt = Date.timeIntervalSinceReferenceDate
-        let liveFormat = input.outputFormat(forBus: 0)
-        guard MicListenPolicy.isValidCaptureFormat(
-            channelCount: liveFormat.channelCount,
-            sampleRate: liveFormat.sampleRate
-        ) else {
-            voiceDebug("start rejected: invalid post-start format ch=\(liveFormat.channelCount) sr=\(liveFormat.sampleRate)")
-            stop(endAudio: false)
-            throw SpeechInputError.noInputDevice
-        }
-        voiceDebug("engine started ch=\(liveFormat.channelCount) sr=\(liveFormat.sampleRate) running=\(engine.isRunning)")
+        voiceDebug("engine started ch=\(format.channelCount) sr=\(format.sampleRate) running=\(engine.isRunning) waited=\(waited * 50)ms")
     }
 
     /// Idempotent mic graph teardown. Call on MainActor before resuming any async continuation.
     func stop(endAudio: Bool) {
         guard bridge.claimStop() else { return }
         bridge.stopAcceptingAudio()
-        if endAudio, !endedNaturally {
-            request.endAudio()
-        }
+        input.removeTap(onBus: 0)
         if engine.isRunning {
             engine.stop()
         }
-        input.removeTap(onBus: 0)
-        recognitionTask?.cancel()
-        recognitionTask = nil
+        if endAudio, !endedNaturally {
+            bridge.endAudioOnce()
+        }
+        // Never cancel the recognition task — cancel during an in-flight Speech
+        // callback corrupts the framework heap ("freed pointer was not the last
+        // allocation"). The task completes naturally after endAudio / isFinal.
         voiceDebug("engine stopped")
     }
 
-    /// Cancel monitor work and let CoreAudio release the input device before the next capture.
-    func finishTeardown() async {
-        monitorTask?.cancel()
-        if let monitorTask {
-            _ = await monitorTask.value
-        }
-        monitorTask = nil
+    /// Synchronous settle so CoreAudio releases the input before the next capture.
+    func finishTeardown() {
         recognitionTask = nil
-        // Brief settle so the next AVAudioEngine can acquire the default input (notably after TTS).
-        try? await Task.sleep(for: .milliseconds(50))
+        Thread.sleep(forTimeInterval: 0.25)
         voiceDebug("teardown complete")
     }
 

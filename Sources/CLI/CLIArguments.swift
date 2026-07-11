@@ -41,7 +41,7 @@ public struct CLIArguments: Sendable, Equatable {
         case release
         case speak
         case listen
-        case agent
+        case transcribe
 
         /// Whether this mode supports reading piped stdin as prompt input.
         /// Modes that accept a user prompt from the command line also accept
@@ -151,6 +151,8 @@ public struct CLIArguments: Sendable, Equatable {
     public var ttsRate: Float? = nil
     public var audioFormat: AudioOutputFormat? = nil
     public var timestamps: Bool = false
+    /// Audio file path for `--transcribe <path>`.
+    public var transcribePath: String? = nil
 
     // MARK: - Warnings
 
@@ -182,7 +184,7 @@ public struct CLIArguments: Sendable, Equatable {
         "--context-status",
         "-f", "--file",
         "--schema", "--messages", "--code",
-        "--speak", "--listen", "--agent",
+        "--speak", "--listen", "--transcribe",
         "--input-device", "--voice-name", "--locale", "--rate", "--audio-format", "--timestamps",
     ]
 
@@ -310,7 +312,7 @@ extension CLIArguments {
         // tuning flag was parsed and then silently ignored. Reject it loudly
         // rather than pretend it took effect. (.serve still honors --permissive,
         // --retry, --mcp, and the server flags - those are consumed.)
-        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen]
+        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen, .transcribe]
         if inputIgnoringModes.contains(mode) {
             var offender: String? = nil
             if !prompt.isEmpty { offender = "a positional prompt" }
@@ -325,21 +327,6 @@ extension CLIArguments {
             else if contextOutputReserve != nil { offender = "--context-output-reserve" }
             if let offender {
                 throw CLIParseError("--\(mode.rawValue) does not accept \(offender) - it would be ignored in this mode")
-            }
-        }
-        if mode == .agent {
-            var offender: String? = nil
-            if !prompt.isEmpty { offender = "a positional prompt" }
-            else if !fileContents.isEmpty || !fileAttachments.isEmpty { offender = "-f/--file content" }
-            else if temperature != nil { offender = "--temperature" }
-            else if topP != nil { offender = "--top-p" }
-            else if maxTokens != nil { offender = "--max-tokens" }
-            else if seed != nil { offender = "--seed" }
-            else if contextStrategy != nil { offender = "--context-strategy" }
-            else if contextMaxTurns != nil { offender = "--context-max-turns" }
-            else if contextOutputReserve != nil { offender = "--context-output-reserve" }
-            if let offender {
-                throw CLIParseError("--agent does not accept \(offender) - use -s/--system for a steering prompt")
             }
         }
         // --context-status is a --chat-only display toggle; it does nothing in
@@ -694,9 +681,12 @@ extension CLIArguments {
                 context.modeFlagsSeen.append("--listen")
                 result.mode = .listen
 
-            case "--agent":
-                context.modeFlagsSeen.append("--agent")
-                result.mode = .agent
+            case "--transcribe":
+                context.modeFlagsSeen.append("--transcribe")
+                result.mode = .transcribe
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--transcribe", "an audio file path") }
+                result.transcribePath = args[i]
 
             case "--input-device":
                 i += 1

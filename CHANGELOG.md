@@ -7,14 +7,22 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `dev --transcribe <file>` transcribes an existing audio file to stdout, fully on-device; honors `--locale`, `--timestamps`, and the other voice flags.
+
+### Changed
+
+- Removed the experimental `dev --agent` voice loop. `dev --listen` (speech-to-text) and `dev --transcribe` (file transcription) are the supported voice-input commands; the OpenAI-compatible `/v1/audio/*` server routes are unaffected.
+
 ### Fixed
 
-- `dev --agent` and `dev --listen` no longer abort with a heap "freed pointer" error: `MicCaptureSession` stops the mic graph before resuming the caller (`.isFinal` and silence paths), keeps `SFSpeechRecognizer` alive for the recognition task lifetime, and avoids cancelling the monitor during `Task.sleep`.
-- `make preflight` MCP test server startup now passes `--token` (required since MCP auth hardening).
+- `dev --listen` no longer aborts at end-of-speech with `freed pointer was not the last allocation`: mic teardown follows Apple order (`removeTap` before `engine.stop`), never cancels `SFSpeechRecognitionTask`, calls `endAudio()` at most once after the tap stops, and uses synchronous CoreAudio settle (no nested `Task.sleep` in teardown).
+- The mic tap appends to the recognition request under the same lock as stop/end, so a realtime callback cannot `append` after `endAudio()`.
+- First-capture reliability on Bluetooth mics: `MicCaptureSession.start()` waits (up to 2s, zero delay on the normal path) for a usable input format during A2DP→HFP profile switch.
+- `make preflight` MCP test server startup passes `--token` (required since MCP auth hardening).
 - `POST /v1/audio/speech` no longer hangs: server TTS render yields the MainActor instead of blocking `RunLoop.main`.
-- Integration tests pass Bearer auth to the standing MCP server on port 11435 (`post_chat_rotating_seeds`).
-- Integration test suite: the `--serve --mcp` custom-server fixtures now pass `--token` (required since MCP auth hardening), the remote-MCP tests send the Bearer token on the protected `/v1/models` and streaming `/v1/chat/completions` routes, `test_http_with_bearer_token_is_refused` targets the plaintext-credential guard via a port-80 public host instead of tripping the earlier SSRF host-block guard, and `test_code_oneliner_battery` rotates seeds to tolerate on-device model verbosity.
-- Second and later `dev --listen` / `dev --agent` turns no longer come up silent: mic graph teardown is fully awaited (`finishTeardown`), the engine stops before the tap is removed, capture format is validated on start, and a first-buffer watchdog surfaces a clear error when the tap receives no audio.
+- Integration tests pass Bearer auth to the MCP server on port 11435; remote-MCP and openapi conformance deps install via `scripts/ensure-integration-deps.sh`.
 
 ## [1.0.1] - 2026-07-11
 

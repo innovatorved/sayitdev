@@ -50,7 +50,7 @@ complete -c dev -l messages -r -F -d 'One-shot multi-turn from OpenAI messages J
 complete -c dev -l code -d 'Print only the first fenced code block of the response'
 complete -c dev -l speak -d 'Text-to-speech'
 complete -c dev -l listen -d 'Speech-to-text from microphone'
-complete -c dev -l agent -d 'Voice agent loop'
+complete -c dev -l transcribe -r -F -d 'Speech-to-text from an audio file'
 complete -c dev -l input-device -x -d 'Microphone device UID'
 complete -c dev -l voice-name -x -d 'TTS voice id or personal'
 complete -c dev -l locale -x -d 'STT locale'

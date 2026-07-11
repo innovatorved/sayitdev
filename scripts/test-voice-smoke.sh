@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test: dev --listen / dev --agent must not abort (exit 134) on silence teardown.
+# Smoke test: dev --listen must not abort (exit 134) on silence teardown.
 # Requires mic + speech permissions for the calling terminal (Terminal.app recommended).
 set -euo pipefail
 
@@ -97,7 +97,6 @@ run_sequential_listen_test() {
 
 run_silence_test "dev --listen" "$DEV" --listen || true
 run_sequential_listen_test || true
-run_silence_test "dev --agent" "$DEV" --agent || true
 
 if [[ "$failures" -gt 0 ]]; then
   echo ""

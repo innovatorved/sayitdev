@@ -304,7 +304,7 @@ let voiceConfig = VoiceConfig.resolve(from: parsed, env: ProcessInfo.processInfo
 
 // Check model availability for modes that need it.
 switch parsed.mode {
-case .modelInfo, .serve, .update, .countTokens, .speak, .listen:
+case .modelInfo, .serve, .update, .countTokens, .speak, .listen, .transcribe:
     break
 default:
     let availability = await TokenCounter.shared.availability
@@ -432,9 +432,12 @@ do {
             exit(exitUsageError)
         }
 
-    case .agent:
+    case .transcribe:
         do {
-            try await AgentLoop.run(systemPrompt: parsed.systemPrompt, options: sessionOpts, config: voiceConfig)
+            try await VoiceCommands.runTranscribe(path: parsed.transcribePath ?? "", config: voiceConfig)
+        } catch ExitSignal.usage {
+            await shutdownMCP()
+            exit(exitUsageError)
         } catch SpeechInputError.permissionDenied(let msg) {
             printError(msg)
             await shutdownMCP()
@@ -443,14 +446,10 @@ do {
             printError(SpeechInputError.assetInstallFailed.localizedDescription)
             await shutdownMCP()
             exit(SayItDevExitCodes.speechAssetFailed)
-        } catch SpeechInputError.noInputDevice {
-            printError(SpeechInputError.noInputDevice.localizedDescription)
+        } catch SpeechInputError.emptyAudio {
+            printError("No speech detected in audio")
             await shutdownMCP()
-            exit(SayItDevExitCodes.noInputDevice)
-        } catch SpeechInputError.microphoneNoAudio {
-            printError(SpeechInputError.microphoneNoAudio.localizedDescription)
-            await shutdownMCP()
-            exit(SayItDevExitCodes.noInputDevice)
+            exit(exitUsageError)
         }
 
     case .chat:

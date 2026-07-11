@@ -32,8 +32,8 @@ func runPrewarmDecisionTests() {
         try assertTrue(!PrewarmDecision.shouldPrewarm(mode: .benchmark))
     }
 
-    test("agent mode prewarms (voice loop uses the model)") {
-        try assertTrue(PrewarmDecision.shouldPrewarm(mode: .agent))
+    test("transcribe mode does not prewarm (STT only)") {
+        try assertTrue(!PrewarmDecision.shouldPrewarm(mode: .transcribe))
     }
 
     test("speak mode does not prewarm (TTS only)") {

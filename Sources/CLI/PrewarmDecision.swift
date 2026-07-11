@@ -22,11 +22,11 @@ public enum PrewarmDecision {
     /// - everything else never generates.
     public static func shouldPrewarm(mode: CLIArguments.Mode) -> Bool {
         switch mode {
-        case .single, .stream, .chat, .agent:
+        case .single, .stream, .chat:
             return true
         case .serve, .benchmark, .countTokens, .modelInfo, .update,
              .demos, .completions, .help, .version, .release,
-             .speak, .listen:
+             .speak, .listen, .transcribe:
             return false
         }
     }

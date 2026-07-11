@@ -1218,15 +1218,25 @@ func runCLIArgumentsTests() {
         try assertEqual(args.mode, .listen)
     }
 
-    test("--agent sets agent mode") {
-        let args = try CLIArguments.parse(["--agent"])
-        try assertEqual(args.mode, .agent)
+    test("--transcribe sets transcribe mode and captures path") {
+        let args = try CLIArguments.parse(["--transcribe", "/tmp/audio.wav"])
+        try assertEqual(args.mode, .transcribe)
+        try assertEqual(args.transcribePath, "/tmp/audio.wav")
     }
 
-    test("--agent accepts --system steering prompt") {
-        let args = try CLIArguments.parse(["--agent", "-s", "You are concise"])
-        try assertEqual(args.mode, .agent)
-        try assertEqual(args.systemPrompt, "You are concise")
+    test("--transcribe without a path throws") {
+        do {
+            _ = try CLIArguments.parse(["--transcribe"])
+            try assertTrue(false, "expected --transcribe to require a path")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--transcribe"))
+        }
+    }
+
+    test("--transcribe honors --timestamps") {
+        let args = try CLIArguments.parse(["--transcribe", "/tmp/a.wav", "--timestamps"])
+        try assertEqual(args.mode, .transcribe)
+        try assertTrue(args.timestamps)
     }
 
     test("voice env DEV_TTS_VOICE is applied") {

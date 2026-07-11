@@ -57,8 +57,7 @@ dev \- on-device voice and Apple Intelligence from the command line
 .RI [ options ]
 .br
 .B dev
-.B \-\-agent
-.RI [ options ]
+.BI \-\-transcribe " file"
 .br
 .B dev
 .B completions
@@ -105,11 +104,10 @@ With
 the transcript on standard output. Requires Microphone and Speech
 Recognition permissions.
 .TP
-.B voice agent
+.B file transcription
 With
-.BR \-\-agent ", run a loop: listen from the microphone, send the"
-transcript to the on-device model, and speak the answer. Press
-Ctrl-C to quit. Requires Apple Intelligence and speech permissions.
+.BR \-\-transcribe ", transcribe an existing audio file to standard"
+output, fully on-device. Requires Speech Recognition permission.
 .PP
 The model's context window is approximately 4096 tokens. Requests
 that exceed it are trimmed according to the active context strategy
@@ -342,7 +340,7 @@ Print detailed release and build information and exit.
 Voice options apply to
 .BR \-\-speak ", "
 .BR \-\-listen ", "
-.BR \-\-agent ", and the "
+.BR \-\-transcribe ", and the "
 .BR /v1/audio/* "
 server routes.
 .TP
@@ -357,9 +355,11 @@ is omitted, read from standard input. Does not call the LLM.
 Capture speech from the default microphone and print the transcript
 on standard output.
 .TP
-.B \-\-agent
-Run a voice Q&A loop: listen, ask the on-device model, speak the
-answer. Press Ctrl-C to quit.
+.BI \-\-transcribe " file"
+Transcribe an existing audio file and print the transcript on standard
+output. With
+.BR \-\-timestamps ", "
+prefix each segment with its time range. Runs fully on-device.
 .TP
 .BI \-\-input-device " uid"
 Microphone device UID. When omitted, the system default input is used.
@@ -565,8 +565,7 @@ Default server TTS file format:
 .TP
 .B DEV_AUDIO_INPUT
 Default microphone device UID for
-.BR \-\-listen " and "
-.BR \-\-agent .
+.BR \-\-listen .
 .TP
 .B NO_COLOR
 When set to any non-empty value, disables ANSI color output. See
@@ -712,11 +711,11 @@ dev --listen
 .fi
 .RE
 .PP
-Run a voice Q&A agent (requires Apple Intelligence):
+Transcribe an existing audio file:
 .PP
 .RS 4
 .nf
-dev --agent
+dev --transcribe recording.wav
 .fi
 .RE
 .PP

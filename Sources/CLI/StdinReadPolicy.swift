@@ -14,7 +14,7 @@ public enum StdinReadPolicy {
             return promptEmpty
         case .single, .stream, .countTokens:
             return true
-        case .serve, .benchmark, .modelInfo, .update, .listen, .agent,
+        case .serve, .benchmark, .modelInfo, .update, .listen, .transcribe,
              .chat, .help, .version, .release, .demos, .completions:
             return false
         }
