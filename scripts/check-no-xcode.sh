@@ -1,5 +1,5 @@
 #!/bin/bash
-# Verify apfel builds and tests with Command Line Tools only (no Xcode).
+# Verify dev builds and tests with Command Line Tools only (no Xcode).
 
 PASS=0
 FAIL=0
@@ -14,7 +14,7 @@ check() {
     fi
 }
 
-echo "Checking apfel builds without Xcode..."
+echo "Checking dev builds without Xcode..."
 echo ""
 
 DEV_DIR=$(xcode-select -p 2>/dev/null || echo "none")
@@ -33,7 +33,7 @@ check "swift available" "swift --version"
 check "make available" "make --version"
 check "swift build (debug)" "swift build"
 check "swift build (release)" "swift build -c release"
-check "unit tests pass" "swift run apfel-tests"
+check "unit tests pass" "swift run dev-tests"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

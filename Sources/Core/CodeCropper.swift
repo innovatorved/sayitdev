@@ -1,6 +1,6 @@
 // ============================================================================
 // CodeCropper.swift — extract the first fenced code block from model output
-// Part of ApfelCore — pure Swift, no external dependencies
+// Part of SayItDevCore — pure Swift, no external dependencies
 //
 // Backs the CLI `--code` flag (#373): Layer 1 is `steeringDirective` (asks the
 // model for exactly one fenced block), Layer 2 is `extract` (guarantees the

@@ -1,10 +1,10 @@
-# apfel routines - operator guide
+# dev routines - operator guide
 
-This directory holds the **prompt templates** for Anthropic Claude Code routines that act on the apfel repo. Each routine's live configuration lives in [claude.ai/code/routines](https://claude.ai/code/routines) against Franz's Max 20x account, but the prompt text is version-controlled here so any change goes through the same review process as code.
+This directory holds the **prompt templates** for Anthropic Claude Code routines that act on the dev repo. Each routine's live configuration lives in [claude.ai/code/routines](https://claude.ai/code/routines) against Franz's Max 20x account, but the prompt text is version-controlled here so any change goes through the same review process as code.
 
 ## What routines are (and are not)
 
-**Are:** scheduled / webhook-triggered Claude Code agents on Anthropic's Linux cloud, with access to the apfel repo via a Claude GitHub App install.
+**Are:** scheduled / webhook-triggered Claude Code agents on Anthropic's Linux cloud, with access to the dev repo via a Claude GitHub App install.
 
 **Are not:** replacements for CI, for `make preflight`, or for Franz's merge/release authority. They cannot run FoundationModels code, cannot do functional tests, cannot merge PRs, cannot cut releases, cannot touch any distribution channel. See [docs/routines.md](../../docs/routines.md) for the user-facing version of this line.
 
@@ -29,7 +29,7 @@ If you update `_golden-goal.md`, you must re-paste into **every** live routine. 
 ## Setting up a new routine
 
 1. Confirm the routine's prompt is committed to this directory and reviewed (same bar as code).
-2. Ensure the Claude GitHub App is installed on `Arthur-Ficial/apfel` **only**, with minimum permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). Verify it is NOT on `Arthur-Ficial/homebrew-tap` or any release-side repo.
+2. Ensure the Claude GitHub App is installed on `__UPSTREAM_DEV_REPO__` **only**, with minimum permissions: Contents (Read), Issues (Read + Write), Pull requests (Read + Write). Verify it is NOT on `Arthur-Ficial/homebrew-tap` or any release-side repo.
 3. Go to [claude.ai/code/routines](https://claude.ai/code/routines) → New routine.
 4. Name it exactly as the filename minus extension (`02-pr-auto-review`).
 5. Trigger: the GitHub trigger described at the top of the routine file.
@@ -43,10 +43,10 @@ If you update `_golden-goal.md`, you must re-paste into **every** live routine. 
 Three ways, in descending preference:
 
 1. **Disable in claude.ai** - instant, reversible. Preferred.
-2. **Uninstall the Claude GitHub App from apfel** - revokes access entirely. Nuclear option.
+2. **Uninstall the Claude GitHub App from dev** - revokes access entirely. Nuclear option.
 3. **Revoke the fine-grained PATs** related to the routine - same effect.
 
-After disabling a misbehaving routine, file an issue on `Arthur-Ficial/apfel` describing: what triggered the run, what the routine did wrong, the run ID from claude.ai, and the prompt change needed to prevent recurrence.
+After disabling a misbehaving routine, file an issue on `__UPSTREAM_DEV_REPO__` describing: what triggered the run, what the routine did wrong, the run ID from claude.ai, and the prompt change needed to prevent recurrence.
 
 ## Tuning a routine's prompt
 
@@ -62,11 +62,11 @@ Never edit the live prompt in claude.ai without also updating this directory. Dr
 
 - claude.ai → Code → Routines → click routine → Run history
 - Each run has a session URL; clicking it shows the full transcript
-- Cross-reference routine runs against PR review IDs via `gh api repos/Arthur-Ficial/apfel/pulls/<n>/reviews`
+- Cross-reference routine runs against PR review IDs via `gh api repos/__UPSTREAM_DEV_REPO__/pulls/<n>/reviews`
 
 ## Budget
 
-Max 20x plan: 15 routine runs per day. Webhook routines only burn budget when events fire. Realistic daily load for apfel based on current issue/PR volume: ~1-5 runs. We are comfortably under the cap.
+Max 20x plan: 15 routine runs per day. Webhook routines only burn budget when events fire. Realistic daily load for dev based on current issue/PR volume: ~1-5 runs. We are comfortably under the cap.
 
 ## Current phase rollout
 

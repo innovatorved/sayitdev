@@ -14,7 +14,7 @@ When pasting this prompt into claude.ai, prepend `_golden-goal.md` verbatim, the
 
 ## Your job
 
-Decide whether to open / comment / skip a `dist-sync` issue on `Arthur-Ficial/apfel`, based on the deterministic output of `scripts/dist-watch.sh`.
+Decide whether to open / comment / skip a `dist-sync` issue on `__UPSTREAM_DEV_REPO__`, based on the deterministic output of `scripts/dist-watch.sh`.
 
 **You do not check channel versions yourself.** The script does that. You do not look up in-flight bump PRs yourself. The script does that. You do not write the issue body. The script does that. Your only job is to call `gh` correctly based on the script's three output modes.
 
@@ -47,7 +47,7 @@ Parse the issue number from the line (`STILL: dist-sync issue #N is still open .
 ```bash
 issue_num=$(echo "$body" | sed -nE 's/STILL: dist-sync issue #([0-9]+).*/\1/p')
 today=$(date -u +%Y-%m-%d)
-gh issue comment "$issue_num" --repo Arthur-Ficial/apfel --body "Still not in sync as of ${today}. No action taken on my end.
+gh issue comment "$issue_num" --repo __UPSTREAM_DEV_REPO__ --body "Still not in sync as of ${today}. No action taken on my end.
 
 Cheers, Arthur"
 ```
@@ -57,11 +57,11 @@ Cheers, Arthur"
 Real lag, no existing tracker issue. **Open one new issue.** Title format is fixed; body comes verbatim from the script.
 
 ```bash
-canonical=$(gh release view --repo Arthur-Ficial/apfel --json tagName --jq '.tagName | sub("^v"; "")')
+canonical=$(gh release view --repo __UPSTREAM_DEV_REPO__ --json tagName --jq '.tagName | sub("^v"; "")')
 hours=$(echo "$body" | grep -oE '~[0-9]+h' | head -1 | tr -d '~h')
 channels=$(echo "$body" | head -1 | sed -E 's/.*looks like (.*) trailing.*/\1/')
 
-gh issue create --repo Arthur-Ficial/apfel \
+gh issue create --repo __UPSTREAM_DEV_REPO__ \
   --title "dist-sync: ${channels} behind v${canonical} by ~${hours}h" \
   --body "$body"
 ```

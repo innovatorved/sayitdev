@@ -3,16 +3,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "ApfelCoreConsumer",
+    name: "SayItDevCoreConsumer",
     platforms: [.macOS(.v26)],
     dependencies: [
-        .package(name: "apfel", path: "../../../../"),
+        .package(name: "sayitdev", path: "../../../../"),
     ],
     targets: [
         .executableTarget(
-            name: "apfelcore-consumer",
+            name: "sayitdevcore-consumer",
             dependencies: [
-                .product(name: "ApfelCore", package: "apfel"),
+                .product(name: "SayItDevCore", package: "dev"),
             ]
         )
     ]

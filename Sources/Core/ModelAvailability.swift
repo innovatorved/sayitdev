@@ -2,8 +2,8 @@
 // ModelAvailability.swift - Pure enum mirroring the shape of
 // SystemLanguageModel.Availability from FoundationModels.
 //
-// Living in ApfelCore (no FoundationModels import) so it's unit-testable
-// from apfel-tests and reusable. TokenCounter.swift in the main target
+// Living in SayItDevCore (no FoundationModels import) so it's unit-testable
+// from dev-tests and reusable. TokenCounter.swift in the main target
 // adapts the real Apple enum into this type.
 // ============================================================================
 
@@ -39,7 +39,7 @@ public enum ModelAvailability: Sendable, Equatable, Hashable, CustomStringConver
         }
     }
 
-    /// Multi-line actionable remediation text. Used by `apfel --model-info`
+    /// Multi-line actionable remediation text. Used by `dev --model-info`
     /// and the runtime "model unavailable" error to point the user at the
     /// exact fix for their situation.
     public var remediation: String {
@@ -69,7 +69,7 @@ public enum ModelAvailability: Sendable, Equatable, Hashable, CustomStringConver
 
                 Apple Intelligence requires an Apple Silicon Mac (M1 or later).
                 Intel Macs are not supported - this is a hard Apple requirement,
-                not an apfel limitation.
+                not an dev limitation.
 
                 Details: https://support.apple.com/en-us/121115
                 """
@@ -93,13 +93,12 @@ public enum ModelAvailability: Sendable, Equatable, Hashable, CustomStringConver
             return """
                 The Apple Intelligence model reported an unknown unavailable
                 reason. Apple may have added a new case that this version of
-                apfel does not recognize.
+                dev does not recognize.
 
                 Try:
-                  - Updating apfel: brew upgrade apfel
                   - Checking System Settings > Apple Intelligence & Siri
                   - Filing an issue at
-                    https://github.com/Arthur-Ficial/apfel/issues
+                    https://github.com/innovatorved/sayitdev/issues
                 """
         }
     }

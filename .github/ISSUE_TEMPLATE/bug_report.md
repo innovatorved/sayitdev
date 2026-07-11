@@ -17,9 +17,9 @@ labels: bug
 
 **Environment**
 - macOS version: (`sw_vers`)
-- apfel version: (`apfel --version`)
+- dev version: (`dev --version`)
 - Install method: Homebrew / built from source
-- `apfel --model-info` output:
+- `dev --model-info` output:
 
 ```
 paste here

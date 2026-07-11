@@ -1,6 +1,6 @@
 // ============================================================================
 // Retry.swift — Exponential backoff retry for transient model errors
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
@@ -37,7 +37,7 @@ public func withRetry<T: Sendable>(
 
             // Exponential backoff
             let delay = attempt < delays.count ? delays[attempt] : delays.last ?? 2.0
-            let msg = ApfelError.classify(error).cliLabel
+            let msg = SayItDevError.classify(error).cliLabel
             FileHandle.standardError.write(Data("  retry \(attempt + 1)/\(maxRetries) after \(delay)s: \(msg)\n".utf8))
             try await Task.sleep(for: .seconds(delay))
         }

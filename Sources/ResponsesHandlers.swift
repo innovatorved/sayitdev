@@ -1,7 +1,7 @@
 // ============================================================================
 // ResponsesHandlers.swift - POST /v1/responses (#365)
 // A translation layer over the chat pipeline: decode ResponsesRequest
-// (ApfelCore), validate (honest 501s), map to chat internals, run the same
+// (SayItDevCore), validate (honest 501s), map to chat internals, run the same
 // ContextManager/collectStream/streamResponse primitives the chat handler
 // uses, and re-encode as a Responses envelope / named-SSE event stream.
 //
@@ -17,7 +17,7 @@ import Foundation
 import FoundationModels
 import Hummingbird
 import HTTPTypes
-import ApfelCore
+import SayItDevCore
 
 // MARK: - Echoed request fields
 
@@ -178,7 +178,7 @@ func handleResponses(_ request: Request, context: some RequestContext) async thr
             messages: messages, tools: tools, options: sessionOpts,
             jsonMode: jsonMode, toolChoice: responsesRequest.tool_choice)
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         return responsesFailure(
             status: .init(code: classified.httpStatusCode),
             message: classified.openAIMessage,
@@ -263,7 +263,7 @@ private func responsesNonStreamingResponse(
             }
         }
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         if case .refusal(let explanation) = classified {
             // Wire parity with chat: a refusal is a 200 with a refusal part.
             let completionTokens = await TokenCounter.shared.count(explanation)
@@ -430,7 +430,7 @@ private func responsesStreamingResponse(
                 streamCancelled = true
                 await eventBox.append("responses stream cancelled by client")
             } catch {
-                let classified = ApfelError.classify(error)
+                let classified = SayItDevError.classify(error)
                 if case .truncated(let truncatedContent) = StreamErrorResolver.resolve(prev: prev, error: classified) {
                     // Output-side overflow with content already streamed is a
                     // graceful incomplete, mirroring the chat path.

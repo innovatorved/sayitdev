@@ -1,4 +1,4 @@
-"""Smoke-test the runnable ApfelCore example targets.
+"""Smoke-test the runnable SayItDevCore example targets.
 
 These examples back the public Swift package docs. If they stop compiling
 or their basic output changes unexpectedly, we want CI to fail loudly.
@@ -21,7 +21,7 @@ EXAMPLES = [
     (
         "apfelcore-openai-types-example",
         [
-            "model=apple-foundationmodel",
+            "model=sayitdev-on-device",
             "messages=2",
         ],
     ),

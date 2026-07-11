@@ -1,11 +1,11 @@
 """
-apfel Integration Tests - Server request-validation and error-protocol wire format.
+dev Integration Tests - Server request-validation and error-protocol wire format.
 
 Covers the audit fixes for request validation and OpenAI error-protocol parity.
 These validation paths run BEFORE the on-device model is touched, so they are
 model-free and run in CI as well as locally.
 
-Requires: apfel --serve running on localhost:11434
+Requires: dev --serve running on localhost:11434
 Run: python3 -m pytest Tests/integration/server_validation_test.py -v
 """
 
@@ -13,7 +13,7 @@ import httpx
 import pytest
 
 BASE_URL = "http://localhost:11434"
-MODEL = "apple-foundationmodel"
+MODEL = "sayitdev-on-device"
 LOCAL_ORIGIN = "http://localhost:5173"
 
 
@@ -240,56 +240,56 @@ def test_responses_unknown_model_returns_404_model_not_found():
 
 
 def test_responses_missing_input_returns_400():
-    r = _responses({"model": "apple-foundationmodel"})
+    r = _responses({"model": "sayitdev-on-device"})
     assert r.status_code == 400
     assert "input" in r.json()["error"]["message"]
 
 
 def test_responses_previous_response_id_returns_501_stateless():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi",
+    r = _responses({"model": "sayitdev-on-device", "input": "hi",
                     "previous_response_id": "resp_123"})
     assert r.status_code == 501
     assert "stateless" in r.json()["error"]["message"]
 
 
 def test_responses_background_returns_501():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi", "background": True})
+    r = _responses({"model": "sayitdev-on-device", "input": "hi", "background": True})
     assert r.status_code == 501
 
 
 def test_responses_store_true_returns_501():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi", "store": True})
+    r = _responses({"model": "sayitdev-on-device", "input": "hi", "store": True})
     assert r.status_code == 501
     assert "stateless" in r.json()["error"]["message"]
 
 
 def test_responses_reasoning_returns_501():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi",
+    r = _responses({"model": "sayitdev-on-device", "input": "hi",
                     "reasoning": {"effort": "low"}})
     assert r.status_code == 501
 
 
 def test_responses_hosted_tool_returns_501():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi",
+    r = _responses({"model": "sayitdev-on-device", "input": "hi",
                     "tools": [{"type": "web_search"}]})
     assert r.status_code == 501
     assert "web_search" in r.json()["error"]["message"]
 
 
 def test_responses_tools_with_stream_returns_501():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi", "stream": True,
+    r = _responses({"model": "sayitdev-on-device", "input": "hi", "stream": True,
                     "tools": [{"type": "function", "name": "add"}]})
     assert r.status_code == 501
 
 
 def test_responses_out_of_range_temperature_returns_400():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi", "temperature": 3})
+    r = _responses({"model": "sayitdev-on-device", "input": "hi", "temperature": 3})
     assert r.status_code == 400
     assert "temperature" in r.json()["error"]["message"]
 
 
 def test_responses_error_object_has_null_param_and_code():
-    r = _responses({"model": "apple-foundationmodel", "input": "hi", "background": True})
+    r = _responses({"model": "sayitdev-on-device", "input": "hi", "background": True})
     err = r.json()["error"]
     assert "param" in err and err["param"] is None
     assert "code" in err and err["code"] is None

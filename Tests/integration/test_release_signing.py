@@ -1,5 +1,5 @@
 """
-apfel Integration Tests - release signing / notarization wiring (static).
+dev Integration Tests - release signing / notarization wiring (static).
 
 #226: the shipped tarball was only ad-hoc signed (flags=adhoc, no
 TeamIdentifier) and no checksum was published as a release asset, while
@@ -9,7 +9,7 @@ release plumbing now:
 - signs the binary with the Developer ID identity under a hardened runtime
   (`--options runtime`) before tarring,
 - notarizes the signed binary as a hard gate on the release path,
-- publishes an `apfel-<v>-arm64-macos.tar.gz.sha256` checksum asset,
+- publishes an `dev-<v>-arm64-macos.tar.gz.sha256` checksum asset,
 - verifies the checksum and the Developer ID TeamIdentifier post-release,
 - and that the docs no longer falsely claim the plain tarball is signed.
 

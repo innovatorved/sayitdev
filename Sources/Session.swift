@@ -1,12 +1,12 @@
 // ============================================================================
 // Session.swift — FoundationModels session management and streaming
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // SHARED by both CLI and server modes.
 // ============================================================================
 
 import FoundationModels
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 // MARK: - Session Options
 
@@ -438,7 +438,7 @@ func executeMCPToolCallsForCLI(
 }
 
 /// Remove a `{"tool_calls": ...}` JSON block from model output so it never
-/// leaks to the user as raw protocol text. Implementation lives in ApfelCore
+/// leaks to the user as raw protocol text. Implementation lives in SayItDevCore
 /// (`ToolCallHandler.stripToolCallJSON`) so it is unit-testable (#358).
 func stripToolCallJSON(from text: String) -> String {
     ToolCallHandler.stripToolCallJSON(from: text)
@@ -604,7 +604,7 @@ func collectStream(
         )
         return StreamOutcome(content: prev, finishReason: reason)
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         switch StreamErrorResolver.resolve(prev: prev, error: classified) {
         case .truncated(let content):
             return StreamOutcome(content: content, finishReason: .length)

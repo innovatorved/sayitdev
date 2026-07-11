@@ -1,4 +1,4 @@
-"""Integration tests for `apfel -f` and piped-file extraction via the lesbar package.
+"""Integration tests for `dev -f` and piped-file extraction via the lesbar package.
 
 Exercises every extraction path against REAL public-domain fixtures (see
 fixtures/lesbar/README.md): a text-layer PDF (US IRS W-9), a photo WITH text
@@ -16,7 +16,7 @@ import subprocess
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "lesbar"
 
 PLAQUE = FIXTURES / "apollo11_plaque.jpg"   # photo WITH text (NASA, public domain)
@@ -27,14 +27,14 @@ MONA = FIXTURES / "wikimedia_mona_lisa.jpg"   # painting WITHOUT text (Wikimedia
 DECL = FIXTURES / "wikimedia_declaration.jpg" # document scan WITH text (Wikimedia, public domain)
 TEXT_SAMPLE = FIXTURES / "text_sample.png"    # authored PD text image, converted per-format at runtime
 
-# Image formats apfel must accept (detected by content, not extension).
+# Image formats dev must accept (detected by content, not extension).
 FORMATS = ["png", "jpeg", "tiff", "gif", "bmp", "heic"]
 
 TOTAL_RE = re.compile(r"(\d+)/\d+ tokens")
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 # Skip the whole module (rather than error) if the release binary is not built.
-pytestmark = pytest.mark.skipif(not BINARY.exists(), reason=f"apfel release binary not built at {BINARY}")
+pytestmark = pytest.mark.skipif(not BINARY.exists(), reason=f"dev release binary not built at {BINARY}")
 
 
 def _tokens_from_output(text: str) -> int:
@@ -44,7 +44,7 @@ def _tokens_from_output(text: str) -> int:
 
 
 def count_tokens_file(path: pathlib.Path) -> int:
-    """Run `apfel -f <path> --count-tokens` and return the total token count.
+    """Run `dev -f <path> --count-tokens` and return the total token count.
 
     Raises AssertionError (failing the test) if extraction exits non-zero.
     """
@@ -57,7 +57,7 @@ def count_tokens_file(path: pathlib.Path) -> int:
 
 
 def count_tokens_piped(path: pathlib.Path) -> int:
-    """Run `cat <path> | apfel --count-tokens` and return the total token count."""
+    """Run `cat <path> | dev --count-tokens` and return the total token count."""
     data = path.read_bytes()
     r = subprocess.run(
         [str(BINARY), "--count-tokens"],
@@ -72,9 +72,9 @@ from conftest import require_model  # noqa: E402,F401
 
 
 def debug_extract(path: pathlib.Path) -> str:
-    """Return exactly what apfel puts to the API for a file.
+    """Return exactly what dev puts to the API for a file.
 
-    Runs `apfel -f <path> --count-tokens --debug`, which is model-free: `--debug` prints
+    Runs `dev -f <path> --count-tokens --debug`, which is model-free: `--debug` prints
     the framed extraction (and full prompt) to stderr, `--count-tokens` avoids the model.
     This is the "see what we actually send" path, used to assert extracted content
     deterministically without depending on model output.

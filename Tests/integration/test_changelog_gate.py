@@ -1,5 +1,5 @@
 """
-apfel Integration Tests -- CHANGELOG [Unreleased] merge gate
+dev Integration Tests -- CHANGELOG [Unreleased] merge gate
 
 Model-free: spins throwaway git repos and drives scripts/check-changelog.sh.
 

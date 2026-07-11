@@ -1,6 +1,6 @@
 // ============================================================================
 // JSONFenceStripper.swift — Remove Markdown code fences around JSON output
-// Part of ApfelCore — pure Swift, no external dependencies
+// Part of SayItDevCore — pure Swift, no external dependencies
 // ============================================================================
 
 import Foundation

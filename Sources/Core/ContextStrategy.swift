@@ -1,6 +1,6 @@
 // ============================================================================
 // ContextStrategy.swift — Configurable context window management
-// Part of ApfelCore — pure data types, no FoundationModels dependency
+// Part of SayItDevCore — pure data types, no FoundationModels dependency
 // ============================================================================
 
 /// Strategy for trimming conversation history when approaching the context limit.

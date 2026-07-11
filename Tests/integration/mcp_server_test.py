@@ -1,12 +1,12 @@
 """
-apfel Integration Tests -- MCP auto-execution in server mode
+dev Integration Tests -- MCP auto-execution in server mode
 
-Validates that when apfel --serve --mcp <server> receives a chat completion
+Validates that when dev --serve --mcp <server> receives a chat completion
 request WITHOUT client-provided tools, it auto-executes MCP tool calls and
 returns the final text answer (not raw tool_calls).
 
 Requires: pip install pytest httpx
-Requires: apfel --serve --mcp mcp/calculator/server.py running on localhost:11435
+Requires: dev --serve --mcp mcp/calculator/server.py running on localhost:11435
 
 Run: python3 -m pytest Tests/integration/mcp_server_test.py -v
 
@@ -35,10 +35,10 @@ pytestmark = pytest.mark.model
 
 BASE_URL = "http://localhost:11435"
 API_URL = f"{BASE_URL}/v1"
-MODEL = "apple-foundationmodel"
+MODEL = "sayitdev-on-device"
 TIMEOUT = 60
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 FIXTURES = ROOT / "Tests" / "integration" / "fixtures"
 
 
@@ -130,7 +130,7 @@ def running_custom_mcp_server(mcp_script):
 
 @contextlib.contextmanager
 def running_mcp_servers(mcp_scripts):
-    """Start apfel --serve with several --mcp servers; yield (api_url, read_log).
+    """Start dev --serve with several --mcp servers; yield (api_url, read_log).
 
     read_log() returns the captured stdout+stderr so a test can assert on
     startup diagnostics (e.g. the tool-name collision warning, #239).
@@ -162,11 +162,11 @@ def running_mcp_servers(mcp_scripts):
 
 @contextlib.contextmanager
 def running_mcp_server_with_env(mcp_script, extra_env):
-    """Start apfel --serve --mcp <script> with extra env vars; yield read_log.
+    """Start dev --serve --mcp <script> with extra env vars; yield read_log.
 
     Used to prove the local MCP subprocess env is scrubbed (#229): the parent
-    apfel process is given secrets, and the fixture reflects what it could see
-    through its tool names, which apfel prints on the startup banner.
+    dev process is given secrets, and the fixture reflects what it could see
+    through its tool names, which dev prints on the startup banner.
     """
     import os as _os
 
@@ -201,16 +201,16 @@ def running_mcp_server_with_env(mcp_script, extra_env):
 
 
 def test_local_mcp_subprocess_env_is_scrubbed():
-    """Local MCP scripts must not inherit apfel/secret env vars (#229).
+    """Local MCP scripts must not inherit dev/secret env vars (#229).
 
     Model-free: only exercises initialize + tools/list. The fixture names a
     ``leaked_*`` tool for every canary secret it can still see and a ``saw_*``
-    tool for every allowlisted passthrough var; apfel prints the tool names on
+    tool for every allowlisted passthrough var; dev prints the tool names on
     startup, so the banner reveals exactly what crossed the boundary.
     """
     secrets = {
-        "APFEL_TOKEN": "server-secret-xyz",
-        "APFEL_MCP_TOKEN": "mcp-secret-xyz",
+        "DEV_TOKEN": "server-secret-xyz",
+        "DEV_MCP_TOKEN": "mcp-secret-xyz",
         "TEST_CANARY_SECRET": "leak-secret",
         "TEST_CANARY_API_KEY": "leak-key",
         "TEST_CANARY_TOKEN": "leak-token",
@@ -454,7 +454,7 @@ def test_mcp_tool_iserror_is_fed_back_to_model_not_500():
     the model to recover, not aborted with HTTP 500 (#220).
 
     Per the MCP spec, execution errors "should be reported inside the result
-    object ... so the LLM can see it and act". Previously apfel turned isError
+    object ... so the LLM can see it and act". Previously dev turned isError
     into a thrown MCPError.serverError -> HTTP 500. Now the request completes
     normally (200) with a natural-language answer; only transport/protocol
     failures (timeout, dead pipe) still surface as 500 (covered by the timeout
@@ -503,11 +503,11 @@ def test_mcp_tool_timeout_returns_structured_error():
 
 
 def test_mcp_crashed_server_does_not_kill_apfel():
-    """A crashed MCP server must not take down the whole apfel process (#215).
+    """A crashed MCP server must not take down the whole dev process (#215).
 
     crashing_mcp_server.py answers the handshake (so the tool registers and the
     server is healthy) then exits before any tools/call. When the model then
-    calls the tool, apfel writes to a pipe whose read end is closed. Before the
+    calls the tool, dev writes to a pipe whose read end is closed. Before the
     fix that raised SIGPIPE and killed the whole --serve process (exit 141);
     now the write fails with a recoverable MCPError and the HTTP server stays up.
     """
@@ -530,7 +530,7 @@ def test_mcp_crashed_server_does_not_kill_apfel():
         assert data["error"]["type"] == "server_error"
         # The server must still be alive and serving after the crashed-pipe write.
         health = httpx.get(f"{base_url}/health", timeout=5)
-        assert health.status_code == 200, "apfel server died after writing to a crashed MCP server (SIGPIPE)"
+        assert health.status_code == 200, "dev server died after writing to a crashed MCP server (SIGPIPE)"
         assert health.json()["model_available"] is True
 
 
@@ -608,7 +608,7 @@ def test_mcp_timed_out_connection_is_deregistered():
     """A timed-out MCP connection must be deregistered, not left permanently dead (#216).
 
     hanging_mcp_server.py sleeps forever on tools/call. The first call times out
-    (~5s) and apfel tears the connection down. Before the fix the tool stayed in
+    (~5s) and dev tears the connection down. Before the fix the tool stayed in
     the routing tables, so a second call routed to the dead connection and failed
     with "MCP server process is not running". After the fix the connection is
     deregistered: the tool is removed from allTools(), the model is no longer
@@ -651,7 +651,7 @@ def test_mcp_noisy_server_handshake_survives_notifications():
 
     noisy_mcp_server.py emits notifications/message lines and a ping request
     before every response (what FastMCP's ctx.info() does). Before the id
-    correlation fix, apfel parsed the first notification as the initialize
+    correlation fix, dev parsed the first notification as the initialize
     response, MCP startup failed, and the server never became healthy. This
     test is model-free: it only exercises initialize + tools/list.
     """
@@ -659,7 +659,7 @@ def test_mcp_noisy_server_handshake_survives_notifications():
         base_url = api_url.rsplit("/", 1)[0]
         health = httpx.get(f"{base_url}/health", timeout=5)
         assert health.status_code == 200, \
-            "apfel did not come up with a noisy MCP server - id correlation broken?"
+            "dev did not come up with a noisy MCP server - id correlation broken?"
 
 
 def test_mcp_noisy_server_tool_call_succeeds():
@@ -884,7 +884,7 @@ def test_mcp_invalid_model_rejected():
     assert resp.status_code == 404
     data = resp.json()
     assert "does not exist" in data["error"]["message"]
-    assert "apple-foundationmodel" in data["error"]["message"]
+    assert "sayitdev-on-device" in data["error"]["message"]
     assert data["error"]["code"] == "model_not_found"
     assert data["error"]["param"] == "model"
 

@@ -1,4 +1,4 @@
-# Work log: apfel --count-tokens
+# Work log: dev --count-tokens
 
 **Branch:** feat/count-tokens
 **Design spec:** docs/plans/2026-06-21-count-tokens-design.md
@@ -6,7 +6,7 @@
 
 ## Progress checklist
 - [x] Wave 0: branch + baseline tests
-- [x] Wave 1: TokenBudgetReport (ApfelCore)
+- [x] Wave 1: TokenBudgetReport (SayItDevCore)
 - [x] Wave 2: CLI parsing
 - [x] Wave 3: execution wiring
 - [x] Wave 4: user-facing docs
@@ -17,16 +17,16 @@
 
 ### 2026-06-22 — Implementation complete
 **Done:**
-- `TokenBudgetReport` + `TokenBudgetTests` (ApfelCore)
+- `TokenBudgetReport` + `TokenBudgetTests` (SayItDevCore)
 - `Mode.countTokens`, `--strict`, `fileAttachments` in CLIArguments
 - `countTokens()` in CLI.swift; main.swift dispatch + availability exemption
 - `TokenCounter` fast chars/4 path when model unavailable
 - Approximate path skips `LanguageModelSession` when AI unavailable
-- Docs: cli-reference, tool-calling-guide, README, man/apfel.1.in
+- Docs: cli-reference, tool-calling-guide, README, man/dev.1.in
 - Integration tests: help, JSON shape, strict exit
 
 **Tests run:**
-- `swift run apfel-tests` → pass (687 tests)
+- `swift run dev-tests` → pass (687 tests)
 - `swift build -c release` → pass
 - `make generate-man-page` → pass
 - Release smoke test on Mac with Apple Intelligence: first `tokenCount` call can be slow (model load)
@@ -54,7 +54,7 @@
 | docs/cli-reference.md | done | |
 | docs/tool-calling-guide.md | done | |
 | README.md | done | one example |
-| man/apfel.1.in | done | |
+| man/dev.1.in | done | |
 | docs/plans/* | done | spec + worklog |
 
 ## PR readiness

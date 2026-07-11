@@ -5,9 +5,9 @@
 
 set -euo pipefail
 
-APFEL="${APFEL_BINARY:-apfel}"
+APFEL="${DEV_BINARY:-dev}"
 OUT="docs/PERMISSIVE.md"
-VERSION=$("$APFEL" --version 2>&1 | sed 's/apfel //')
+VERSION=$("$APFEL" --version 2>&1 | sed 's/dev //')
 DATE=$(date +%Y-%m-%d)
 OS=$(sw_vers -productVersion 2>/dev/null || echo "unknown")
 CHIP=$(uname -m)

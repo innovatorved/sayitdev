@@ -3,7 +3,7 @@
 
 It answers initialize + tools/list, then stops reading stdin and sleeps forever.
 Because it never notices its stdin closing, it is NOT cleaned up by EOF when the
-parent exits - only an explicit terminate() reaps it. Used to prove apfel awaits
+parent exits - only an explicit terminate() reaps it. Used to prove dev awaits
 MCP shutdown on exit paths instead of orphaning such a child (issue #246).
 """
 
@@ -60,7 +60,7 @@ def main():
                 }]
             })
             # Stop reading stdin entirely: EOF will never be observed, so only an
-            # explicit SIGTERM/SIGKILL from apfel can reap us.
+            # explicit SIGTERM/SIGKILL from dev can reap us.
             while True:
                 time.sleep(3600)
 

@@ -1,9 +1,9 @@
 """
-apfel Integration Tests — OpenAI Python Client E2E
+dev Integration Tests — OpenAI Python Client E2E
 
-Validates that apfel's OpenAI-compatible server works with the real `openai` library.
+Validates that dev's OpenAI-compatible server works with the real `openai` library.
 Requires: pip install openai pytest httpx
-Requires: apfel --serve running on localhost:11434
+Requires: dev --serve running on localhost:11434
 
 Run: python3 -m pytest Tests/integration/openai_client_test.py -v
 """
@@ -23,7 +23,7 @@ pytestmark = pytest.mark.model
 
 
 BASE_URL = "http://localhost:11434/v1"
-MODEL = "apple-foundationmodel"
+MODEL = "sayitdev-on-device"
 
 client = openai.OpenAI(base_url=BASE_URL, api_key="ignored")
 
@@ -42,7 +42,7 @@ def test_health_returns_fast_without_cold_start():
     """Repeated /health requests must be fast because contextSize and
     supportedLanguages are cached at server startup.
 
-    Regression guard for apfel-gui#4: the GUI polls /health every 500ms
+    Regression guard for dev-gui#4: the GUI polls /health every 500ms
     with a 12-second deadline. If /health synchronously hit the
     FoundationModels SDK on every request, the GUI would time out on
     cold starts. Budget: 20 consecutive requests should complete in
@@ -58,14 +58,14 @@ def test_health_returns_fast_without_cold_start():
     assert elapsed < 2.0, (
         f"20 /health requests took {elapsed:.2f}s, expected < 2s. "
         f"This means /health is hitting the SDK on every request -- "
-        f"regressing apfel-gui#4 (GUI cold-start timeout)."
+        f"regressing dev-gui#4 (GUI cold-start timeout)."
     )
 
 
 def test_health_supported_languages_populated():
     """Startup cache must include a non-empty supported_languages list.
 
-    Regression guard for apfel-gui#4: pre-caching
+    Regression guard for dev-gui#4: pre-caching
     SystemLanguageModel.supportedLanguages at startup must actually
     produce a non-empty list on a machine with Apple Intelligence
     enabled. If the SDK starts returning an empty Set we want to
@@ -775,7 +775,7 @@ def test_responses_function_tool_call():
         # Prefer an attempt with schema-faithful argument names, but do not
         # REQUIRE them: the on-device model occasionally hallucinates keys
         # (observed: value1/value2 for a/b). Key fidelity is model quality;
-        # this test asserts apfel's wire format - the call item, its name,
+        # this test asserts dev's wire format - the call item, its name,
         # and verbatim JSON-object arguments.
         if calls and isinstance(args, dict) and set(args.keys()) <= {"a", "b"}:
             break

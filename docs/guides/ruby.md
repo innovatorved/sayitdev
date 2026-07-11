@@ -1,14 +1,14 @@
 # How to use the Apple Foundation Model from Ruby
 
-Call Apple's on-device Foundation Model from Ruby using the `ruby-openai` gem, pointed at a local `apfel --serve`. 100% on-device, zero API cost.
+Call Apple's on-device Foundation Model from Ruby using the `ruby-openai` gem, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/ruby](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/ruby).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/ruby](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/ruby).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel`
-- `apfel --serve` running (port `11434`)
+- `brew install dev`
+- `dev --serve` running (port `11434`)
 - Ruby 2.6+ (ships with macOS)
 - `gem install ruby-openai` (or `bundle add ruby-openai`)
 
@@ -24,7 +24,7 @@ client = OpenAI::Client.new(
 
 response = client.chat(
   parameters: {
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [{ role: "user", content: "In one sentence, what is the Swift programming language?" }],
     max_tokens: 80
   }
@@ -39,7 +39,7 @@ Real output:
 Swift is a modern, high-performance, and versatile programming language designed for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/01_oneshot.rb).
+Lab script: [`01_oneshot.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/01_oneshot.rb).
 
 ## 2. Streaming
 
@@ -52,7 +52,7 @@ client = OpenAI::Client.new(uri_base: "http://localhost:11434", access_token: "n
 
 client.chat(
   parameters: {
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [{ role: "user", content: "List three Apple silicon chips, one per line." }],
     max_tokens: 80,
     stream: proc do |chunk, _bytesize|
@@ -74,7 +74,7 @@ Apple M2
 Apple M3
 ```
 
-Lab script: [`02_stream.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/02_stream.rb).
+Lab script: [`02_stream.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/02_stream.rb).
 
 ## 3. JSON mode
 
@@ -86,7 +86,7 @@ client = OpenAI::Client.new(uri_base: "http://localhost:11434", access_token: "n
 
 response = client.chat(
   parameters: {
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [{ role: "user", content: "Return JSON with fields 'chip', 'year', 'cores'. Describe the Apple M1 chip. Return ONLY JSON." }],
     response_format: { type: "json_object" },
     max_tokens: 120
@@ -111,7 +111,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/03_json.rb).
+Lab script: [`03_json.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/03_json.rb).
 
 ## 4. Error handling
 
@@ -123,7 +123,7 @@ require "openai"
 client = OpenAI::Client.new(uri_base: "http://localhost:11434", access_token: "not-needed")
 
 begin
-  client.embeddings(parameters: { model: "apple-foundationmodel", input: "apfel runs 100% on-device." })
+  client.embeddings(parameters: { model: "sayitdev-on-device", input: "dev runs 100% on-device." })
 rescue Faraday::Error => e
   status = e.response && e.response[:status]
   puts "Got expected error: HTTP #{status} - #{e.message}"
@@ -136,7 +136,7 @@ Real output:
 Got expected error: HTTP 501 - the server responded with status 501
 ```
 
-Lab script: [`04_errors.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/04_errors.rb).
+Lab script: [`04_errors.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/04_errors.rb).
 
 ## 5. Tool calling
 
@@ -165,7 +165,7 @@ def get_weather(args)
 end
 
 messages = [{ role: "user", content: "What is the temperature in Vienna right now?" }]
-first = client.chat(parameters: { model: "apple-foundationmodel", messages: messages, tools: TOOLS, max_tokens: 256 })
+first = client.chat(parameters: { model: "sayitdev-on-device", messages: messages, tools: TOOLS, max_tokens: 256 })
 msg = first.dig("choices", 0, "message")
 messages << msg
 
@@ -174,7 +174,7 @@ if msg["tool_calls"] && !msg["tool_calls"].empty?
     args = JSON.parse(call.dig("function", "arguments"))
     messages << { role: "tool", tool_call_id: call["id"], content: get_weather(args) }
   end
-  final = client.chat(parameters: { model: "apple-foundationmodel", messages: messages, max_tokens: 120 })
+  final = client.chat(parameters: { model: "sayitdev-on-device", messages: messages, max_tokens: 120 })
   puts final.dig("choices", 0, "message", "content").to_s.strip
 end
 ```
@@ -185,7 +185,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/05_tools.rb).
+Lab script: [`05_tools.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/05_tools.rb).
 
 ## 6. Real example - summarize stdin
 
@@ -202,7 +202,7 @@ client = OpenAI::Client.new(uri_base: "http://localhost:11434", access_token: "n
 
 response = client.chat(
   parameters: {
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [
       { role: "system", content: "You are a concise summarizer. Reply with one short paragraph." },
       { role: "user", content: "Summarize:\n\n#{text}" }
@@ -219,22 +219,22 @@ Real output:
 The Apple M1 chip, launched in November 2020, marked Apple's first ARM-based system-on-a-chip for Mac computers. It features an 8-core CPU with four performance and four efficiency cores, along with an integrated GPU that can have up to 8 cores. The chip integrates CPU, GPU, memory, and neural engine on a single die, offering significant performance-per-watt improvements over its Intel predecessors.
 ```
 
-Lab script: [`06_example.rb`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/ruby/06_example.rb).
+Lab script: [`06_example.rb`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/ruby/06_example.rb).
 
 ## Troubleshooting
 
-- **Connection refused** - start `apfel --serve` before running the Ruby script.
+- **Connection refused** - start `dev --serve` before running the Ruby script.
 - **`e.response[:status]`** - only present when Faraday raises with a full response object. For low-level socket errors it's nil.
 - **Rails** - these patterns drop into a Rails controller or background job without changes. Use the same `OpenAI::Client` pointed at localhost.
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - Ruby 2.6.10 (system) / ruby-openai 7.4.0
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_ruby.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_ruby.py).
+Runnable tests: [tests/test_ruby.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_ruby.py).
 
 ## See also
 
-[python.md](python.md), [nodejs.md](nodejs.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[python.md](python.md), [nodejs.md](nodejs.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

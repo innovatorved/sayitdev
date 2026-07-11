@@ -1,6 +1,6 @@
 // ============================================================================
 // CLIErrors.swift - Template helpers for CLIParseError messages.
-// Part of ApfelCLI - CLI-specific parsing, separate from ApfelCore domain logic.
+// Part of SayItDevCLI - CLI-specific parsing, separate from SayItDevCore domain logic.
 //
 // These helpers replace 22 hand-written `CLIParseError("...")` call sites in
 // CLIArguments.swift with 5 reusable templates. The templates preserve the

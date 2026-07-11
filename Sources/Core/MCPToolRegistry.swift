@@ -1,6 +1,6 @@
 // ============================================================================
 // MCPToolRegistry.swift - Tool-name collision detection and dedup across
-// multiple MCP servers (#239). Pure logic, no subprocess/IO - part of ApfelCore.
+// multiple MCP servers (#239). Pure logic, no subprocess/IO - part of SayItDevCore.
 // ============================================================================
 
 import Foundation

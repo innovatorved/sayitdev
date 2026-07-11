@@ -1,12 +1,12 @@
 #!/bin/bash
 # wtd — what is this directory?, powered by Apple Intelligence
-# Install globally as `apfel-wtd`: see demo/README.md "Install demos globally (optional)"
+# Install globally as `dev-wtd`: see demo/README.md "Install demos globally (optional)"
 #
 # Usage:  wtd              # current directory
 #         wtd ~/projects   # any directory
 #         wtd -c           # copy summary to clipboard
 #
-# Requires: apfel installed (https://github.com/Arthur-Ficial/apfel)
+# Requires: dev installed (__UPSTREAM_DEV_URL__)
 
 COPY=false
 TARGET="."
@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
             echo "  wtd ~/some/project      # any directory"
             echo "  wtd -c .                # copy summary to clipboard"
             echo ""
-            echo "Requires: apfel (Apple Intelligence CLI)"
+            echo "Requires: dev (Apple Intelligence CLI)"
             exit 0
             ;;
         -*) echo "Unknown option: $1. Use --help."; exit 1 ;;
@@ -40,9 +40,9 @@ if [[ ! -d "$TARGET" ]]; then
     exit 1
 fi
 
-# Check apfel is installed
-if ! command -v apfel &>/dev/null; then
-    echo "Error: apfel not found. Install from https://github.com/Arthur-Ficial/apfel"
+# Check dev is installed
+if ! command -v dev &>/dev/null; then
+    echo "Error: dev not found. Install from __UPSTREAM_DEV_URL__"
     exit 1
 fi
 
@@ -79,11 +79,11 @@ fi
 
 SYSTEM="Summarize what this directory/project is in 2-3 sentences. Mention: what language/framework, what it does, how to build/run it if obvious. Be concise and specific. No bullet points."
 
-result=$(echo "$snapshot" | apfel -q -s "$SYSTEM")
+result=$(echo "$snapshot" | dev -q -s "$SYSTEM")
 status=$?
 
 if [[ $status -ne 0 ]]; then
-    echo "Error: apfel failed (exit $status)" >&2
+    echo "Error: dev failed (exit $status)" >&2
     exit $status
 fi
 

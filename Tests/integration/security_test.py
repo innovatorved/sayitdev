@@ -1,9 +1,9 @@
 """
-apfel Integration Tests - Security (Origin Check & Token Auth)
+dev Integration Tests - Security (Origin Check & Token Auth)
 
 Validates localhost CSRF protection and token authentication.
 Requires: pip install pytest httpx
-Requires: apfel --serve running on localhost:11434 (default config)
+Requires: dev --serve running on localhost:11434 (default config)
 Additional flag-specific tests launch their own release-binary server instances.
 
 Run: python3 -m pytest Tests/integration/security_test.py -v
@@ -22,14 +22,14 @@ import pytest
 import httpx
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 BASE_URL = "http://localhost:11434"
 
 
 def clean_env(extra_env=None):
     """Remove server env vars so each test controls its own configuration."""
     env = os.environ.copy()
-    for key in ["APFEL_HOST", "APFEL_PORT", "APFEL_TOKEN"]:
+    for key in ["DEV_HOST", "DEV_PORT", "DEV_TOKEN"]:
         env.pop(key, None)
     if extra_env:
         env.update(extra_env)
@@ -235,7 +235,7 @@ def test_foreign_origin_rejected_on_chat():
     """Origin check applies to /v1/chat/completions."""
     resp = httpx.post(
         f"{BASE_URL}/v1/chat/completions",
-        json={"model": "apple-foundationmodel", "messages": [{"role": "user", "content": "hi"}]},
+        json={"model": "sayitdev-on-device", "messages": [{"role": "user", "content": "hi"}]},
         headers={"Origin": "http://evil.com"},
         timeout=60
     )
@@ -361,9 +361,9 @@ def test_explicit_token_not_echoed_in_startup_banner():
 
 
 def test_env_token_not_echoed_in_startup_banner():
-    """Configured secrets from APFEL_TOKEN must not be printed on startup."""
+    """Configured secrets from DEV_TOKEN must not be printed on startup."""
     secret = "env-secret-token"
-    with running_server(env={"APFEL_TOKEN": secret}) as (_, log_path):
+    with running_server(env={"DEV_TOKEN": secret}) as (_, log_path):
         banner = read_log(log_path)
     assert "token:    required" in banner
     assert secret not in banner

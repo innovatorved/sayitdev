@@ -2,13 +2,13 @@
 
 AWK can't do HTTP on its own - it was designed for text processing, not networking. The UNIX convention is to **pair AWK with curl**: curl handles transport, AWK parses the response. That's what every script in this guide does.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/awk](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/awk).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/awk](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/awk).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel jq` (`jq` is only needed for the JSON-mode + tool-calling examples)
-- `apfel --serve` running (port `11434`)
+- `brew install dev jq` (`jq` is only needed for the JSON-mode + tool-calling examples)
+- `dev --serve` running (port `11434`)
 - `awk` (ships with macOS)
 
 ## 1. One-shot
@@ -20,7 +20,7 @@ set -euo pipefail
 PROMPT="In one sentence, what is the Swift programming language?"
 PAYLOAD=$(awk -v prompt="$PROMPT" 'BEGIN {
   gsub(/"/, "\\\"", prompt)
-  printf "{\"model\":\"apple-foundationmodel\",\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}],\"max_tokens\":80}", prompt
+  printf "{\"model\":\"sayitdev-on-device\",\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}],\"max_tokens\":80}", prompt
 }')
 
 curl -sS http://localhost:11434/v1/chat/completions \
@@ -39,7 +39,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing apps and systems across platforms, known for its safety, performance, and ease of use.
 ```
 
-Lab script: [`01_oneshot.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/01_oneshot.sh).
+Lab script: [`01_oneshot.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/01_oneshot.sh).
 
 ## 2. Streaming
 
@@ -49,7 +49,7 @@ set -euo pipefail
 
 curl -sS -N http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"apple-foundationmodel","messages":[{"role":"user","content":"List three Apple silicon chips, one per line."}],"max_tokens":80,"stream":true}' \
+  -d '{"model":"sayitdev-on-device","messages":[{"role":"user","content":"List three Apple silicon chips, one per line."}],"max_tokens":80,"stream":true}' \
   | awk '
       /^data: / {
         json = substr($0, 7)
@@ -73,14 +73,14 @@ Apple M1 Pro
 Apple M1 Max
 ```
 
-Lab script: [`02_stream.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/02_stream.sh).
+Lab script: [`02_stream.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/02_stream.sh).
 
 ## 3. JSON mode
 
 AWK is not a JSON parser. It can extract the string `content` field well enough, but for real validation we hand off to `jq`:
 
 ```bash
-PAYLOAD='{"model":"apple-foundationmodel","messages":[{"role":"user","content":"Return JSON with fields chip, year, cores. Describe the Apple M1 chip. Return ONLY JSON."}],"response_format":{"type":"json_object"},"max_tokens":120}'
+PAYLOAD='{"model":"sayitdev-on-device","messages":[{"role":"user","content":"Return JSON with fields chip, year, cores. Describe the Apple M1 chip. Return ONLY JSON."}],"response_format":{"type":"json_object"},"max_tokens":120}'
 
 curl -sS http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" -d "$PAYLOAD" \
@@ -107,7 +107,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/03_json.sh).
+Lab script: [`03_json.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/03_json.sh).
 
 ## 4. Error handling
 
@@ -118,7 +118,7 @@ tmp=$(mktemp)
 status=$(curl -sS -o "$tmp" -w '%{http_code}' \
   http://localhost:11434/v1/embeddings \
   -H "Content-Type: application/json" \
-  -d '{"model":"apple-foundationmodel","input":"apfel runs 100% on-device."}')
+  -d '{"model":"sayitdev-on-device","input":"dev runs 100% on-device."}')
 
 if [[ "$status" -ge 400 ]]; then
   msg=$(awk 'BEGIN { RS="\"message\" :" } NR==2 {
@@ -138,7 +138,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/04_errors.sh).
+Lab script: [`04_errors.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/04_errors.sh).
 
 ## 5. Tool calling (delegate to Bash)
 
@@ -156,11 +156,11 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/05_tools.sh). For tool-heavy code, reach for [python.md](python.md) or [nodejs.md](nodejs.md).
+Lab script: [`05_tools.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/05_tools.sh). For tool-heavy code, reach for [python.md](python.md) or [nodejs.md](nodejs.md).
 
 ## 6. Real example - summarize stdin
 
-AWK does what AWK is good at - text cleanup - then hands the clean text to apfel:
+AWK does what AWK is good at - text cleanup - then hands the clean text to dev:
 
 ```bash
 cleaned=$(awk '
@@ -169,7 +169,7 @@ cleaned=$(awk '
 ' | awk 'NF')
 
 payload=$(jq -n --arg text "$cleaned" '{
-  model:"apple-foundationmodel",
+  model:"sayitdev-on-device",
   messages:[
     {role:"system", content:"You are a concise summarizer. Reply with one short paragraph."},
     {role:"user", content:("Summarize:\n\n" + $text)}
@@ -193,7 +193,7 @@ Real output:
 The Apple M1 chip, launched in November 2020, marked Apple's first ARM-based system-on-a-chip for Macs. This chip features an 8-core CPU with four performance and four efficiency cores, along with an integrated GPU capable of up to 8 cores. By consolidating the CPU, GPU, memory, and neural engine on a single die, the M1 chip achieved notable performance-per-watt improvements compared to its Intel counterparts.
 ```
 
-Lab script: [`06_example.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/awk/06_example.sh).
+Lab script: [`06_example.sh`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/awk/06_example.sh).
 
 ## Troubleshooting
 
@@ -203,12 +203,12 @@ Lab script: [`06_example.sh`](https://github.com/Arthur-Ficial/apfel-guides-lab/
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - BSD awk 20200816 (system) / jq 1.7 / curl
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_awk.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_awk.py).
+Runnable tests: [tests/test_awk.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_awk.py).
 
 ## See also
 
-[bash-curl.md](bash-curl.md), [perl.md](perl.md), [zsh.md](zsh.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[bash-curl.md](bash-curl.md), [perl.md](perl.md), [zsh.md](zsh.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

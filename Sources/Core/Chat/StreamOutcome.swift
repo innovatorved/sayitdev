@@ -39,7 +39,7 @@ public enum StreamErrorResolution: Sendable {
     /// length-finish; do not propagate the error.
     case truncated(String)
     /// Genuine error. Propagate.
-    case fatal(ApfelError)
+    case fatal(SayItDevError)
 }
 
 public enum StreamErrorResolver {
@@ -50,7 +50,7 @@ public enum StreamErrorResolver {
     /// - parameter error: the classified error.
     /// - returns: `.truncated(prev)` only when the error is a context overflow AND
     ///   `prev` is non-empty. Everything else is fatal.
-    public static func resolve(prev: String, error: ApfelError) -> StreamErrorResolution {
+    public static func resolve(prev: String, error: SayItDevError) -> StreamErrorResolution {
         switch error {
         case .contextOverflow where !prev.isEmpty:
             return .truncated(prev)

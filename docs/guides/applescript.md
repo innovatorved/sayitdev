@@ -2,13 +2,13 @@
 
 Call Apple's on-device Foundation Model from AppleScript via `do shell script` + `curl`. 100% on-device - perfect for Shortcuts, Automator, and macOS system automation.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/applescript](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/applescript).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/applescript](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/applescript).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel jq`
-- `apfel --serve` running (port `11434`)
+- `brew install dev jq`
+- `dev --serve` running (port `11434`)
 - AppleScript (ships with macOS)
 
 AppleScript has no native HTTP client; the idiomatic pattern is `do shell script "curl ..."`.
@@ -16,7 +16,7 @@ AppleScript has no native HTTP client; the idiomatic pattern is `do shell script
 ## 1. One-shot
 
 ```applescript
-set payload to "{\"model\":\"apple-foundationmodel\",\"messages\":[{\"role\":\"user\",\"content\":\"In one sentence, what is the Swift programming language?\"}],\"max_tokens\":80}"
+set payload to "{\"model\":\"sayitdev-on-device\",\"messages\":[{\"role\":\"user\",\"content\":\"In one sentence, what is the Swift programming language?\"}],\"max_tokens\":80}"
 set response to do shell script "curl -sS http://localhost:11434/v1/chat/completions -H 'Content-Type: application/json' -d " & quoted form of payload & " | jq -r '.choices[0].message.content'"
 return response
 ```
@@ -27,7 +27,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing iOS, macOS, watchOS, and tvOS applications.
 ```
 
-Lab script: [`01_oneshot.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/01_oneshot.applescript).
+Lab script: [`01_oneshot.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/01_oneshot.applescript).
 
 ## 2. Streaming
 
@@ -36,7 +36,7 @@ AppleScript doesn't stream natively - `do shell script` returns the final string
 ```applescript
 set shellCmd to "curl -sS -N http://localhost:11434/v1/chat/completions " & ¬
     "-H 'Content-Type: application/json' " & ¬
-    "-d '{\"model\":\"apple-foundationmodel\",\"messages\":[{\"role\":\"user\",\"content\":\"List three Apple silicon chips, one per line.\"}],\"max_tokens\":80,\"stream\":true}' " & ¬
+    "-d '{\"model\":\"sayitdev-on-device\",\"messages\":[{\"role\":\"user\",\"content\":\"List three Apple silicon chips, one per line.\"}],\"max_tokens\":80,\"stream\":true}' " & ¬
     "| while IFS= read -r line; do " & ¬
     "    line=\"${line#data: }\"; " & ¬
     "    [ -z \"$line\" ] || [ \"$line\" = \"[DONE]\" ] && continue; " & ¬
@@ -54,12 +54,12 @@ Apple M1 Pro
 Apple M1 Max
 ```
 
-Lab script: [`02_stream.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/02_stream.applescript).
+Lab script: [`02_stream.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/02_stream.applescript).
 
 ## 3. JSON mode
 
 ```applescript
-set payload to "{\"model\":\"apple-foundationmodel\",\"messages\":[{\"role\":\"user\",\"content\":\"Return JSON with fields chip, year, cores. Describe the Apple M1 chip. Return ONLY JSON.\"}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":120}"
+set payload to "{\"model\":\"sayitdev-on-device\",\"messages\":[{\"role\":\"user\",\"content\":\"Return JSON with fields chip, year, cores. Describe the Apple M1 chip. Return ONLY JSON.\"}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":120}"
 set cmd to "curl -sS http://localhost:11434/v1/chat/completions -H 'Content-Type: application/json' -d " & quoted form of payload & " | jq -r '.choices[0].message.content' | sed -E 's/^```(json)?//; s/```$//' | tr -d '\\r' | jq '.'"
 return do shell script cmd
 ```
@@ -70,12 +70,12 @@ Real output (note AppleScript collapses newlines when returning from `do shell s
 {  "chip": "Apple M1",  "year": 2020,  "cores": 8}
 ```
 
-Lab script: [`03_json.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/03_json.applescript).
+Lab script: [`03_json.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/03_json.applescript).
 
 ## 4. Error handling
 
 ```applescript
-set cmd to "tmp=$(mktemp); status=$(curl -sS -o \"$tmp\" -w '%{http_code}' http://localhost:11434/v1/embeddings -H 'Content-Type: application/json' -d '{\"model\":\"apple-foundationmodel\",\"input\":\"apfel runs 100% on-device.\"}'); if [ \"$status\" -ge 400 ]; then msg=$(jq -r '.error.message // empty' \"$tmp\" 2>/dev/null || true); echo \"Got expected error: HTTP $status - ${msg:-see response}\"; else echo \"unexpected success: HTTP $status\"; cat \"$tmp\"; fi; rm -f \"$tmp\""
+set cmd to "tmp=$(mktemp); status=$(curl -sS -o \"$tmp\" -w '%{http_code}' http://localhost:11434/v1/embeddings -H 'Content-Type: application/json' -d '{\"model\":\"sayitdev-on-device\",\"input\":\"dev runs 100% on-device.\"}'); if [ \"$status\" -ge 400 ]; then msg=$(jq -r '.error.message // empty' \"$tmp\" 2>/dev/null || true); echo \"Got expected error: HTTP $status - ${msg:-see response}\"; else echo \"unexpected success: HTTP $status\"; cat \"$tmp\"; fi; rm -f \"$tmp\""
 return do shell script cmd
 ```
 
@@ -85,7 +85,7 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/04_errors.applescript).
+Lab script: [`04_errors.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/04_errors.applescript).
 
 ## 5. Tool calling (delegate to Bash)
 
@@ -102,7 +102,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/05_tools.applescript). For production tool-calling, use [python.md](python.md) or [nodejs.md](nodejs.md).
+Lab script: [`05_tools.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/05_tools.applescript). For production tool-calling, use [python.md](python.md) or [nodejs.md](nodejs.md).
 
 ## 6. Real example - summarize a file
 
@@ -113,7 +113,7 @@ on run argv
   if (count of argv) < 1 then error "usage: osascript 06_example.applescript <path-to-file>"
   set filePath to item 1 of argv
   set cmd to "text=$(cat " & quoted form of filePath & "); " & ¬
-    "payload=$(jq -n --arg text \"$text\" '{model:\"apple-foundationmodel\", messages:[{role:\"system\",content:\"You are a concise summarizer. Reply with one short paragraph.\"},{role:\"user\",content:(\"Summarize:\\n\\n\" + $text)}], max_tokens:150}'); " & ¬
+    "payload=$(jq -n --arg text \"$text\" '{model:\"sayitdev-on-device\", messages:[{role:\"system\",content:\"You are a concise summarizer. Reply with one short paragraph.\"},{role:\"user\",content:(\"Summarize:\\n\\n\" + $text)}], max_tokens:150}'); " & ¬
     "curl -sS http://localhost:11434/v1/chat/completions -H 'Content-Type: application/json' -d \"$payload\" | jq -r '.choices[0].message.content'"
   return do shell script cmd
 end run
@@ -127,7 +127,7 @@ Real output:
 In November 2020, Apple released the M1 chip, the first ARM-based system-on-a-chip for Mac computers. The chip features an 8-core CPU with four performance and four efficiency cores, an integrated GPU with up to 8 cores, and a unified CPU, GPU, memory, and neural engine on a single die. The M1 chip offers significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.applescript`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/applescript/06_example.applescript).
+Lab script: [`06_example.applescript`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/applescript/06_example.applescript).
 
 ## Shortcuts integration
 
@@ -135,18 +135,18 @@ Paste any of these into a **Run AppleScript** action in Shortcuts. Combine with 
 
 ## Troubleshooting
 
-- **Collapsed newlines** - `do shell script` returns a single AppleScript string with all newlines folded. That's a Classic macOS quirk, not an apfel issue.
+- **Collapsed newlines** - `do shell script` returns a single AppleScript string with all newlines folded. That's a Classic macOS quirk, not an dev issue.
 - **Stdin not flowing** - AppleScript cannot pipe its own stdin into `do shell script`. Pass file paths via `on run argv` instead.
 - **Escaping** - always use `quoted form of` for any user-supplied string before embedding in a shell command.
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - osascript / AppleScript (system) / jq 1.7
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_applescript.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_applescript.py).
+Runnable tests: [tests/test_applescript.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_applescript.py).
 
 ## See also
 
-[bash-curl.md](bash-curl.md), [zsh.md](zsh.md), [swift-scripting.md](swift-scripting.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[bash-curl.md](bash-curl.md), [zsh.md](zsh.md), [swift-scripting.md](swift-scripting.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OUT="docs/EXAMPLES.md"
-VERSION=$(apfel --version 2>/dev/null | sed 's/apfel v//')
+VERSION=$(dev --version 2>/dev/null | sed 's/dev v//')
 OS_VER=$(sw_vers -productVersion 2>/dev/null || echo "unknown")
 CHIP=$(sysctl -n machdep.cpu.brand_string 2>/dev/null | sed 's/Apple //')
 DATE=$(date -u +"%Y-%m-%d")
@@ -14,7 +14,7 @@ run() {
     local args=("$@")
     COUNT=$((COUNT + 1))
 
-    local cmd="apfel"
+    local cmd="dev"
     local display_args=""
     for arg in "${args[@]}"; do
         if [[ "$arg" == *" "* || "$arg" == *"'"* || "$arg" == *'"'* || "$arg" == *'$'* || "$arg" == *'!'* ]]; then
@@ -26,7 +26,7 @@ run() {
 
     printf "  [%d] %s ..." "$COUNT" "${display_args:1:60}" >&2
     local output
-    output=$(apfel "${args[@]}" 2>&1) || true
+    output=$(dev "${args[@]}" 2>&1) || true
     echo " done" >&2
 
     local wrapped
@@ -35,7 +35,7 @@ run() {
     cat <<BLOCK
 
 \`\`\`
-\$ apfel${display_args}
+\$ dev${display_args}
 \`\`\`
 
 \`\`\`\`
@@ -55,7 +55,7 @@ run_with_flags() {
 
     printf "  [%d] %s ..." "$COUNT" "${display:0:60}" >&2
     local output
-    output=$(apfel "${args[@]}" 2>&1) || true
+    output=$(dev "${args[@]}" 2>&1) || true
     echo " done" >&2
 
     local wrapped
@@ -83,10 +83,10 @@ cat <<HEADER
 # Real Examples - Challenging Apple Intelligence
 
 Every response below is **real, unedited output** from Apple's on-device model
-via \`apfel\`. Nothing was cherry-picked, cleaned up, or re-run.
+via \`dev\`. Nothing was cherry-picked, cleaned up, or re-run.
 This file was generated automatically by \`scripts/generate-examples.sh\`.
 
-> apfel v${VERSION} | macOS ${OS_VER} | ${CHIP} | ${DATE}
+> dev v${VERSION} | macOS ${OS_VER} | ${CHIP} | ${DATE}
 
 ## Table of Contents
 
@@ -163,10 +163,10 @@ run coding "Write a Swift function that reverses a string without using built-in
 run coding "What is the time complexity of binary search? Explain in one sentence."
 run coding "Find the bug: for i in range(10): if i = 5: print(i)"
 run_with_flags coding \
-    'apfel --code "Write a Python function that deduplicates a list, keeping order."' \
+    'dev --code "Write a Python function that deduplicates a list, keeping order."' \
     --code "Write a Python function that deduplicates a list, keeping order."
 run_with_flags coding \
-    'apfel --code "shell one-liner that shows the 5 largest files in the current directory"' \
+    'dev --code "shell one-liner that shows the 5 largest files in the current directory"' \
     --code "shell one-liner that shows the 5 largest files in the current directory"
 
 # ============================================================================
@@ -225,15 +225,15 @@ echo "## 10. System Prompt Tricks"
 echo ""
 
 run_with_flags systemprompt \
-    'apfel -s "You are a pirate. Respond only in pirate speak." "What is recursion?"' \
+    'dev -s "You are a pirate. Respond only in pirate speak." "What is recursion?"' \
     -s "You are a pirate. Respond only in pirate speak." "What is recursion?"
 
 run_with_flags systemprompt \
-    'apfel -s "Respond in exactly 5 words." "Explain quantum computing."' \
+    'dev -s "Respond in exactly 5 words." "Explain quantum computing."' \
     -s "Respond in exactly 5 words." "Explain quantum computing."
 
 run_with_flags systemprompt \
-    'apfel -s "You are a Socratic teacher. Only respond with questions." "What is gravity?"' \
+    'dev -s "You are a Socratic teacher. Only respond with questions." "What is gravity?"' \
     -s "You are a Socratic teacher. Only respond with questions." "What is gravity?"
 
 # ============================================================================
@@ -243,19 +243,19 @@ echo "## 11. MCP Tool Calling"
 echo ""
 
 run_with_flags mcp \
-    'apfel --mcp mcp/calculator/server.py "What is 247 times 83?"' \
+    'dev --mcp mcp/calculator/server.py "What is 247 times 83?"' \
     --mcp mcp/calculator/server.py "What is 247 times 83?"
 
 run_with_flags mcp \
-    'apfel --mcp mcp/calculator/server.py "What is the square root of 2025?"' \
+    'dev --mcp mcp/calculator/server.py "What is the square root of 2025?"' \
     --mcp mcp/calculator/server.py "What is the square root of 2025?"
 
 run_with_flags mcp \
-    'apfel --mcp mcp/calculator/server.py "What is 2 to the power of 10?"' \
+    'dev --mcp mcp/calculator/server.py "What is 2 to the power of 10?"' \
     --mcp mcp/calculator/server.py "What is 2 to the power of 10?"
 
 run_with_flags mcp \
-    'apfel --mcp mcp/calculator/server.py "Add 999 and 1, then multiply the result by 7."' \
+    'dev --mcp mcp/calculator/server.py "Add 999 and 1, then multiply the result by 7."' \
     --mcp mcp/calculator/server.py "Add 999 and 1, then multiply the result by 7."
 
 # ============================================================================
@@ -278,15 +278,15 @@ echo "## 13. Formatting & Structure"
 echo ""
 
 run_with_flags format \
-    'apfel -o json "Capital of France? One word."' \
+    'dev -o json "Capital of France? One word."' \
     -o json "Capital of France? One word."
 
 run_with_flags format \
-    'apfel -q "What is 2+2?"' \
+    'dev -q "What is 2+2?"' \
     -q "What is 2+2?"
 
 run_with_flags format \
-    'apfel --stream "Count from 1 to 5."' \
+    'dev --stream "Count from 1 to 5."' \
     --stream "Count from 1 to 5."
 
 # ============================================================================
@@ -302,21 +302,21 @@ LFX="Tests/integration/fixtures/lesbar"
 # A text-dense PDF can exceed the 4096-token window; --count-tokens previews the
 # extraction and the honest budget before you spend it.
 run_with_flags files \
-    'apfel -f irs_w9.pdf --count-tokens "Summarize this form."' \
+    'dev -f irs_w9.pdf --count-tokens "Summarize this form."' \
     -f "$LFX/irs_w9.pdf" --count-tokens "Summarize this form."
 
 run_with_flags files \
-    'apfel -f wikimedia_declaration.jpg "What historic document is this, and what year?"' \
+    'dev -f wikimedia_declaration.jpg "What historic document is this, and what year?"' \
     -f "$LFX/wikimedia_declaration.jpg" "What historic document is this, and what year?"
 
 run_with_flags files \
-    'apfel -f wikimedia_mona_lisa.jpg "In a few words, what is in this image?"' \
+    'dev -f wikimedia_mona_lisa.jpg "In a few words, what is in this image?"' \
     -f "$LFX/wikimedia_mona_lisa.jpg" "In a few words, what is in this image?"
 
-# Debuggable: --debug shows exactly what apfel puts to the API, --count-tokens keeps
+# Debuggable: --debug shows exactly what dev puts to the API, --count-tokens keeps
 # it model-free. Here, on-device OCR of a NASA public-domain photo of an engraved plaque.
 run_with_flags files \
-    'apfel -f apollo11_plaque.jpg --count-tokens --debug' \
+    'dev -f apollo11_plaque.jpg --count-tokens --debug' \
     -f "$LFX/apollo11_plaque.jpg" --count-tokens --debug
 
 } > "$OUT"

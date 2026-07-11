@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# bump-nixpkgs.sh - update apfel-llm/package.nix version and hash.
+# bump-nixpkgs.sh - update dev-llm/package.nix version and hash.
 #
 # Does NOT touch git or gh; callers (GitHub Actions workflow, humans)
 # drive commit/push/PR separately. This keeps the script deterministic
@@ -11,7 +11,7 @@
 #       [--tarball path/to/local.tar.gz] [--dry-run]
 #
 # If --tarball is omitted, the script downloads
-#   https://github.com/Arthur-Ficial/apfel/releases/download/vX.Y.Z/apfel-X.Y.Z-arm64-macos.tar.gz
+#   __UPSTREAM_DEV_URL__/releases/download/vX.Y.Z/dev-X.Y.Z-arm64-macos.tar.gz
 #
 # --dry-run prints the would-be diff and does not modify the target file.
 
@@ -59,8 +59,8 @@ trap cleanup EXIT
 
 if [[ -z "$tarball" ]]; then
   tmpdir=$(mktemp -d)
-  tarball="$tmpdir/apfel-${version}-arm64-macos.tar.gz"
-  url="https://github.com/Arthur-Ficial/apfel/releases/download/v${version}/apfel-${version}-arm64-macos.tar.gz"
+  tarball="$tmpdir/dev-${version}-arm64-macos.tar.gz"
+  url="__UPSTREAM_DEV_URL__/releases/download/v${version}/dev-${version}-arm64-macos.tar.gz"
   echo "downloading: $url" >&2
   if ! curl -sSfL -o "$tarball" "$url"; then
     echo "error: failed to download $url" >&2

@@ -1,6 +1,6 @@
 // ============================================================================
-// OutputFormat.swift - Output format enum for the apfel CLI
-// Part of ApfelCLI - CLI-specific types, separate from ApfelCore domain logic
+// OutputFormat.swift - Output format enum for the dev CLI
+// Part of SayItDevCLI - CLI-specific types, separate from SayItDevCore domain logic
 // ============================================================================
 
 import Foundation

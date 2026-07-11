@@ -1,9 +1,9 @@
-# apfel-calc - MCP Calculator Server
+# dev-calc - MCP Calculator Server
 
 Gives Apple's on-device LLM the ability to do math via tool calling.
 
 ```bash
-apfel --serve &
+dev --serve &
 python3 mcp/calculator/test_round_trip.py
 # Question: What is 247 times 83?
 # Step 1: Model called multiply({"a": 247, "b": 83})

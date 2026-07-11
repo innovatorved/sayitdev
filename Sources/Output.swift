@@ -1,11 +1,11 @@
 // ============================================================================
 // Output.swift — Terminal output helpers (colors, stderr, formatting)
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
-import ApfelCore
-import ApfelCLI
+import SayItDevCore
+import SayItDevCLI
 
 // MARK: - Global State
 // Set during argument parsing (before any async work) and read during execution.
@@ -53,7 +53,7 @@ func styled(_ text: String, _ colors: ANSIColor...) -> String {
 }
 
 /// Apply ANSI color codes to text destined for stderr. Keys colorization off
-/// stderr's own TTY-ness so redirected stderr (e.g. `apfel ... 2>err.log`) stays
+/// stderr's own TTY-ness so redirected stderr (e.g. `dev ... 2>err.log`) stays
 /// escape-free even when stdout is a terminal (#249).
 func styledErr(_ text: String, _ colors: ANSIColor...) -> String {
     applyStyle(text, colorize: ColorPolicy.shouldColorize(
@@ -78,12 +78,12 @@ func printError(_ message: String) {
 
 /// Print a debug message to stderr. Zero-cost when debug logging is disabled.
 func debugLog(_ message: @autoclosure () -> String) {
-    guard ApfelDebugConfiguration.isEnabled else { return }
+    guard SayItDevDebugConfiguration.isEnabled else { return }
     printStderr("\(styledErr("debug:", .dim)) \(message())")
 }
 
 /// Print a categorized debug message to stderr. Zero-cost when debug logging is disabled.
 func debugLog(_ category: String, _ message: @autoclosure () -> String) {
-    guard ApfelDebugConfiguration.isEnabled else { return }
+    guard SayItDevDebugConfiguration.isEnabled else { return }
     printStderr("\(styledErr("debug[\(category)]:", .dim)) \(message())")
 }

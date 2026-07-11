@@ -2,7 +2,7 @@
 """MCP server fixture A for the tool-name collision test (#239).
 
 Exposes a `shared_tool` (also exposed by dup_tool_server_b.py) plus a unique
-`only_a` tool. When two servers expose `shared_tool`, apfel must warn loudly on
+`only_a` tool. When two servers expose `shared_tool`, dev must warn loudly on
 stderr and keep only the first registration; the shared_tool from whichever
 server is registered second is shadowed and dropped from allTools().
 """

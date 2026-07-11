@@ -1,10 +1,10 @@
 // ============================================================================
 // SSE.swift — Server-Sent Events streaming for OpenAI-compatible responses
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 /// Format a single SSE data line from a ChatCompletionChunk.
 /// Returns: "data: {json}\n\n"

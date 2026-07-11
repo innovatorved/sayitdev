@@ -1,5 +1,5 @@
 // ============================================================================
-// TokenBudgetReport.swift — Pure token budget preflight types (ApfelCore)
+// TokenBudgetReport.swift — Pure token budget preflight types (SayItDevCore)
 // ============================================================================
 
 import Foundation

@@ -1,14 +1,14 @@
 # How to use the Apple Foundation Model from Node.js
 
-Call Apple's on-device Foundation Model from Node.js using the official `openai` npm package, pointed at a local `apfel --serve`. 100% on-device, zero API cost.
+Call Apple's on-device Foundation Model from Node.js using the official `openai` npm package, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/nodejs](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/nodejs).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/nodejs](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/nodejs).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel`
-- `apfel --serve` running (port `11434`)
+- `brew install dev`
+- `dev --serve` running (port `11434`)
 - Node.js 20+
 - `npm install openai`
 - `"type": "module"` in `package.json` (or use `.mjs` files)
@@ -21,7 +21,7 @@ import OpenAI from "openai";
 const client = new OpenAI({ baseURL: "http://localhost:11434/v1", apiKey: "not-needed" });
 
 const response = await client.chat.completions.create({
-  model: "apple-foundationmodel",
+  model: "sayitdev-on-device",
   messages: [{ role: "user", content: "In one sentence, what is the Swift programming language?" }],
   max_tokens: 80,
 });
@@ -35,7 +35,7 @@ Real output:
 Swift is a modern, high-performance, and easy-to-learn programming language developed by Apple for building applications on iOS, macOS, watchOS, and tvOS.
 ```
 
-Lab script: [`01_oneshot.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/01_oneshot.mjs).
+Lab script: [`01_oneshot.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/01_oneshot.mjs).
 
 ## 2. Streaming
 
@@ -45,7 +45,7 @@ import OpenAI from "openai";
 const client = new OpenAI({ baseURL: "http://localhost:11434/v1", apiKey: "not-needed" });
 
 const stream = await client.chat.completions.create({
-  model: "apple-foundationmodel",
+  model: "sayitdev-on-device",
   messages: [{ role: "user", content: "List three Apple silicon chips, one per line." }],
   max_tokens: 80,
   stream: true,
@@ -67,7 +67,7 @@ Apple M2
 Apple M2 Pro
 ```
 
-Lab script: [`02_stream.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/02_stream.mjs).
+Lab script: [`02_stream.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/02_stream.mjs).
 
 ## 3. JSON mode
 
@@ -77,7 +77,7 @@ import OpenAI from "openai";
 const client = new OpenAI({ baseURL: "http://localhost:11434/v1", apiKey: "not-needed" });
 
 const response = await client.chat.completions.create({
-  model: "apple-foundationmodel",
+  model: "sayitdev-on-device",
   messages: [{
     role: "user",
     content: "Return JSON with fields 'chip', 'year', 'cores'. Describe the Apple M1 chip. Return ONLY JSON.",
@@ -104,7 +104,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/03_json.mjs).
+Lab script: [`03_json.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/03_json.mjs).
 
 ## 4. Error handling
 
@@ -115,8 +115,8 @@ const client = new OpenAI({ baseURL: "http://localhost:11434/v1", apiKey: "not-n
 
 try {
   await client.embeddings.create({
-    model: "apple-foundationmodel",
-    input: "apfel runs 100% on-device.",
+    model: "sayitdev-on-device",
+    input: "dev runs 100% on-device.",
   });
 } catch (err) {
   if (err instanceof OpenAI.APIError) {
@@ -133,7 +133,7 @@ Real output:
 Got expected error: HTTP 501 - 501 Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/04_errors.mjs).
+Lab script: [`04_errors.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/04_errors.mjs).
 
 ## 5. Tool calling
 
@@ -163,7 +163,7 @@ function getWeather({ city }) {
 const messages = [{ role: "user", content: "What is the temperature in Vienna right now?" }];
 
 const first = await client.chat.completions.create({
-  model: "apple-foundationmodel", messages, tools, max_tokens: 256,
+  model: "sayitdev-on-device", messages, tools, max_tokens: 256,
 });
 const msg = first.choices[0].message;
 messages.push(msg);
@@ -174,7 +174,7 @@ if (msg.tool_calls?.length) {
     messages.push({ role: "tool", tool_call_id: call.id, content: getWeather(args) });
   }
   const final = await client.chat.completions.create({
-    model: "apple-foundationmodel", messages, max_tokens: 120,
+    model: "sayitdev-on-device", messages, max_tokens: 120,
   });
   console.log((final.choices[0].message.content || "").trim());
 }
@@ -186,7 +186,7 @@ Real output:
 The current temperature in Vienna is 14 degrees Celsius.
 ```
 
-Lab script: [`05_tools.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/05_tools.mjs).
+Lab script: [`05_tools.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/05_tools.mjs).
 
 ## 6. Real example - summarize stdin
 
@@ -208,7 +208,7 @@ if (!text) {
 const client = new OpenAI({ baseURL: "http://localhost:11434/v1", apiKey: "not-needed" });
 
 const response = await client.chat.completions.create({
-  model: "apple-foundationmodel",
+  model: "sayitdev-on-device",
   messages: [
     { role: "system", content: "You are a concise summarizer. Reply with one short paragraph." },
     { role: "user", content: `Summarize:\n\n${text}` },
@@ -224,22 +224,22 @@ Real output (M1 paragraph):
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.mjs`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/nodejs/06_example.mjs).
+Lab script: [`06_example.mjs`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/nodejs/06_example.mjs).
 
 ## Troubleshooting
 
-- **`ECONNREFUSED`** - start `apfel --serve` before running your Node script.
+- **`ECONNREFUSED`** - start `dev --serve` before running your Node script.
 - **Missing `choices[0]` during streaming** - handle the final usage chunk with the `if (!chunk.choices || chunk.choices.length === 0) continue;` guard above.
 - **TypeScript** - same code works; `npm install -D @types/node` for Node types.
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - Node.js v25.8.1 / openai 4.x
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_nodejs.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_nodejs.py).
+Runnable tests: [tests/test_nodejs.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_nodejs.py).
 
 ## See also
 
-[python.md](python.md), [ruby.md](ruby.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[python.md](python.md), [ruby.md](ruby.md), [php.md](php.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

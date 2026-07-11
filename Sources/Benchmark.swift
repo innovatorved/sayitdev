@@ -1,12 +1,12 @@
 // ============================================================================
 // Benchmark.swift — Internal performance benchmarks
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
 import FoundationModels
 import NIOCore
-import ApfelCore
+import SayItDevCore
 
 private struct BenchmarkReport: Encodable {
     let version: String
@@ -42,7 +42,7 @@ func runBenchmarks() async throws {
         print(jsonString(report, pretty: false))
     case .plain:
         print("""
-        \(styled("apfel", .cyan, .bold)) v\(report.version) — benchmark report
+        \(styled("dev", .cyan, .bold)) v\(report.version) — benchmark report
         model: \(report.environment.model)
         context: \(report.environment.context_window) tokens
         token counter available: \(report.environment.token_counter_available)
@@ -585,7 +585,7 @@ private func benchmarkMessages() -> [OpenAIMessage] {
 private func makeRequestJSON() -> Data {
     let payload = """
     {
-      "model": "apple-foundationmodel",
+      "model": "sayitdev-on-device",
       "stream": false,
       "temperature": 0.2,
       "max_tokens": 256,

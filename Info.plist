@@ -3,8 +3,14 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>apfel</string>
+    <string>SayItDev</string>
     <key>CFBundleIdentifier</key>
-    <string>com.arthurficial.apfel</string>
+    <string>com.innovatorved.sayitdev</string>
+    <key>CFBundleExecutable</key>
+    <string>dev</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>SayItDev needs microphone access for speech-to-text and voice agent mode.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>SayItDev uses on-device speech recognition to transcribe your voice.</string>
 </dict>
 </plist>

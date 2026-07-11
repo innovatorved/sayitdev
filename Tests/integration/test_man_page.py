@@ -1,13 +1,13 @@
 """
-apfel Integration Tests - Man page drift prevention.
+dev Integration Tests - Man page drift prevention.
 
-These tests keep `man/apfel.1.in` in lockstep with `apfel --help` and the
+These tests keep `man/dev.1.in` in lockstep with `dev --help` and the
 declared exit-code inventory. If the CLI grows or loses a flag / env var /
 exit code, one of these assertions will fail until the man page is updated.
 This is the core promise of the man-page automation - it cannot silently
 drift.
 
-Also lints the generated `apfel.1` with `mandoc -Tlint` so syntax errors
+Also lints the generated `dev.1` with `mandoc -Tlint` so syntax errors
 never reach a release.
 """
 
@@ -19,16 +19,16 @@ import subprocess
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
-MAN_PAGE = ROOT / ".build" / "release" / "apfel.1"
-MAN_SOURCE = ROOT / "man" / "apfel.1.in"
+BINARY = ROOT / ".build" / "release" / "dev"
+MAN_PAGE = ROOT / ".build" / "release" / "dev.1"
+MAN_SOURCE = ROOT / "man" / "dev.1.in"
 VERSION_FILE = ROOT / ".version"
 MAIN_SWIFT = ROOT / "Sources" / "main.swift"
 EXIT_CODES_SWIFT = ROOT / "Sources" / "CLI" / "ExitCodes.swift"
 
 FLAG_RE = re.compile(r"(--[a-z][a-z0-9-]+)")
 SHORT_FLAG_RE = re.compile(r"(?<![\w-])(-[a-z])(?=[ ,])")
-ENV_RE = re.compile(r"\b(APFEL_[A-Z0-9_]+|NO_COLOR)\b")
+ENV_RE = re.compile(r"\b(DEV_[A-Z0-9_]+|NO_COLOR)\b")
 
 
 def _help_output() -> str:
@@ -61,7 +61,7 @@ def _man_page_flag_sections() -> str:
     Everything above the FILES section covers SYNOPSIS, DESCRIPTION, OPTIONS,
     CONTEXT OPTIONS, SERVER OPTIONS, ENVIRONMENT, EXIT STATUS. Flags that
     appear later (in FILES/EXAMPLES/BUGS/SEE ALSO) are command examples or
-    documentation references, not apfel's own flag surface, and must not
+    documentation references, not dev's own flag surface, and must not
     be compared against `--help`.
     """
     text = _man_page_unescaped()
@@ -124,7 +124,7 @@ def test_man_page_renders_with_man():
     assert res.returncode == 0, (
         f"man {MAN_PAGE} failed (exit {res.returncode}):\n{res.stderr}"
     )
-    assert "apfel" in res.stdout.lower()
+    assert "dev" in res.stdout.lower()
 
 
 def test_version_matches_version_file():
@@ -132,7 +132,7 @@ def test_version_matches_version_file():
     expected = VERSION_FILE.read_text().strip()
     text = _man_page_text()
     first_line = text.splitlines()[0]
-    assert f'"apfel {expected}"' in first_line, (
+    assert f'"dev {expected}"' in first_line, (
         f"Expected version {expected!r} in .TH header, got:\n{first_line}"
     )
     # Placeholder must not survive into the generated page.
@@ -152,7 +152,7 @@ def test_bidirectional_long_flag_coverage():
 
     assert not missing_in_man, (
         f"Flags in --help but missing from man page: {sorted(missing_in_man)}. "
-        "Update man/apfel.1.in to document them."
+        "Update man/dev.1.in to document them."
     )
     assert not missing_in_help, (
         f"Flags in man page but missing from --help: {sorted(missing_in_help)}. "
@@ -161,7 +161,7 @@ def test_bidirectional_long_flag_coverage():
 
 
 def test_bidirectional_env_var_coverage():
-    """Every APFEL_* / NO_COLOR env var in --help must appear in the man page."""
+    """Every DEV_* / NO_COLOR env var in --help must appear in the man page."""
     help_text = _help_output()
     man_text = _man_page_unescaped()
 
@@ -199,7 +199,7 @@ def test_environment_section_lists_match():
     """The ENVIRONMENT *section* of --help and the man page must list the same vars.
 
     The whole-text coverage check above is fooled by a var that is only named
-    in a flag description (e.g. APFEL_MCP_TOKEN in the --mcp-token line): it
+    in a flag description (e.g. DEV_MCP_TOKEN in the --mcp-token line): it
     can be absent from the ENVIRONMENT list yet still counted as present. This
     section-scoped check catches that drift.
     """
@@ -217,9 +217,9 @@ def test_environment_section_lists_match():
 
 
 def test_bidirectional_exit_code_coverage():
-    """Every exit code declared in ApfelCLI must appear in the man page."""
+    """Every exit code declared in SayItDevCLI must appear in the man page."""
     # Constants live in Sources/CLI/ExitCodes.swift (testable); main.swift
-    # re-exposes them via `let exit...: Int32 = ApfelExitCodes.xxx` for local
+    # re-exposes them via `let exit...: Int32 = SayItDevExitCodes.xxx` for local
     # readability. Scrape the literal values from ExitCodes.swift.
     src = EXIT_CODES_SWIFT.read_text()
     # e.g. `public static let guardrail: Int32 = 3`
@@ -229,5 +229,5 @@ def test_bidirectional_exit_code_coverage():
     man_text = _man_page_text()
     for code in sorted(declared, key=int):
         assert f".B {code}\n" in man_text, (
-            f"Exit code {code} declared in ApfelExitCodes but not documented in man page"
+            f"Exit code {code} declared in SayItDevExitCodes but not documented in man page"
         )

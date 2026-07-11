@@ -1,12 +1,12 @@
 """
-apfel Integration Tests - regression guards for tickets #167-#183 and #219/#243
+dev Integration Tests - regression guards for tickets #167-#183 and #219/#243
 
 These began life as the TDD RED batch (branch tdd/red-tests-167-183). Every
 ticket they cover is now FIXED and shipped; the tests are kept as REGRESSION
 GUARDS so the behaviour cannot silently regress. They live here (not in the
 pure-Swift unit target) because they exercise the wire/CLI boundary of the
-FoundationModels-coupled executable target, which apfel-tests cannot import
-(see Package.swift: apfel-tests depends only on ApfelCore + ApfelCLI).
+FoundationModels-coupled executable target, which dev-tests cannot import
+(see Package.swift: dev-tests depends only on SayItDevCore + SayItDevCLI).
 
 Two kinds of guard:
   - Wire-level behaviour guards (real requests): #167 json_schema, #169 prewarm
@@ -40,10 +40,10 @@ pytestmark = pytest.mark.model
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 BASE = "http://localhost:11434"
 BASE_URL = f"{BASE}/v1"
-MODEL = "apple-foundationmodel"
+MODEL = "sayitdev-on-device"
 TIMEOUT = 60
 
 
@@ -115,7 +115,7 @@ def test_168_top_p_and_greedy_mapping():
 
     FIXED (#168): the sampling policy was extracted into a pure,
     FoundationModels-free decision — SamplingDecision.resolve(temperature:topP:seed:)
-    in ApfelCore — so it is exercised deterministically by the unit suite
+    in SayItDevCore — so it is exercised deterministically by the unit suite
     (Tests/apfelTests/SamplingDecisionTests.swift, runSamplingDecisionTests):
     top_p -> .nucleus(probabilityThreshold:seed:), temperature:0 (no top_p) ->
     .greedy, seed-only -> .topK(top:50,seed:). The executable's
@@ -138,7 +138,7 @@ def test_168_top_p_and_greedy_mapping():
 
     decision = (ROOT / "Sources" / "Core" / "SamplingDecision.swift").read_text()
     assert "public static func resolve(" in decision, (
-        "the pure sampling-policy seam must live in ApfelCore so it is "
+        "the pure sampling-policy seam must live in SayItDevCore so it is "
         "unit-testable without FoundationModels (#168)")
 
 
@@ -292,7 +292,7 @@ def test_179_streaming_refusal_counts_pre_refusal_tokens():
 
     resolver = (ROOT / "Sources" / "Core" / "Chat" / "StreamOutcome.swift").read_text()
     assert "func refusalCompletionText(prev: String, explanation: String) -> String" in resolver, (
-        "the pure completion-token helper must exist in ApfelCore so it is "
+        "the pure completion-token helper must exist in SayItDevCore so it is "
         "unit-testable without FoundationModels")
 
 

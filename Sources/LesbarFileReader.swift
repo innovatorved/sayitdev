@@ -8,12 +8,12 @@
 //   - image       -> OCR text PLUS "what the image is about" (Vision classification),
 //                    framed so the model gets both. OCR alone is not enough.
 //
-// Pure framing lives in ApfelCore.FileFraming; this file is the framework seam.
+// Pure framing lives in SayItDevCore.FileFraming; this file is the framework seam.
 // ============================================================================
 
 import Foundation
-import ApfelCore
-import ApfelCLI
+import SayItDevCore
+import SayItDevCLI
 import LesbarCore
 import Lesbar
 
@@ -36,7 +36,7 @@ enum LesbarFileReader {
         let kind = FileKind.detect(data: data, filename: name)
         switch kind {
         case .plainText:
-            // Raw passthrough — preserves apfel's existing text `-f` / pipe behaviour.
+            // Raw passthrough — preserves dev's existing text `-f` / pipe behaviour.
             return TextDecoding.decode(data).text
 
         case .pdf:
@@ -58,7 +58,7 @@ enum LesbarFileReader {
             return FileFraming.image(name: name, whatItShows: summary, ocrText: ocr)
 
         case .unknown:
-            throw CLIParseError("unsupported file type: \(name) (apfel -f reads text, PDF, and images)")
+            throw CLIParseError("unsupported file type: \(name) (dev -f reads text, PDF, and images)")
         }
     }
 
@@ -76,7 +76,7 @@ enum LesbarFileReader {
         case .plainText, .unknown: return nil
         }
         let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("apfel-stdin-\(ProcessInfo.processInfo.processIdentifier).\(ext)")
+            .appendingPathComponent("dev-stdin-\(ProcessInfo.processInfo.processIdentifier).\(ext)")
         do { try data.write(to: tmp) }
         catch { throw CLIParseError("could not stage piped input for extraction") }
         defer { try? FileManager.default.removeItem(at: tmp) }

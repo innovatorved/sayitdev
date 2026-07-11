@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:11434/v1`
 
-`apfel` implements the OpenAI Chat Completions and Responses surfaces for Apple's on-device model: a drop-in local backend for SDKs and tools that target a custom `base_url`.
+`dev` implements the OpenAI Chat Completions and Responses surfaces for Apple's on-device model: a drop-in local backend for SDKs and tools that target a custom `base_url`.
 
 ## Supported Surface
 
@@ -10,7 +10,7 @@
 |---------|--------|-------|
 | `POST /v1/chat/completions` | Supported | Streaming + non-streaming |
 | `POST /v1/responses` | Supported | See [Responses API](#responses-api) below |
-| `GET /v1/models` | Supported | Returns `apple-foundationmodel` |
+| `GET /v1/models` | Supported | Returns `sayitdev-on-device` |
 | `GET /health` | Supported | Model availability, context window, languages |
 | `GET /v1/logs`, `/v1/logs/stats` | Debug only | Requires `--debug` |
 | Tool calling | Supported | Native `ToolDefinition` + JSON detection. See [tool-calling-guide.md](tool-calling-guide.md) |
@@ -30,7 +30,7 @@
 
 ## Responses API
 
-`POST /v1/responses` is served as a translation layer over the same on-device pipeline as Chat Completions. apfel is stateless; the Responses API's server-side conversation state is deliberately not implemented.
+`POST /v1/responses` is served as a translation layer over the same on-device pipeline as Chat Completions. dev is stateless; the Responses API's server-side conversation state is deliberately not implemented.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -41,7 +41,7 @@
 | `text.format: json_object` / `json_schema` | Supported | json_schema is non-streaming only (501 with `stream: true`) |
 | Function tools (flat Responses shape) | Supported | Non-streaming only; the call comes back as a `function_call` output item for the client to execute |
 | `usage` | Supported | `input_tokens` / `output_tokens` / `total_tokens` |
-| `previous_response_id` | 501 | apfel is stateless: resend the full conversation in `input` |
+| `previous_response_id` | 501 | dev is stateless: resend the full conversation in `input` |
 | `store: true` | 501 | Responses are never stored; every response reports `"store": false` |
 | `background`, `reasoning`, `include` | 501 | Not available on-device |
 | Hosted tools (`web_search`, `file_search`, `computer_use`, ...) | 501 | The on-device model has no hosted tools |

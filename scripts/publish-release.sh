@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish a release of apfel — runs locally with full test qualification.
+# Publish a release of dev — runs locally with full test qualification.
 #
 # GitHub-hosted runners lack Apple Intelligence, so releases must run
 # on a Mac with Apple Intelligence enabled. This script does everything
@@ -48,12 +48,12 @@ echo "Version: $version"
 
 # --- Unit tests ---
 step "Unit tests"
-swift run apfel-tests
+swift run dev-tests
 
 # --- Integration tests (ALL 7 suites, full qualification) ---
 step "Integration tests (full qualification)"
 
-pkill -f "apfel --serve" 2>/dev/null || true
+pkill -f "dev --serve" 2>/dev/null || true
 sleep 1
 
 SERVER_PID=""
@@ -65,9 +65,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-.build/release/apfel --serve --port 11434 2>/dev/null &
+.build/release/dev --serve --port 11434 2>/dev/null &
 SERVER_PID=$!
-.build/release/apfel --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
+.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
 MCP_SERVER_PID=$!
 
 READY=0
@@ -83,7 +83,7 @@ done
 
 # Run ALL integration test files — directory discovery, not explicit lists.
 # This ensures new test files are never silently excluded from release qualification.
-# APFEL_REQUIRE_FULL=1: any skipped test fails the release (#227) - a skip means a
+# DEV_REQUIRE_FULL=1: any skipped test fails the release (#227) - a skip means a
 # feature shipped unverified (the exact green-by-skip hole this closes).
 # Two phases (#374): the model-free/parallel-safe partition first (cheap gates
 # fail before any model time is spent; parallel when pytest-xdist is present),
@@ -93,8 +93,8 @@ XDIST_ARGS=""
 if python3 -c "import xdist" 2>/dev/null; then
     XDIST_ARGS="-n auto --dist loadfile"
 fi
-APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $XDIST_ARGS -v --tb=short
-APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short
+DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $XDIST_ARGS -v --tb=short
+DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short
 
 # Stop servers
 kill "$SERVER_PID" "$MCP_SERVER_PID" 2>/dev/null || true
@@ -117,16 +117,16 @@ security find-identity -v -p codesigning 2>/dev/null | grep -q "Developer ID App
     || fail "no 'Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)' signing identity found - cannot publish a signed release (#226)"
 codesign --force --timestamp --options runtime \
     --sign "Developer ID Application: Franz Enzenhofer (7D2YX5DQ6M)" \
-    ".build/release/apfel" \
+    ".build/release/dev" \
     || fail "codesign failed - refusing to publish (#226)"
-codesign --verify --strict ".build/release/apfel" || fail "codesign verification failed (#226)"
+codesign --verify --strict ".build/release/dev" || fail "codesign verification failed (#226)"
 
 # --- Notarization hard gate (#226) ---
 # Refuse to publish an ad-hoc-signed binary, and notarize the signed binary so
 # Gatekeeper accepts non-brew downloads. A bare CLI binary cannot be stapled
 # (stapler needs a bundle/dmg/pkg), so we notarize the submission and ship
 # without a stapled ticket - Gatekeeper verifies notarization online.
-sig=$(codesign -dvv ".build/release/apfel" 2>&1 || true)
+sig=$(codesign -dvv ".build/release/dev" 2>&1 || true)
 echo "$sig" | grep -q "TeamIdentifier=7D2YX5DQ6M" || \
     fail "release binary is not Developer ID signed (need TeamIdentifier 7D2YX5DQ6M) - refusing to publish an ad-hoc release (#226)"
 echo "$sig" | grep -q "flags=.*runtime" || \
@@ -134,23 +134,23 @@ echo "$sig" | grep -q "flags=.*runtime" || \
 
 notarize_dir=$(mktemp -d)
 mkdir -p "$notarize_dir/payload"
-cp ".build/release/apfel" "$notarize_dir/payload/apfel"
-COPYFILE_DISABLE=1 ditto -c -k "$notarize_dir/payload" "$notarize_dir/apfel-notarize.zip"
+cp ".build/release/dev" "$notarize_dir/payload/dev"
+COPYFILE_DISABLE=1 ditto -c -k "$notarize_dir/payload" "$notarize_dir/dev-notarize.zip"
 # Credentials: prefer explicit App Store Connect creds (works non-interactively,
 # e.g. when the notarytool keychain profile lives in a locked keychain), else
 # fall back to the documented "notarytool" keychain profile (see
 # ~/dev/apple-dev-id/README.md). team-id defaults to Franz's team.
-if [ -n "${APFEL_NOTARY_APPLE_ID:-}" ] && [ -n "${APFEL_NOTARY_PASSWORD:-}" ]; then
-    xcrun notarytool submit "$notarize_dir/apfel-notarize.zip" \
-        --apple-id "$APFEL_NOTARY_APPLE_ID" \
-        --team-id "${APFEL_NOTARY_TEAM_ID:-7D2YX5DQ6M}" \
-        --password "$APFEL_NOTARY_PASSWORD" --wait \
+if [ -n "${DEV_NOTARY_APPLE_ID:-}" ] && [ -n "${DEV_NOTARY_PASSWORD:-}" ]; then
+    xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
+        --apple-id "$DEV_NOTARY_APPLE_ID" \
+        --team-id "${DEV_NOTARY_TEAM_ID:-7D2YX5DQ6M}" \
+        --password "$DEV_NOTARY_PASSWORD" --wait \
         || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226)."; }
 else
-    NOTARY_PROFILE="${APFEL_NOTARY_PROFILE:-notarytool}"
-    xcrun notarytool submit "$notarize_dir/apfel-notarize.zip" \
+    NOTARY_PROFILE="${DEV_NOTARY_PROFILE:-notarytool}"
+    xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
         --keychain-profile "$NOTARY_PROFILE" --wait \
-        || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226). Ensure the '$NOTARY_PROFILE' keychain profile exists (xcrun notarytool store-credentials) and its keychain is unlocked, or set APFEL_NOTARY_APPLE_ID / APFEL_NOTARY_PASSWORD."; }
+        || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226). Ensure the '$NOTARY_PROFILE' keychain profile exists (xcrun notarytool store-credentials) and its keychain is unlocked, or set DEV_NOTARY_APPLE_ID / DEV_NOTARY_PASSWORD."; }
 fi
 rm -rf "$notarize_dir"
 
@@ -166,7 +166,7 @@ bash scripts/stamp-changelog.sh "$version"
 # stamp is otherwise permanently one version behind the tag that ships it.
 # Outputs are unaffected by a version bump, so only the header line changes;
 # the macOS/chip/date parts of the stamp are preserved. Idempotent.
-sed -i '' -E "1,10s/^> apfel v[0-9]+\.[0-9]+\.[0-9]+ \|/> apfel v$version |/" docs/EXAMPLES.md
+sed -i '' -E "1,10s/^> dev v[0-9]+\.[0-9]+\.[0-9]+ \|/> dev v$version |/" docs/EXAMPLES.md
 
 git add .version README.md Sources/BuildInfo.swift CHANGELOG.md docs/EXAMPLES.md
 git commit -m "release v$version"
@@ -193,16 +193,16 @@ if [ -n "$prev_tag" ]; then
     notes+=$(git log --oneline "$prev_tag"..HEAD~1 -- | sed 's/^/- /')
 fi
 notes+=$'\n\n'"---"$'\n'
-notes+="Install: \`brew install apfel\`"$'\n'
-notes+="Upgrade: \`brew upgrade apfel\`"
+notes+="Install: \`brew install dev\`"$'\n'
+notes+="Upgrade: \`brew upgrade dev\`"
 
-if gh release view "v$version" --repo Arthur-Ficial/apfel >/dev/null 2>&1; then
-    gh release upload "v$version" "$asset" "$asset.sha256" --clobber --repo Arthur-Ficial/apfel
+if gh release view "v$version" --repo __UPSTREAM_DEV_REPO__ >/dev/null 2>&1; then
+    gh release upload "v$version" "$asset" "$asset.sha256" --clobber --repo __UPSTREAM_DEV_REPO__
 else
     gh release create "v$version" "$asset" "$asset.sha256" \
         --title "v$version" \
         --notes "$notes" \
-        --repo Arthur-Ficial/apfel
+        --repo __UPSTREAM_DEV_REPO__
 fi
 
 # --- Update Homebrew tap ---
@@ -212,15 +212,15 @@ TAP_DIR=$(mktemp -d)
 git clone "https://x-access-token:$(gh auth token)@github.com/Arthur-Ficial/homebrew-tap.git" "$TAP_DIR" --quiet
 
 make update-homebrew-formula \
-    HOMEBREW_FORMULA_OUTPUT="$TAP_DIR/Formula/apfel.rb" \
+    HOMEBREW_FORMULA_OUTPUT="$TAP_DIR/Formula/dev.rb" \
     HOMEBREW_FORMULA_SHA256="$sha256"
 
 cd "$TAP_DIR"
 git config user.name "Arthur Ficial"
 git config user.email "arti.ficial@fullstackoptimization.com"
-if ! git diff --quiet -- Formula/apfel.rb; then
-    git add Formula/apfel.rb
-    git commit -m "apfel v$version"
+if ! git diff --quiet -- Formula/dev.rb; then
+    git add Formula/dev.rb
+    git commit -m "dev v$version"
     git push origin main
     echo "Tap updated to v$version"
 else
@@ -245,7 +245,7 @@ fi
 # --- Done ---
 step "Release v$version complete"
 echo ""
-echo "  GitHub Release: https://github.com/Arthur-Ficial/apfel/releases/tag/v$version"
+echo "  GitHub Release: __UPSTREAM_DEV_URL__/releases/tag/v$version"
 echo "  Homebrew tap:   updated"
 echo "  homebrew-core:  autobump will pick this up within ~24h"
 echo "  nixpkgs:        PR opened (or warning above)"

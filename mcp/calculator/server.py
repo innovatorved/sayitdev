@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-apfel-calc - MCP calculator server for Apple Intelligence
+dev-calc - MCP calculator server for Apple Intelligence
 
 A standards-compliant Model Context Protocol server that gives
 Apple's on-device LLM the ability to do math.
@@ -16,7 +16,7 @@ Usage with Claude Desktop / Claude Code:
     "mcpServers": {
       "calculator": {
         "command": "python3",
-        "args": ["/path/to/apfel/mcp/calculator/server.py"]
+        "args": ["/path/to/dev/mcp/calculator/server.py"]
       }
     }
   }
@@ -27,7 +27,7 @@ import math
 import sys
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_NAME = "apfel-calc"
+SERVER_NAME = "dev-calc"
 SERVER_VERSION = "1.0.0"
 
 NUM_SCHEMA = {"type": "number"}

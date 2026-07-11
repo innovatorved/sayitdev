@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-apfel-calc-http - MCP calculator server over Streamable HTTP transport
+dev-calc-http - MCP calculator server over Streamable HTTP transport
 
 HTTP equivalent of mcp/calculator/server.py. Used by integration tests.
 
@@ -17,7 +17,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_NAME = "apfel-calc-http"
+SERVER_NAME = "dev-calc-http"
 SERVER_VERSION = "1.0.0"
 
 NUM_SCHEMA = {"type": "number"}
@@ -238,7 +238,7 @@ def main():
 
     endpoint = "/mcp"
     print(
-        f"apfel-calc-http listening on http://127.0.0.1:{args.port}{endpoint}",
+        f"dev-calc-http listening on http://127.0.0.1:{args.port}{endpoint}",
         file=sys.stderr,
     )
     if args.token:

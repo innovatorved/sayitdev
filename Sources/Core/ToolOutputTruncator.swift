@@ -1,6 +1,6 @@
 // ============================================================================
 // ToolOutputTruncator.swift - Head+tail truncation of tool output to a token
-// budget before the follow-up prompt (#221). Pure logic, part of ApfelCore.
+// budget before the follow-up prompt (#221). Pure logic, part of SayItDevCore.
 // ============================================================================
 
 import Foundation

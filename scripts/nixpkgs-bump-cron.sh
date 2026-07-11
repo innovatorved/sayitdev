@@ -20,9 +20,9 @@ set -uo pipefail
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BUMP="${NIXPKGS_BUMP_SCRIPT:-$REPO_ROOT/scripts/publish-nixpkgs-bump.sh}"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/apfel"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dev"
 STATE_FILE="$STATE_DIR/nixpkgs-bump-alert.state"
-LOG="$HOME/Library/Logs/apfel-nixpkgs-bump.log"
+LOG="$HOME/Library/Logs/dev-nixpkgs-bump.log"
 ALERT_TO="${NIXPKGS_BUMP_ALERT_TO:-franz.enzenhofer@fullstackoptimization.com}"
 mkdir -p "$STATE_DIR"
 
@@ -51,13 +51,13 @@ if is_actionable "$status"; then
   if [[ "$key" != "$prev" ]]; then
     case "$status" in
       AUTH_2FA)  hint="FIX: NixOS requires authenticator/passkey 2FA. Remove the SMS factor from the Arthur-Ficial GitHub account (Settings -> Password and authentication -> SMS/Text message -> Disable). TOTP stays the anchor; recovery codes are in 'pass show github/recovery-codes'. Then re-run: $BUMP --version $version" ;;
-      BUILD_FAIL) hint="FIX: nix-build failed - see /tmp/apfel-nixpkgs-build.log" ;;
+      BUILD_FAIL) hint="FIX: nix-build failed - see /tmp/dev-nixpkgs-build.log" ;;
       AUTH_GENERIC) hint="FIX: gh CLI is not authenticated - run 'gh auth login' then re-run the bump." ;;
       PUSH_FAIL) hint="FIX: git push to the fork failed - check network and the Arthur-Ficial/nixpkgs fork." ;;
       *) hint="" ;;
     esac
     {
-      echo "The twice-daily nixpkgs apfel-llm bump is failing and needs attention."
+      echo "The twice-daily nixpkgs dev-llm bump is failing and needs attention."
       echo
       echo "Status:  $status"
       echo "Version: $version"
@@ -69,7 +69,7 @@ if is_actionable "$status"; then
       echo "Full log: $LOG"
       echo
       echo "Cheers, Arthur Ficial"
-    } | hm-send "$ALERT_TO" "apfel nixpkgs bump FAILED: $status (v$version)" \
+    } | hm-send "$ALERT_TO" "dev nixpkgs bump FAILED: $status (v$version)" \
       && echo "[cron] alerted Franz: $key" \
       || echo "[cron] WARN: hm-send failed; could not alert ($key)"
     printf '%s' "$key" > "$STATE_FILE"

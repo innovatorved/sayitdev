@@ -1,5 +1,5 @@
 """
-apfel Integration Tests - CHANGELOG.md release stamping.
+dev Integration Tests - CHANGELOG.md release stamping.
 
 The release workflow must keep CHANGELOG.md current: on each release it stamps
 the accumulated `## [Unreleased]` section as `## [<version>] - <date>` and opens

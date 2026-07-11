@@ -14,7 +14,7 @@ pytestmark = pytest.mark.model
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 
 # Benchmarks with a large, reliably measurable algorithmic win (binary-search
 # trims, schema-convert caching, capture short-circuits). A single wall-clock
@@ -31,9 +31,9 @@ _SPEEDUP_BENCHMARKS = [
 ]
 # Odd count so the median is a single observed run, never an average of two.
 # Default 3 (#374): a median of 3 still absorbs the one noisy run that #264
-# guarded against, at ~half the wall-clock of 5. Set APFEL_BENCH_RUNS=5 when
+# guarded against, at ~half the wall-clock of 5. Set DEV_BENCH_RUNS=5 when
 # investigating benchmark flakes.
-_SPEEDUP_RUNS = int(os.environ.get("APFEL_BENCH_RUNS", "3"))
+_SPEEDUP_RUNS = int(os.environ.get("DEV_BENCH_RUNS", "3"))
 
 
 def _run_benchmarks():

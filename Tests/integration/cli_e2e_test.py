@@ -1,5 +1,5 @@
 """
-apfel Integration Tests — CLI E2E
+dev Integration Tests — CLI E2E
 
 Exercises the release binary as a real UNIX tool:
 - help/version/exit codes
@@ -25,7 +25,7 @@ import pytest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
@@ -33,11 +33,11 @@ def run_cli(args, input_text=None, env=None, timeout=60):
     merged_env = os.environ.copy()
     for key in [
         "NO_COLOR",
-        "APFEL_SYSTEM_PROMPT",
-        "APFEL_HOST",
-        "APFEL_PORT",
-        "APFEL_TEMPERATURE",
-        "APFEL_MAX_TOKENS",
+        "DEV_SYSTEM_PROMPT",
+        "DEV_HOST",
+        "DEV_PORT",
+        "DEV_TEMPERATURE",
+        "DEV_MAX_TOKENS",
     ]:
         merged_env.pop(key, None)
     if env:
@@ -56,11 +56,11 @@ def run_cli_tty(args, env=None, timeout=30):
     merged_env = os.environ.copy()
     for key in [
         "NO_COLOR",
-        "APFEL_SYSTEM_PROMPT",
-        "APFEL_HOST",
-        "APFEL_PORT",
-        "APFEL_TEMPERATURE",
-        "APFEL_MAX_TOKENS",
+        "DEV_SYSTEM_PROMPT",
+        "DEV_HOST",
+        "DEV_PORT",
+        "DEV_TEMPERATURE",
+        "DEV_MAX_TOKENS",
     ]:
         merged_env.pop(key, None)
     if env:
@@ -108,11 +108,11 @@ def run_cli_chat_json(args, steps, env=None, timeout=60, stop_when=None):
     merged_env = os.environ.copy()
     for key in [
         "NO_COLOR",
-        "APFEL_SYSTEM_PROMPT",
-        "APFEL_HOST",
-        "APFEL_PORT",
-        "APFEL_TEMPERATURE",
-        "APFEL_MAX_TOKENS",
+        "DEV_SYSTEM_PROMPT",
+        "DEV_HOST",
+        "DEV_PORT",
+        "DEV_TEMPERATURE",
+        "DEV_MAX_TOKENS",
     ]:
         merged_env.pop(key, None)
     if env:
@@ -202,11 +202,11 @@ def run_cli_chat_tty(args, steps, env=None, timeout=60, stop_when=None):
     merged_env = os.environ.copy()
     for key in [
         "NO_COLOR",
-        "APFEL_SYSTEM_PROMPT",
-        "APFEL_HOST",
-        "APFEL_PORT",
-        "APFEL_TEMPERATURE",
-        "APFEL_MAX_TOKENS",
+        "DEV_SYSTEM_PROMPT",
+        "DEV_HOST",
+        "DEV_PORT",
+        "DEV_TEMPERATURE",
+        "DEV_MAX_TOKENS",
     ]:
         merged_env.pop(key, None)
     if env:
@@ -301,7 +301,7 @@ def test_help_exit_success():
 def test_version_exit_success():
     result = run_cli(["--version"])
     assert result.returncode == 0
-    assert result.stdout.startswith("apfel v")
+    assert result.stdout.startswith("dev v")
 
 
 def test_count_tokens_in_help():
@@ -314,10 +314,10 @@ def test_count_tokens_in_help():
 # --- Shell completions (#259) ------------------------------------------------
 
 def test_completions_zsh_exit_and_content():
-    """`apfel completions zsh` exits 0 and prints a zsh completion script."""
+    """`dev completions zsh` exits 0 and prints a zsh completion script."""
     result = run_cli(["completions", "zsh"], timeout=15)
     assert result.returncode == 0, f"stderr: {result.stderr}"
-    assert result.stdout.startswith("#compdef apfel"), result.stdout[:80]
+    assert result.stdout.startswith("#compdef dev"), result.stdout[:80]
     assert "--context-strategy" in result.stdout
     assert "newest-first" in result.stdout
 
@@ -325,10 +325,10 @@ def test_completions_zsh_exit_and_content():
 def test_completions_bash_and_fish_content():
     bash = run_cli(["completions", "bash"], timeout=15)
     assert bash.returncode == 0
-    assert "complete -F _apfel apfel" in bash.stdout
+    assert "complete -F _apfel dev" in bash.stdout
     fish = run_cli(["completions", "fish"], timeout=15)
     assert fish.returncode == 0
-    assert "complete -c apfel" in fish.stdout
+    assert "complete -c dev" in fish.stdout
 
 
 def test_completions_missing_shell_is_usage_error():
@@ -398,16 +398,16 @@ def test_serve_still_accepts_server_flags():
 
 
 def test_committed_completion_files_match_binary():
-    """The checked-in completions/apfel.{bash,zsh,fish} must match the binary.
+    """The checked-in completions/dev.{bash,zsh,fish} must match the binary.
 
     Packagers install the committed files; if the generator changes, they must
-    be regenerated (`apfel completions <shell> > completions/apfel.<shell>`).
+    be regenerated (`dev completions <shell> > completions/dev.<shell>`).
     """
     for shell in ("bash", "zsh", "fish"):
-        committed = (ROOT / "completions" / f"apfel.{shell}").read_text()
+        committed = (ROOT / "completions" / f"dev.{shell}").read_text()
         generated = run_cli(["completions", shell], timeout=15).stdout
         assert committed == generated, (
-            f"completions/apfel.{shell} is stale; regenerate it from the binary"
+            f"completions/dev.{shell} is stale; regenerate it from the binary"
         )
 
 
@@ -496,12 +496,12 @@ def test_empty_no_color_still_colors_under_tty():
 def _run_split_tty(args, env=None, timeout=30):
     """Run the binary with stdout on a pty (a TTY) but stderr on a plain pipe.
 
-    Reproduces the `apfel ... 2>err.log` case from a terminal: stdout is a
+    Reproduces the `dev ... 2>err.log` case from a terminal: stdout is a
     terminal, stderr is redirected. Returns (returncode, stderr_bytes).
     """
     merged_env = os.environ.copy()
-    for key in ["NO_COLOR", "APFEL_SYSTEM_PROMPT", "APFEL_HOST",
-                "APFEL_PORT", "APFEL_TEMPERATURE", "APFEL_MAX_TOKENS"]:
+    for key in ["NO_COLOR", "DEV_SYSTEM_PROMPT", "DEV_HOST",
+                "DEV_PORT", "DEV_TEMPERATURE", "DEV_MAX_TOKENS"]:
         merged_env.pop(key, None)
     if env:
         merged_env.update(env)
@@ -555,12 +555,12 @@ def test_empty_stdin_usage_error_keeps_stdout_empty():
 def _run_no_args_tty_stdin(timeout=15):
     """No args with stdin on a pty (interactive TTY), stdout/stderr on pipes.
 
-    Reproduces launching `apfel` with nothing to do at a terminal. Returns
+    Reproduces launching `dev` with nothing to do at a terminal. Returns
     (returncode, stdout_bytes, stderr_bytes).
     """
     merged_env = os.environ.copy()
-    for key in ["NO_COLOR", "APFEL_SYSTEM_PROMPT", "APFEL_HOST",
-                "APFEL_PORT", "APFEL_TEMPERATURE", "APFEL_MAX_TOKENS"]:
+    for key in ["NO_COLOR", "DEV_SYSTEM_PROMPT", "DEV_HOST",
+                "DEV_PORT", "DEV_TEMPERATURE", "DEV_MAX_TOKENS"]:
         merged_env.pop(key, None)
     stdin_master, stdin_slave = pty.openpty()
     out_r, out_w = os.pipe()
@@ -607,7 +607,7 @@ def test_quiet_json_prompt_output_is_machine_readable():
     )
     assert result.returncode == 0
     payload = json.loads(result.stdout)
-    assert payload["model"] == "apple-foundationmodel"
+    assert payload["model"] == "sayitdev-on-device"
     assert payload["content"].strip()
     assert result.stderr == ""
 
@@ -622,7 +622,7 @@ def test_piped_stdin_json_output_is_machine_readable():
     )
     assert result.returncode == 0
     payload = json.loads(result.stdout)
-    assert payload["model"] == "apple-foundationmodel"
+    assert payload["model"] == "sayitdev-on-device"
     assert payload["content"].strip()
     assert result.stderr == ""
 
@@ -830,7 +830,7 @@ def test_file_flag_unknown_binary_gives_utf8_error():
 
 @pytest.mark.model
 def test_file_flag_with_prompt():
-    """apfel -f <file> <prompt> should prepend file content to the prompt."""
+    """dev -f <file> <prompt> should prepend file content to the prompt."""
     require_model()
     tmp = pathlib.Path("/tmp/apfel_test_file_flag.txt")
     tmp.write_text("The capital of Austria is Vienna.")
@@ -848,7 +848,7 @@ def test_file_flag_with_prompt():
 
 @pytest.mark.model
 def test_file_flag_no_prompt():
-    """apfel -f <file> with no prompt argument should use file content as the prompt."""
+    """dev -f <file> with no prompt argument should use file content as the prompt."""
     require_model()
     tmp = pathlib.Path("/tmp/apfel_test_file_noprompt.txt")
     tmp.write_text("What is 2+2? Reply with just the number.")
@@ -866,7 +866,7 @@ def test_file_flag_no_prompt():
 
 @pytest.mark.model
 def test_multiple_file_flags():
-    """apfel -f a.txt -f b.txt <prompt> should include content from both files."""
+    """dev -f a.txt -f b.txt <prompt> should include content from both files."""
     require_model()
     tmp_a = pathlib.Path("/tmp/apfel_test_multi_a.txt")
     tmp_b = pathlib.Path("/tmp/apfel_test_multi_b.txt")
@@ -904,7 +904,7 @@ def test_stdin_with_prompt_argument():
 
 @pytest.mark.model
 def test_file_flag_with_stdin_and_prompt():
-    """apfel -f <file> <prompt> with piped stdin should include all three."""
+    """dev -f <file> <prompt> with piped stdin should include all three."""
     require_model()
     tmp = pathlib.Path("/tmp/apfel_test_file_stdin.txt")
     tmp.write_text("File content: The answer is 42.")
@@ -956,7 +956,7 @@ def test_stdin_only_with_stream_flag():
 
 @pytest.mark.model
 def test_file_flag_with_stdin_and_stream():
-    """apfel -f <file> --stream <prompt> with piped stdin should include all three (GH-82)."""
+    """dev -f <file> --stream <prompt> with piped stdin should include all three (GH-82)."""
     require_model()
     tmp = pathlib.Path("/tmp/apfel_test_file_stdin_stream.txt")
     tmp.write_text("File content: The answer is 42.")
@@ -1002,7 +1002,7 @@ def test_update_flag_exits_success():
 def test_update_shows_version():
     """--update output should contain the current version."""
     result = run_cli(["--update"])
-    assert "apfel v" in result.stdout
+    assert "dev v" in result.stdout
 
 
 def test_update_detects_install_method():
@@ -1049,13 +1049,13 @@ def test_empty_pipe_quiet_suppresses_hint():
 
 
 def test_empty_file_redirect_no_hint(tmp_path):
-    """Empty regular-file redirect (`apfel "q" < empty.txt`) should NOT emit the
-    pipe hint - the hint is only useful for `command 2>&1 | apfel` (#152)."""
+    """Empty regular-file redirect (`dev "q" < empty.txt`) should NOT emit the
+    pipe hint - the hint is only useful for `command 2>&1 | dev` (#152)."""
     empty_file = tmp_path / "empty.txt"
     empty_file.write_text("")
     merged_env = os.environ.copy()
-    for key in ["NO_COLOR", "APFEL_SYSTEM_PROMPT", "APFEL_HOST", "APFEL_PORT",
-                "APFEL_TEMPERATURE", "APFEL_MAX_TOKENS"]:
+    for key in ["NO_COLOR", "DEV_SYSTEM_PROMPT", "DEV_HOST", "DEV_PORT",
+                "DEV_TEMPERATURE", "DEV_MAX_TOKENS"]:
         merged_env.pop(key, None)
     with open(empty_file, "rb") as fh:
         result = subprocess.run(
@@ -1256,18 +1256,18 @@ def test_readme_cli_reference_complete():
 
 @pytest.mark.model
 def test_apfel_mcp_env_var():
-    """APFEL_MCP env var should attach MCP servers (same as --mcp flag)."""
+    """DEV_MCP env var should attach MCP servers (same as --mcp flag)."""
     require_model()
     mcp_path = str(ROOT / "mcp" / "calculator" / "server.py")
     result = run_cli(
         ["What is 3 + 4? Use the add tool."],
-        env={"APFEL_MCP": mcp_path},
+        env={"DEV_MCP": mcp_path},
         timeout=90,
     )
     assert result.returncode == 0
     # stderr must show MCP tool discovery ("mcp: ... add, subtract, ...")
     assert "mcp:" in result.stderr.lower(), \
-        f"APFEL_MCP env var not loading MCP server. stderr: {result.stderr[:300]}"
+        f"DEV_MCP env var not loading MCP server. stderr: {result.stderr[:300]}"
 
 
 def test_homebrew_formula_has_service_block():
@@ -1287,10 +1287,10 @@ def test_mcp_timeout_flag_in_help():
 
 
 def test_mcp_timeout_env_var_in_help():
-    """APFEL_MCP_TIMEOUT must appear in help output."""
+    """DEV_MCP_TIMEOUT must appear in help output."""
     result = run_cli(["--help"])
-    assert "APFEL_MCP_TIMEOUT" in result.stdout, \
-        f"APFEL_MCP_TIMEOUT not in help: {result.stdout[:500]}"
+    assert "DEV_MCP_TIMEOUT" in result.stdout, \
+        f"DEV_MCP_TIMEOUT not in help: {result.stdout[:500]}"
 
 
 @pytest.mark.model  # needs an available model: the availability gate
@@ -1316,13 +1316,13 @@ def test_mcp_timeout_short_causes_fast_failure():
 # (exit 5, #222) fires before MCP init on ineligible hardware, so the
 # MCP timeout path is unreachable on GitHub runners.
 def test_mcp_timeout_env_var_works():
-    """APFEL_MCP_TIMEOUT=1 should timeout same as --mcp-timeout 1."""
+    """DEV_MCP_TIMEOUT=1 should timeout same as --mcp-timeout 1."""
     require_model()
     slow_server = str(ROOT / "Tests" / "integration" / "fixtures" / "slow_startup_mcp_server.py")
     start = time.time()
     result = run_cli(
         ["--mcp", slow_server, "hello"],
-        env={"APFEL_MCP_TIMEOUT": "1"},
+        env={"DEV_MCP_TIMEOUT": "1"},
         timeout=10,
     )
     elapsed = time.time() - start
@@ -1343,7 +1343,7 @@ def test_mcp_timeout_default_unchanged():
 def test_mcp_child_reaped_on_exit_path():
     """MCP children are reaped on exit paths, not orphaned (#246).
 
-    apfel with --mcp and empty stdin initializes the MCP server, then exits 2
+    dev with --mcp and empty stdin initializes the MCP server, then exits 2
     ("no prompt provided"). The eof-ignoring fixture never observes stdin EOF,
     so before the fix - which fired shutdown as a `defer { Task { ... } }` the
     exiting process never scheduled - the child was orphaned. The fix awaits MCP
@@ -1637,7 +1637,7 @@ def test_code_flag_in_help_and_completions():
 
 @pytest.mark.model
 def test_code_python_output_is_bare_parseable_code():
-    """The flagship use case: apfel --code "python function" > file.py must
+    """The flagship use case: dev --code "python function" > file.py must
     yield fence-free, syntactically valid Python. ast.parse is the objective,
     content-free correctness check."""
     import ast
@@ -1678,7 +1678,7 @@ def test_code_json_envelope_has_content_and_language():
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
     payload = json.loads(result.stdout)
-    assert payload["model"] == "apple-foundationmodel"
+    assert payload["model"] == "sayitdev-on-device"
     assert payload["content"].strip()
     assert "```" not in payload["content"]
     # language is advisory and may be absent (bare pass-through); when present
@@ -1729,7 +1729,7 @@ def test_code_oneliner_battery(prompt):
 @pytest.mark.model
 def test_demo_cmd_and_oneliner_scripts_work(tmp_path):
     """The bundled cmd and oneliner demos (upgraded to --code in #373) run
-    end-to-end: `apfel --demos` writes them, they execute, and they emit a
+    end-to-end: `dev --demos` writes them, they execute, and they emit a
     fence-free command line."""
     require_model()
     result = run_cli(["--demos", str(tmp_path / "demos")], timeout=30)

@@ -3,11 +3,11 @@
 // ============================================================================
 
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 // MARK: - CLI Response Types
 
-struct ApfelResponse: Encodable {
+struct SayItDevResponse: Encodable {
     let model: String
     let content: String
     /// `--code` only (#373): first word of the fence info string, lowercased.
@@ -27,7 +27,7 @@ struct ChatMessage: Encodable {
     let model: String?
 }
 
-/// JSON output for `apfel --count-tokens -o json`.
+/// JSON output for `dev --count-tokens -o json`.
 struct TokenBudgetJSONResponse: Encodable {
     let prompt_tokens: Int
     let system_tokens: Int

@@ -1,6 +1,6 @@
 // ============================================================================
 // ContextManager.swift — Convert OpenAI messages to LanguageModelSession
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 //
 // Uses FoundationModels Transcript API to reconstruct session state from
 // OpenAI's stateless message history — NO re-inference on history.
@@ -9,7 +9,7 @@
 
 import FoundationModels
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 enum ContextManager {
 
@@ -50,7 +50,7 @@ enum ContextManager {
             history = conversation
         } else {
             guard let text = conversation.last?.textContent, !text.isEmpty else {
-                throw ApfelError.unknown("Last message has no text content")
+                throw SayItDevError.unknown("Last message has no text content")
             }
             finalPrompt = text
             history = Array(conversation.dropLast())
@@ -97,7 +97,7 @@ enum ContextManager {
             budget: budget,
             config: options.contextConfig
         ) else {
-            throw ApfelError.contextOverflow
+            throw SayItDevError.contextOverflow
         }
 
         let session = makeTranscriptSession(model: model, entries: entries)

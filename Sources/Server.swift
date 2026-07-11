@@ -1,12 +1,13 @@
 // ============================================================================
 // Server.swift — OpenAI-compatible HTTP server
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
 import Hummingbird
 import NIOCore
-import ApfelCore
+import SayItDevCore
+import SayItDevCLI
 
 /// Server configuration passed from CLI argument parsing.
 struct ServerConfig: Sendable {
@@ -53,10 +54,10 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
 
     // Pre-fetch static model properties BEFORE binding so:
     // (a) the first /health or /v1/models request does not pay the cold-start
-    //     SDK cost (12-second GUI health-probe timeouts observed in apfel-gui#4),
+    //     SDK cost (12-second GUI health-probe timeouts observed in dev-gui#4),
     // (b) any SDK-level crash inside SystemLanguageModel.supportedLanguages
     //     fails visibly during startup instead of SIGSEGV on a routine health
-    //     probe (also apfel-gui#4).
+    //     probe (also dev-gui#4).
     // Availability stays a per-request read because it can flip at runtime
     // (user toggles Apple Intelligence, assets re-download, etc.).
     let tc = TokenCounter.shared
@@ -76,7 +77,7 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
 
     // Health - includes model availability from SDK.
     // contextSize and supportedLanguages captured from startup to avoid
-    // per-request SDK calls (cold-start safety, apfel-gui#4).
+    // per-request SDK calls (cold-start safety, dev-gui#4).
     router.get("/health") { _, _ -> Response in
         let active = await serverState.logStore.activeRequests
         let available = await TokenCounter.shared.isAvailable
@@ -276,6 +277,56 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
         openAIError(status: .init(code: 501), message: "Embeddings not supported by Apple's on-device model.", type: "invalid_request_error")
     }
 
+    let defaultVoiceConfig = VoiceConfig()
+
+    router.post("/v1/audio/speech") { request, _ -> Response in
+        let start = Date()
+        let requestId = "speech-\(UUID().uuidString.prefix(12).lowercased())"
+        do {
+            try await serverState.semaphore.wait(timeout: .seconds(30))
+        } catch {
+            return openAIError(status: .tooManyRequests, message: "Server at max concurrent capacity (\(config.maxConcurrent)).", type: "rate_limit_error")
+        }
+        await serverState.logStore.requestStarted()
+        defer {
+            Task { await serverState.semaphore.signal(); await serverState.logStore.requestFinished() }
+        }
+        do {
+            return try await handleAudioSpeech(request, voiceConfig: defaultVoiceConfig)
+        } catch {
+            let log = RequestLog(
+                id: requestId, timestamp: ISO8601DateFormatter().string(from: Date()),
+                method: "POST", path: "/v1/audio/speech", status: 400,
+                duration_ms: Int(Date().timeIntervalSince(start) * 1000),
+                stream: false, estimated_tokens: nil,
+                error: String(describing: error), request_body: nil, response_body: nil, events: []
+            )
+            await serverState.logStore.append(log)
+            return openAIError(status: .badRequest, message: error.localizedDescription, type: "invalid_request_error")
+        }
+    }
+
+    router.post("/v1/audio/transcriptions") { request, _ -> Response in
+        do {
+            try await serverState.semaphore.wait(timeout: .seconds(30))
+        } catch {
+            return openAIError(status: .tooManyRequests, message: "Server at max concurrent capacity (\(config.maxConcurrent)).", type: "rate_limit_error")
+        }
+        await serverState.logStore.requestStarted()
+        defer {
+            Task { await serverState.semaphore.signal(); await serverState.logStore.requestFinished() }
+        }
+        do {
+            return try await handleAudioTranscription(request, voiceConfig: defaultVoiceConfig)
+        } catch {
+            return openAIError(status: .badRequest, message: error.localizedDescription, type: "invalid_request_error")
+        }
+    }
+
+    router.get("/v1/audio/voices") { _, _ -> Response in
+        handleAudioVoices()
+    }
+
     let app = Application(
         router: router,
         configuration: .init(
@@ -287,7 +338,7 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
         ? "localhost only (\(config.allowedOrigins.joined(separator: ", ")))"
         : styledErr("disabled (all origins allowed)", .red)
     var bannerLines = [
-        "\(styledErr("apfel server", .cyan, .bold)) v\(version)",
+        "\(styledErr("SayItDev server", .cyan, .bold)) v\(version)",
         "\(styledErr("├", .dim)) endpoint: http://\(config.host):\(config.port)",
         "\(styledErr("├", .dim)) model:    \(modelName)",
         "\(styledErr("├", .dim)) cors:     \(config.cors ? "enabled" : "disabled")",
@@ -323,6 +374,9 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
     printStderr("")
     printStderr(styledErr("Endpoints:", .yellow, .bold))
     printStderr("  POST http://\(config.host):\(config.port)/v1/chat/completions")
+    printStderr("  POST http://\(config.host):\(config.port)/v1/audio/speech")
+    printStderr("  POST http://\(config.host):\(config.port)/v1/audio/transcriptions")
+    printStderr("  GET  http://\(config.host):\(config.port)/v1/audio/voices")
     printStderr("  GET  http://\(config.host):\(config.port)/v1/models")
     if config.debug {
         printStderr("  GET  http://\(config.host):\(config.port)/v1/logs")
@@ -337,13 +391,13 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil) async thro
         printStderr("")
         printStderr(styledErr("error: Port \(config.port) is already in use.", .red, .bold))
         printStderr("Another process (e.g. Ollama) may be listening on this port.")
-        printStderr("Fix: \(styledErr("apfel --serve --port <other-port>", .cyan)) or stop the other process.")
+        printStderr("Fix: \(styledErr("dev --serve --port <other-port>", .cyan)) or stop the other process.")
         exit(exitRuntimeError)
     }
 }
 
 func isLoopbackHost(_ host: String) -> Bool {
-    // Single source of truth lives in ApfelCore so it is unit-testable (#228).
+    // Single source of truth lives in SayItDevCore so it is unit-testable (#228).
     ServerSecurity.isLoopbackHost(host)
 }
 

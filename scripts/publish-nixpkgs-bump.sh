@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# publish-nixpkgs-bump.sh - open/advance the nixpkgs PR bumping apfel-llm.
+# publish-nixpkgs-bump.sh - open/advance the nixpkgs PR bumping dev-llm.
 #
 # THIS IS THE PERMANENT nixpkgs pipeline - not a legacy fallback.
 #
-# apfel-llm is `meta.platforms = [ "aarch64-darwin" ]`. The nixpkgs auto-update
+# dev-llm is `meta.platforms = [ "aarch64-darwin" ]`. The nixpkgs auto-update
 # bot r-ryantm runs ONLY on x86_64-linux and has no darwin workers, so it
-# REFUSES to evaluate apfel-llm and never opens a bump PR (proof: its log at
-# https://nixpkgs-update-logs.nix-community.org/apfel-llm/ - "Refusing to
+# REFUSES to evaluate dev-llm and never opens a bump PR (proof: its log at
+# https://nixpkgs-update-logs.nix-community.org/dev-llm/ - "Refusing to
 # evaluate ... hostPlatform.system = x86_64-linux"). This is universal for
 # darwin-only packages (raycast, aldente, etc. all hit the same wall).
 #
@@ -37,7 +37,7 @@ REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 NIXPKGS_DIR="${NIXPKGS_BUMP_DIR:-$HOME/dev/nixpkgs-bump}"
 UPSTREAM="NixOS/nixpkgs"
 FORK="Arthur-Ficial/nixpkgs"
-PACKAGE_PATH="pkgs/by-name/ap/apfel-llm/package.nix"
+PACKAGE_PATH="pkgs/by-name/ap/dev-llm/package.nix"
 
 version=""
 dry_run=false
@@ -73,7 +73,7 @@ finish() {
 # catch-up run, which has no --version and where the local .version may lag a
 # release made elsewhere). Falls back to local .version if the API is down.
 if [[ -z "$version" ]]; then
-  version=$(gh api repos/Arthur-Ficial/apfel/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//' || true)
+  version=$(gh api repos/__UPSTREAM_DEV_REPO__/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//' || true)
   [[ -z "$version" ]] && version=$(cat "$REPO_ROOT/.version" 2>/dev/null || true)
 fi
 
@@ -192,21 +192,21 @@ if ! $dry_run; then
   fi
 
   # Advance a SINGLE bump PR instead of opening a new one per release. Find any
-  # open apfel-llm bump PR from our fork; reuse its branch (force-push updates
+  # open dev-llm bump PR from our fork; reuse its branch (force-push updates
   # that PR in place) and close any extras. Only when none exist do we open a
   # fresh PR on a stable branch. This stops the version-named-branch pileup that
   # left 1.3.5/1.3.6/1.3.7/1.3.8 all open at once.
-  open_prs=$(gh pr list --repo "$UPSTREAM" --state open --search "apfel-llm in:title" \
+  open_prs=$(gh pr list --repo "$UPSTREAM" --state open --search "dev-llm in:title" \
     --json number,headRefName,headRepositoryOwner \
     --jq '[.[] | select(.headRepositoryOwner.login=="Arthur-Ficial")]' 2>/dev/null || echo '[]')
 
   # Keep the newest, close the rest. The branch regex matches only bump branches
-  # (apfel-llm-bump or apfel-llm-<version>), so non-bump PRs such as
-  # apfel-llm-add-maintainer are never reused or closed by this flow.
+  # (dev-llm-bump or dev-llm-<version>), so non-bump PRs such as
+  # dev-llm-add-maintainer are never reused or closed by this flow.
   keep_number=""; keep_branch=""; dup_numbers=""
   { read -r keep_number; read -r keep_branch; read -r dup_numbers; } < <(
     printf '%s' "$open_prs" | python3 -c 'import json,re,sys
-prs=[p for p in json.load(sys.stdin) if re.match(r"^apfel-llm-(bump|[0-9])", p["headRefName"])]
+prs=[p for p in json.load(sys.stdin) if re.match(r"^dev-llm-(bump|[0-9])", p["headRefName"])]
 prs.sort(key=lambda p: p["number"])
 if prs:
     print(prs[-1]["number"]); print(prs[-1]["headRefName"])
@@ -218,7 +218,7 @@ else:
     branch="$keep_branch"
     info "Reusing open PR #$keep_number (branch $branch; old: $old_version, new: $version)..."
   else
-    branch="apfel-llm-bump"
+    branch="dev-llm-bump"
     info "No open bump PR - using stable branch $branch (old: $old_version, new: $version)..."
   fi
   # If the reused PR already targets this version, the run has nothing to do but
@@ -249,19 +249,19 @@ else:
   #     r-ryantm cannot do this on its Linux worker - we can, because the host
   #     matches meta.platforms. A bad hash/tarball fails here, before any PR. ---
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    info "Build-verifying apfel-llm $version (nix-build on $(uname -m)-darwin)..."
-    if ( cd "$NIXPKGS_DIR" && nix-build -A apfel-llm --no-out-link >/tmp/apfel-nixpkgs-build.log 2>&1 ); then
+    info "Build-verifying dev-llm $version (nix-build on $(uname -m)-darwin)..."
+    if ( cd "$NIXPKGS_DIR" && nix-build -A dev-llm --no-out-link >/tmp/dev-nixpkgs-build.log 2>&1 ); then
       info "Build OK (versionCheckHook passed)."
     else
-      warn "nix-build FAILED - refusing to open a broken PR. See /tmp/apfel-nixpkgs-build.log"
-      tail -15 /tmp/apfel-nixpkgs-build.log >&2
+      warn "nix-build FAILED - refusing to open a broken PR. See /tmp/dev-nixpkgs-build.log"
+      tail -15 /tmp/dev-nixpkgs-build.log >&2
       finish BUILD_FAIL 22
     fi
   else
     warn "not on darwin - skipping build verification (PR body will not claim a darwin build)"
   fi
 
-  commit_msg="apfel-llm: ${old_version} -> ${version}"
+  commit_msg="dev-llm: ${old_version} -> ${version}"
   git add "$PACKAGE_PATH"
   git commit -m "$commit_msg" --quiet
   info "Pushing $branch to fork..."
@@ -273,23 +273,23 @@ else:
 
   # --- Open or update PR ---
   pr_title="$commit_msg"
-  pr_body="Bumps apfel-llm \`${old_version}\` -> \`${version}\`.
+  pr_body="Bumps dev-llm \`${old_version}\` -> \`${version}\`.
 
-Release notes: https://github.com/Arthur-Ficial/apfel/releases/tag/v${version}
+Release notes: __UPSTREAM_DEV_URL__/releases/tag/v${version}
 
-Opened by the package maintainer (I maintain apfel-llm). r-ryantm cannot auto-update this package: it is \`meta.platforms = [ \"aarch64-darwin\" ]\` only, so the bot's x86_64-linux worker refuses to evaluate it and never opens a PR (its log: https://nixpkgs-update-logs.nix-community.org/apfel-llm/ - \"Refusing to evaluate ... hostPlatform.system = x86_64-linux\"). The merge bot's \"opened by r-ryantm or a committer\" precondition is therefore unsatisfiable here, so a committer merge is appreciated whenever one has a moment. Only \`pkgs/by-name\` is touched.
+Opened by the package maintainer (I maintain dev-llm). r-ryantm cannot auto-update this package: it is \`meta.platforms = [ \"aarch64-darwin\" ]\` only, so the bot's x86_64-linux worker refuses to evaluate it and never opens a PR (its log: https://nixpkgs-update-logs.nix-community.org/dev-llm/ - \"Refusing to evaluate ... hostPlatform.system = x86_64-linux\"). The merge bot's \"opened by r-ryantm or a committer\" precondition is therefore unsatisfiable here, so a committer merge is appreciated whenever one has a moment. Only \`pkgs/by-name\` is touched.
 
 ## Things done
 
 - Built on platform:
   - [x] aarch64-darwin
-- [x] Tested basic functionality of all binary files (\`./result/bin/apfel --version\` -> \`apfel v${version}\`, via \`versionCheckHook\`)
+- [x] Tested basic functionality of all binary files (\`./result/bin/dev --version\` -> \`dev v${version}\`, via \`versionCheckHook\`)
 - [x] Fits [CONTRIBUTING.md], [pkgs/README.md], [maintainers/README.md] and other READMEs.
 - [x] Follows the [automation/AI policy] (disclosure below).
 
 ## Automation/AI disclosure
 
-The version + SRI-hash bump is produced by a deterministic update script equivalent to this package's \`passthru.updateScript\` (\`nix-update-script\`) and yields the identical diff - exempt as standard update-script automation. It was build-verified on aarch64-darwin before opening (\`nix-build -A apfel-llm\`). This PR was opened by the apfel project's release automation and the PR summary was assisted by an AI agent (Claude Code, Claude Opus 4.8); the package maintainer is the responsible person in the loop and is accountable for this change.
+The version + SRI-hash bump is produced by a deterministic update script equivalent to this package's \`passthru.updateScript\` (\`nix-update-script\`) and yields the identical diff - exempt as standard update-script automation. It was build-verified on aarch64-darwin before opening (\`nix-build -A dev-llm\`). This PR was opened by the dev project's release automation and the PR summary was assisted by an AI agent (Claude Code, Claude Opus 4.8); the package maintainer is the responsible person in the loop and is accountable for this change.
 
 [CONTRIBUTING.md]: https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md
 [pkgs/README.md]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md
@@ -321,13 +321,13 @@ The version + SRI-hash bump is produced by a deterministic update script equival
   fi
   info "PR: $pr_url"
 
-  # Close any OTHER open apfel-llm bump PRs from our fork (dedup / self-heal).
+  # Close any OTHER open dev-llm bump PRs from our fork (dedup / self-heal).
   if [[ -n "$dup_numbers" ]]; then
     echo "$dup_numbers" | tr ',' '\n' | while read -r dup; do
       [[ -z "$dup" ]] && continue
       info "Closing superseded duplicate PR #$dup"
       gh pr close "$dup" --repo "$UPSTREAM" \
-        --comment "Superseded by #${keep_number}, which advances the apfel-llm bump to ${version}. Closing to keep a single open bump PR." >/dev/null 2>&1 || warn "could not close #$dup"
+        --comment "Superseded by #${keep_number}, which advances the dev-llm bump to ${version}. Closing to keep a single open bump PR." >/dev/null 2>&1 || warn "could not close #$dup"
     done
   fi
 else

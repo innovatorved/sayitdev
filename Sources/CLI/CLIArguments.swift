@@ -1,13 +1,13 @@
 // ============================================================================
 // CLIArguments.swift - Parsed CLI arguments as a testable value type
-// Part of ApfelCLI - CLI-specific parsing, separate from ApfelCore domain logic
+// Part of SayItDevCLI - CLI-specific parsing, separate from SayItDevCore domain logic
 //
 // parse() is a pure function: no side effects, no exit() calls, no direct file
 // I/O. File reading is injectable via the `readFile` closure for testability.
 // ============================================================================
 
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 /// A file attached via `-f` / `--file` with its source path retained.
 public struct FileAttachment: Sendable, Equatable {
@@ -39,13 +39,16 @@ public struct CLIArguments: Sendable, Equatable {
         case help
         case version
         case release
+        case speak
+        case listen
+        case agent
 
         /// Whether this mode supports reading piped stdin as prompt input.
         /// Modes that accept a user prompt from the command line also accept
         /// it (or a prefix to it) from stdin.
         public var acceptsStdinInput: Bool {
             switch self {
-            case .single, .stream, .countTokens: return true
+            case .single, .stream, .countTokens, .speak: return true
             default: return false
             }
         }
@@ -72,7 +75,7 @@ public struct CLIArguments: Sendable, Equatable {
 
     /// Print only the first fenced code block of the response (#373). Pairs a
     /// steering system-prompt directive with `CodeCropper.extract`; a response
-    /// without a code block exits `ApfelExitCodes.noCode` (7).
+    /// without a code block exits `SayItDevExitCodes.noCode` (7).
     public var codeOnly: Bool = false
 
     /// Raw JSON Schema text from `--schema <file>` (#361). Validated at parse
@@ -138,9 +141,18 @@ public struct CLIArguments: Sendable, Equatable {
     public var contextOutputReserve: Int? = nil
     public var contextStatus: Bool = false
 
+    // MARK: - Voice (SayItDev)
+
+    public var inputDeviceUID: String? = nil
+    public var voiceName: String? = nil
+    public var localeID: String? = nil
+    public var ttsRate: Float? = nil
+    public var audioFormat: AudioOutputFormat? = nil
+    public var timestamps: Bool = false
+
     // MARK: - Warnings
 
-    /// Non-fatal parse warnings (e.g. an invalid `APFEL_*` env value that was
+    /// Non-fatal parse warnings (e.g. an invalid `DEV_*` env value that was
     /// ignored in favor of the default). Collected here so `parse()` stays pure
     /// and testable; the executable prints them to stderr unless `--quiet` (#254).
     public var warnings: [String] = []
@@ -168,6 +180,8 @@ public struct CLIArguments: Sendable, Equatable {
         "--context-status",
         "-f", "--file",
         "--schema", "--messages", "--code",
+        "--speak", "--listen", "--agent",
+        "--input-device", "--voice-name", "--locale", "--rate", "--audio-format", "--timestamps",
     ]
 
     /// Derive the generation-schema root name from a `--schema` file path:
@@ -258,7 +272,7 @@ extension CLIArguments {
                 throw CLIParseError("--schema requires a single one-shot prompt; cannot combine with --\(mode.rawValue)")
             }
             if !mcpServerPaths.isEmpty {
-                throw CLIParseError("--schema cannot be combined with MCP tool calling (--mcp / APFEL_MCP)")
+                throw CLIParseError("--schema cannot be combined with MCP tool calling (--mcp / DEV_MCP)")
             }
         }
         if codeOnly {
@@ -294,7 +308,7 @@ extension CLIArguments {
         // tuning flag was parsed and then silently ignored. Reject it loudly
         // rather than pretend it took effect. (.serve still honors --permissive,
         // --retry, --mcp, and the server flags - those are consumed.)
-        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update]
+        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen, .agent]
         if inputIgnoringModes.contains(mode) {
             var offender: String? = nil
             if !prompt.isEmpty { offender = "a positional prompt" }
@@ -358,82 +372,98 @@ extension CLIArguments {
             return raw
         }
 
-        result.systemPrompt = env["APFEL_SYSTEM_PROMPT"]
+        result.systemPrompt = env["DEV_SYSTEM_PROMPT"]
 
-        if let raw = envValue("APFEL_PORT") {
+        if let raw = envValue("DEV_PORT") {
             if let p = Int(raw), (1...65535).contains(p) {
                 result.serverPort = p
             } else {
-                result.warnings.append("ignoring APFEL_PORT=\(raw) (not in 1-65535)")
+                result.warnings.append("ignoring DEV_PORT=\(raw) (not in 1-65535)")
             }
         }
 
-        result.serverHost = env["APFEL_HOST"] ?? "127.0.0.1"
-        result.serverToken = env["APFEL_TOKEN"]
-        result.mcpServerPaths = env["APFEL_MCP"].map { parseMCPServerPaths($0) } ?? []
+        result.serverHost = env["DEV_HOST"] ?? "127.0.0.1"
+        result.serverToken = env["DEV_TOKEN"]
+        result.mcpServerPaths = env["DEV_MCP"].map { parseMCPServerPaths($0) } ?? []
 
-        if let raw = envValue("APFEL_MCP_TIMEOUT") {
+        if let raw = envValue("DEV_MCP_TIMEOUT") {
             if let t = Int(raw), t > 0 {
                 result.mcpTimeoutSeconds = min(t, 300)
             } else {
-                result.warnings.append("ignoring APFEL_MCP_TIMEOUT=\(raw) (not a positive integer)")
+                result.warnings.append("ignoring DEV_MCP_TIMEOUT=\(raw) (not a positive integer)")
             }
         }
 
-        result.mcpBearerToken = env["APFEL_MCP_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
+        result.mcpBearerToken = env["DEV_MCP_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
 
-        if let raw = envValue("APFEL_TEMPERATURE") {
+        if let raw = envValue("DEV_TEMPERATURE") {
             if let t = Double(raw), t >= 0 {
                 result.temperature = t
             } else {
-                result.warnings.append("ignoring APFEL_TEMPERATURE=\(raw) (not a non-negative number)")
+                result.warnings.append("ignoring DEV_TEMPERATURE=\(raw) (not a non-negative number)")
             }
         }
 
-        if let raw = envValue("APFEL_MAX_TOKENS") {
+        if let raw = envValue("DEV_MAX_TOKENS") {
             if let n = Int(raw), n > 0 {
                 result.maxTokens = n
             } else {
-                result.warnings.append("ignoring APFEL_MAX_TOKENS=\(raw) (not a positive integer)")
+                result.warnings.append("ignoring DEV_MAX_TOKENS=\(raw) (not a positive integer)")
             }
         }
 
-        if let raw = envValue("APFEL_CONTEXT_STRATEGY") {
+        if let raw = envValue("DEV_CONTEXT_STRATEGY") {
             if let s = ContextStrategy(rawValue: raw) {
                 result.contextStrategy = s
             } else {
-                result.warnings.append("ignoring APFEL_CONTEXT_STRATEGY=\(raw) (unknown strategy)")
+                result.warnings.append("ignoring DEV_CONTEXT_STRATEGY=\(raw) (unknown strategy)")
             }
         }
 
-        if let raw = envValue("APFEL_CONTEXT_MAX_TURNS") {
+        if let raw = envValue("DEV_CONTEXT_MAX_TURNS") {
             if let n = Int(raw), n > 0 {
                 result.contextMaxTurns = n
             } else {
-                result.warnings.append("ignoring APFEL_CONTEXT_MAX_TURNS=\(raw) (not a positive integer)")
+                result.warnings.append("ignoring DEV_CONTEXT_MAX_TURNS=\(raw) (not a positive integer)")
             }
         }
 
-        if let raw = envValue("APFEL_CONTEXT_OUTPUT_RESERVE") {
+        if let raw = envValue("DEV_CONTEXT_OUTPUT_RESERVE") {
             if let n = Int(raw), n > 0 {
                 result.contextOutputReserve = n
             } else {
-                result.warnings.append("ignoring APFEL_CONTEXT_OUTPUT_RESERVE=\(raw) (not a positive integer)")
+                result.warnings.append("ignoring DEV_CONTEXT_OUTPUT_RESERVE=\(raw) (not a positive integer)")
             }
         }
-        // APFEL_DEBUG=<any non-empty value> enables debug logging, same as --debug (#164).
-        if let debugVal = env["APFEL_DEBUG"], !debugVal.isEmpty {
+        // DEV_DEBUG=<any non-empty value> enables debug logging, same as --debug (#164).
+        if let raw = envValue("DEV_TTS_RATE") {
+            if let d = Double(raw), d > 0 {
+                result.ttsRate = Float(min(4.0, max(0.25, d)))
+            } else {
+                result.warnings.append("ignoring DEV_TTS_RATE=\(raw) (not a positive number)")
+            }
+        }
+        if let raw = envValue("DEV_TTS_FORMAT"), let fmt = AudioOutputFormat.parse(raw) {
+            result.audioFormat = fmt
+        } else if let raw = env["DEV_TTS_FORMAT"], !raw.isEmpty {
+            result.warnings.append("ignoring DEV_TTS_FORMAT=\(raw) (use wav, pcm, or aac)")
+        }
+        result.inputDeviceUID = env["DEV_AUDIO_INPUT"].flatMap { $0.isEmpty ? nil : $0 }
+        result.voiceName = env["DEV_TTS_VOICE"].flatMap { $0.isEmpty ? nil : $0 }
+        result.localeID = env["DEV_STT_LOCALE"].flatMap { $0.isEmpty ? nil : $0 }
+
+        if let debugVal = env["DEV_DEBUG"], !debugVal.isEmpty {
             result.debug = true
         }
 
         // Parser-phase state. Mode-setting flags are recorded in
         // `context.modeFlagsSeen` so the post-parse validate() step can detect
-        // conflicts like `apfel --chat --serve`. --help/-h/--version/-v
+        // conflicts like `dev --chat --serve`. --help/-h/--version/-v
         // /--release short-circuit out of parse entirely and do not
         // participate in conflict detection.
         var context = ValidationContext()
 
-        // Subcommand form: `apfel demos [dir]`. Bare `demos` as the first token
+        // Subcommand form: `dev demos [dir]`. Bare `demos` as the first token
         // is the friendly alias for `--demos`; a quoted prompt ("demos") still
         // works as a normal prompt because it is not the literal first arg here.
         if args.first == "demos" {
@@ -457,7 +487,7 @@ extension CLIArguments {
             return result
         }
 
-        // Subcommand form: `apfel completions <shell>`. Prints a shell
+        // Subcommand form: `dev completions <shell>`. Prints a shell
         // completion script to stdout. `-h`/`--help` shows help; a missing or
         // unknown shell is a usage error.
         if args.first == "completions" {
@@ -639,6 +669,50 @@ extension CLIArguments {
                     result.demosTarget = args[i]
                 }
 
+            case "--speak":
+                context.modeFlagsSeen.append("--speak")
+                result.mode = .speak
+
+            case "--listen":
+                context.modeFlagsSeen.append("--listen")
+                result.mode = .listen
+
+            case "--agent":
+                context.modeFlagsSeen.append("--agent")
+                result.mode = .agent
+
+            case "--input-device":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--input-device", "a device UID") }
+                result.inputDeviceUID = args[i]
+
+            case "--voice-name":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--voice-name", "a voice id or 'personal'") }
+                result.voiceName = args[i]
+
+            case "--locale":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--locale", "a locale id (e.g. en-US)") }
+                result.localeID = args[i]
+
+            case "--rate":
+                i += 1
+                guard i < args.count, let d = Double(args[i]), d >= 0.25, d <= 4.0 else {
+                    throw CLIErrors.invalidValue(got: i < args.count ? args[i] : "", kind: "rate", hint: "use 0.25–4.0")
+                }
+                result.ttsRate = Float(d)
+
+            case "--audio-format":
+                i += 1
+                guard i < args.count, let fmt = AudioOutputFormat.parse(args[i]) else {
+                    throw CLIErrors.invalidValue(got: i < args.count ? args[i] : "", kind: "audio format", hint: "use wav, pcm, or aac")
+                }
+                result.audioFormat = fmt
+
+            case "--timestamps":
+                result.timestamps = true
+
             // -- Server --
 
             case "--port":
@@ -760,8 +834,8 @@ extension CLIArguments {
                 // Ambiguous optional argument. The next token is treated as the
                 // count only when it parses as a positive integer AND at least
                 // one more token follows it, so a bare numeric prompt is not
-                // swallowed: `apfel --retry 7` keeps "7" as the prompt with the
-                // default count, while `apfel --retry 3 "prompt"` still consumes
+                // swallowed: `dev --retry 7` keeps "7" as the prompt with the
+                // default count, while `dev --retry 3 "prompt"` still consumes
                 // 3 as the count. Use `--retry=N` for the unambiguous spelling.
                 // A non-positive value is rejected like other numeric flags (#253).
                 if i + 2 < args.count, let n = Int(args[i + 1]) {
@@ -932,7 +1006,7 @@ extension CLIArguments {
         let ext = (path.lowercased() as NSString).pathExtension
         switch ext {
         case "zip", "tar", "gz", "dmg", "pkg", "exe", "bin", "dat", "mp3", "mp4", "mov", "avi", "wav":
-            return "unsupported file: \(path) -- apfel -f reads text, PDF, and images (JPEG, PNG, HEIC, TIFF, ...)"
+            return "unsupported file: \(path) -- dev -f reads text, PDF, and images (JPEG, PNG, HEIC, TIFF, ...)"
         default:
             return "file is not valid UTF-8 text: \(path) (binary file?)"
         }

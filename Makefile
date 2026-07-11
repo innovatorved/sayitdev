@@ -1,5 +1,5 @@
 PREFIX ?= /usr/local
-BINARY = apfel
+BINARY = dev
 VERSION_FILE = .version
 
 .PHONY: check-toolchain build install uninstall clean bump-patch bump-minor bump-major generate-build-info generate-demos generate-man-page man update-readme version release release-patch release-minor release-major package-release-asset print-release-asset print-release-sha256 update-homebrew-formula preflight benchmark test
@@ -12,7 +12,7 @@ check-toolchain:
 	os_ver=$$(sw_vers -productVersion 2>/dev/null || echo "unknown"); \
 	if [ "$$sdk" = "missing" ]; then \
 		echo ""; \
-		echo "error: apfel could not determine your active Apple SDK version."; \
+		echo "error: dev could not determine your active Apple SDK version."; \
 		echo "Selected developer dir: $$devdir"; \
 		echo "Install or update Command Line Tools, then retry."; \
 		echo ""; \
@@ -27,7 +27,7 @@ check-toolchain:
 	if [ -z "$$minor" ]; then minor=0; fi; \
 	if [ "$$major" -lt 26 ] || { [ "$$major" -eq 26 ] && [ "$$minor" -lt 4 ]; }; then \
 		echo ""; \
-		echo "error: apfel requires Apple developer tools with the macOS 26.4 SDK or newer."; \
+		echo "error: dev requires Apple developer tools with the macOS 26.4 SDK or newer."; \
 		echo "Your macOS version: $$os_ver"; \
 		echo "Active SDK version: $$sdk"; \
 		echo "Selected developer dir: $$devdir"; \
@@ -48,19 +48,20 @@ check-toolchain:
 
 build: check-toolchain
 	swift build -c release
+	@codesign --force --sign - .build/release/$(BINARY) 2>/dev/null || true
 	@$(MAKE) --no-print-directory generate-man-page
 
 install: build
-	@pkill -f "apfel --serve" 2>/dev/null || true
+	@pkill -f "dev --serve" 2>/dev/null || true
 	@sleep 1
-	@# If Homebrew apfel is linked and would shadow our install, unlink it.
+	@# If Homebrew dev is linked and would shadow our install, unlink it.
 	@# This only removes the symlink — the Homebrew package stays installed.
-	@# `brew upgrade apfel` or `brew link apfel` restores it.
-	@if command -v brew >/dev/null 2>&1 && brew list apfel >/dev/null 2>&1; then \
+	@# `brew upgrade dev` or `brew link dev` restores it.
+	@if command -v brew >/dev/null 2>&1 && brew list dev >/dev/null 2>&1; then \
 		brew_path=$$(brew --prefix)/bin/$(BINARY); \
 		if [ -L "$$brew_path" ]; then \
-			echo "unlinking Homebrew apfel (dev build takes priority)..."; \
-			brew unlink apfel 2>/dev/null || true; \
+			echo "unlinking Homebrew dev (dev build takes priority)..."; \
+			brew unlink dev 2>/dev/null || true; \
 		fi; \
 	fi
 	@if [ ! -d "$(PREFIX)/bin" ]; then \
@@ -93,7 +94,7 @@ install: build
 	@resolved=$$(which $(BINARY) 2>/dev/null || echo "not in PATH"); \
 	if [ "$$resolved" != "$(PREFIX)/bin/$(BINARY)" ]; then \
 		echo "⚠ warning: 'which $(BINARY)' resolves to $$resolved, not $(PREFIX)/bin/$(BINARY)"; \
-		echo "  Run: brew unlink apfel   (then make install again)"; \
+		echo "  Run: brew unlink dev   (then make install again)"; \
 	fi
 
 # --- Version bumps ---
@@ -138,7 +139,7 @@ release-major: check-toolchain bump-major generate-build-info update-readme
 
 # --- Generated files ---
 
-# Embed demo/ into Sources/Core/GeneratedDemos.swift so `apfel demos <dir>`
+# Embed demo/ into Sources/Core/GeneratedDemos.swift so `dev demos <dir>`
 # works identically across every install channel. Re-run when demo/ changes;
 # Tests/integration/test_demos.py fails if the generated file drifts.
 generate-demos:
@@ -172,21 +173,21 @@ update-readme:
 
 generate-man-page:
 	@v=$$(cat $(VERSION_FILE)); \
-	if [ ! -f man/apfel.1.in ]; then \
-		echo "error: missing man/apfel.1.in"; exit 1; \
+	if [ ! -f man/dev.1.in ]; then \
+		echo "error: missing man/dev.1.in"; exit 1; \
 	fi; \
 	mkdir -p .build/release; \
-	sed "s/@VERSION@/$$v/g" man/apfel.1.in > .build/release/apfel.1; \
+	sed "s/@VERSION@/$$v/g" man/dev.1.in > .build/release/dev.1; \
 	if command -v mandoc >/dev/null 2>&1; then \
-		if ! mandoc -Tlint -W warning .build/release/apfel.1 >/dev/null 2>&1; then \
-			echo "error: mandoc -Tlint failed on .build/release/apfel.1"; \
-			mandoc -Tlint -W warning .build/release/apfel.1; \
+		if ! mandoc -Tlint -W warning .build/release/dev.1 >/dev/null 2>&1; then \
+			echo "error: mandoc -Tlint failed on .build/release/dev.1"; \
+			mandoc -Tlint -W warning .build/release/dev.1; \
 			exit 1; \
 		fi; \
 	fi
 
 man: generate-man-page
-	@man .build/release/apfel.1
+	@man .build/release/dev.1
 
 # --- One-command release (runs locally with full test qualification) ---
 # GitHub-hosted runners lack Apple Intelligence, so releases run locally.
@@ -203,24 +204,24 @@ release:
 test: build
 	@echo ""
 	@echo "=== Unit tests ==="
-	@swift run apfel-tests
+	@swift run dev-tests
 	@echo ""
 	@echo "=== Integration tests ==="
-	@pkill -f "apfel --serve" 2>/dev/null || true
+	@pkill -f "dev --serve" 2>/dev/null || true
 	@sleep 1
-	@.build/release/apfel --serve --port 11434 2>/dev/null & echo $$! > /tmp/apfel-test-server.pid; \
-	.build/release/apfel --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null & echo $$! > /tmp/apfel-test-mcp.pid; \
+	@.build/release/dev --serve --port 11434 2>/dev/null & echo $$! > /tmp/dev-test-server.pid; \
+	.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null & echo $$! > /tmp/dev-test-mcp.pid; \
 	READY=0; for i in $$(seq 1 15); do \
 		curl -sf http://localhost:11434/health >/dev/null 2>&1 && \
 		curl -sf http://localhost:11435/health >/dev/null 2>&1 && \
 		READY=1 && break; sleep 1; done; \
 	if [ "$$READY" -ne 1 ]; then echo "FATAL: servers did not start"; exit 1; fi; \
 	XDIST_ARGS=""; python3 -c "import xdist" 2>/dev/null && XDIST_ARGS="-n auto --dist loadfile"; \
-	APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $$XDIST_ARGS -v --tb=short && \
-	APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short; \
+	DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $$XDIST_ARGS -v --tb=short && \
+	DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short; \
 	STATUS=$$?; \
-	kill $$(cat /tmp/apfel-test-server.pid) $$(cat /tmp/apfel-test-mcp.pid) 2>/dev/null || true; \
-	rm -f /tmp/apfel-test-server.pid /tmp/apfel-test-mcp.pid; \
+	kill $$(cat /tmp/dev-test-server.pid) $$(cat /tmp/dev-test-mcp.pid) 2>/dev/null || true; \
+	rm -f /tmp/dev-test-server.pid /tmp/dev-test-mcp.pid; \
 	exit $$STATUS
 
 # --- Pre-release qualification ---
@@ -249,11 +250,11 @@ uninstall:
 			sudo rm -f "$$man_file"; \
 		fi; \
 	fi
-	@# Restore Homebrew apfel if it was unlinked by make install.
-	@if command -v brew >/dev/null 2>&1 && brew list apfel >/dev/null 2>&1; then \
+	@# Restore Homebrew dev if it was unlinked by make install.
+	@if command -v brew >/dev/null 2>&1 && brew list dev >/dev/null 2>&1; then \
 		if ! [ -L "$$(brew --prefix)/bin/$(BINARY)" ]; then \
-			echo "restoring Homebrew apfel link..."; \
-			brew link apfel 2>/dev/null || true; \
+			echo "restoring Homebrew dev link..."; \
+			brew link dev 2>/dev/null || true; \
 		fi; \
 	fi
 
@@ -270,7 +271,7 @@ benchmark:
 
 package-release-asset:
 	@v=$$(cat $(VERSION_FILE)); \
-	asset="apfel-$$v-arm64-macos.tar.gz"; \
+	asset="dev-$$v-arm64-macos.tar.gz"; \
 	if [ ! -x ".build/release/$(BINARY)" ]; then \
 		echo "error: missing .build/release/$(BINARY). Build a release binary first."; \
 		exit 1; \
@@ -287,19 +288,19 @@ package-release-asset:
 	cp -R demo .build/release/demo; \
 	rm -rf .build/release/completions; \
 	mkdir -p .build/release/completions; \
-	.build/release/$(BINARY) completions bash > .build/release/completions/apfel.bash; \
-	.build/release/$(BINARY) completions zsh > .build/release/completions/apfel.zsh; \
-	.build/release/$(BINARY) completions fish > .build/release/completions/apfel.fish; \
+	.build/release/$(BINARY) completions bash > .build/release/completions/dev.bash; \
+	.build/release/$(BINARY) completions zsh > .build/release/completions/dev.zsh; \
+	.build/release/$(BINARY) completions fish > .build/release/completions/dev.fish; \
 	tar -C .build/release -czf "$$asset" $(BINARY) $(BINARY).1 demo completions; \
 	echo "$$asset"
 
 print-release-asset:
 	@v=$$(cat $(VERSION_FILE)); \
-	echo "apfel-$$v-arm64-macos.tar.gz"
+	echo "dev-$$v-arm64-macos.tar.gz"
 
 print-release-sha256:
 	@v=$$(cat $(VERSION_FILE)); \
-	asset="apfel-$$v-arm64-macos.tar.gz"; \
+	asset="dev-$$v-arm64-macos.tar.gz"; \
 	if [ ! -f "$$asset" ]; then \
 		echo "error: missing $$asset. Run make package-release-asset first."; \
 		exit 1; \
@@ -308,7 +309,7 @@ print-release-sha256:
 
 update-homebrew-formula:
 	@if [ -z "$(HOMEBREW_FORMULA_OUTPUT)" ]; then \
-		echo "error: set HOMEBREW_FORMULA_OUTPUT=/path/to/Formula/apfel.rb"; \
+		echo "error: set HOMEBREW_FORMULA_OUTPUT=/path/to/Formula/dev.rb"; \
 		exit 1; \
 	fi
 	@if [ -z "$(HOMEBREW_FORMULA_SHA256)" ]; then \

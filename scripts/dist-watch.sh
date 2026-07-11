@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dist-watch.sh - check whether apfel's distribution channels are in sync.
+# dist-watch.sh - check whether dev's distribution channels are in sync.
 #
 # Used by .claude/routines/04-dist-channel-watch.md as the deterministic
 # layer. The routine becomes "run this script, post the output as an issue
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 REPO_OWNER="Arthur-Ficial"
-REPO_NAME="apfel"
+REPO_NAME="dev"
 REPO="${REPO_OWNER}/${REPO_NAME}"
 GRACE_HOURS="${DIST_WATCH_GRACE_HOURS:-48}"
 
@@ -70,13 +70,13 @@ fi
 
 # --- Step 2: current versions in the two downstream channels.
 
-hb_raw=$(curl -sf "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/a/apfel.rb" || true)
+hb_raw=$(curl -sf "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/a/dev.rb" || true)
 if [[ -z "$hb_raw" ]]; then
   err "could not fetch homebrew-core formula"
   exit 2
 fi
 hb_version=$(printf '%s\n' "$hb_raw" \
-  | grep -E '^\s*url\s+"https://github\.com/Arthur-Ficial/apfel/archive/refs/tags/v' \
+  | grep -E '^\s*url\s+"https://github\.com/__UPSTREAM_DEV_REPO__/archive/refs/tags/v' \
   | head -1 \
   | sed -E 's|.*/tags/v([0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz.*|\1|')
 
@@ -85,7 +85,7 @@ if ! [[ "$hb_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 2
 fi
 
-nix_raw=$(curl -sf "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/ap/apfel-llm/package.nix" || true)
+nix_raw=$(curl -sf "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/ap/dev-llm/package.nix" || true)
 if [[ -z "$nix_raw" ]]; then
   err "could not fetch nixpkgs package.nix"
   exit 2
@@ -110,8 +110,8 @@ inflight_for() {
     --json title --jq "[.[] | select(.title | contains(\"$3\"))] | length" 2>/dev/null || echo 0
 }
 
-nix_inflight=$(inflight_for "NixOS/nixpkgs"        "apfel-llm" "$canonical")
-hb_inflight=$( inflight_for "Homebrew/homebrew-core" "apfel"     "$canonical")
+nix_inflight=$(inflight_for "NixOS/nixpkgs"        "dev-llm" "$canonical")
+hb_inflight=$( inflight_for "Homebrew/homebrew-core" "dev"     "$canonical")
 
 # --- Step 4: decide which channels are lagging (mismatch + no in-flight cover).
 
@@ -156,18 +156,18 @@ Routine check this morning - looks like ${lagging_joined//,/ and } trailing v${c
 |---|---|---|---|
 | GitHub Releases | v${canonical} | - | - |
 | homebrew-core | v${hb_version} | v${canonical} | ~${hours_since}h |
-| nixpkgs \`apfel-llm\` | ${nix_version} | ${canonical} | ~${hours_since}h |
+| nixpkgs \`dev-llm\` | ${nix_version} | ${canonical} | ~${hours_since}h |
 
 ## Fixing it (for you, not me)
 
 **Homebrew-core:** normally autobumps within ~24h. If it is stuck, manually:
 
 \`\`\`bash
-brew bump-formula-pr apfel \\
-  --url=https://github.com/Arthur-Ficial/apfel/releases/download/v${canonical}/apfel-${canonical}-arm64-macos.tar.gz
+brew bump-formula-pr dev \\
+  --url=__UPSTREAM_DEV_URL__/releases/download/v${canonical}/dev-${canonical}-arm64-macos.tar.gz
 \`\`\`
 
-**nixpkgs (\`apfel-llm\`):** darwin-only, so \`r-ryantm\` can NEVER auto-bump it and the merge bot will not accept our self-opened PR - a committer has to merge it (days to weeks; that wait is normal, not a bug). \`make release\` plus a twice-daily launchd job (\`scripts/nixpkgs-bump-cron.sh\`) already open/advance one build-verified PR and email Franz if that fails. If nixpkgs lags with no open PR, the local bump is failing - check \`~/Library/Logs/apfel-nixpkgs-bump.log\` (most common cause: the GitHub 2FA-compliance block, i.e. an SMS factor on the account; remove it). Re-run on demand:
+**nixpkgs (\`dev-llm\`):** darwin-only, so \`r-ryantm\` can NEVER auto-bump it and the merge bot will not accept our self-opened PR - a committer has to merge it (days to weeks; that wait is normal, not a bug). \`make release\` plus a twice-daily launchd job (\`scripts/nixpkgs-bump-cron.sh\`) already open/advance one build-verified PR and email Franz if that fails. If nixpkgs lags with no open PR, the local bump is failing - check \`~/Library/Logs/dev-nixpkgs-bump.log\` (most common cause: the GitHub 2FA-compliance block, i.e. an SMS factor on the account; remove it). Re-run on demand:
 
 \`\`\`bash
 ./scripts/publish-nixpkgs-bump.sh --version ${canonical}

@@ -1,6 +1,6 @@
 // ============================================================================
 // SamplingDecision.swift — Pure mapping from request sampling params to a mode
-// Part of ApfelCore — shared with the executable, unit-testable without
+// Part of SayItDevCore — shared with the executable, unit-testable without
 // FoundationModels (whose GenerationOptions.SamplingMode lives in the SDK).
 // ============================================================================
 

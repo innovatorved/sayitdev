@@ -1,11 +1,11 @@
 // ============================================================================
 // SecurityMiddleware.swift - Origin check, token auth, and CORS handling
-// Part of apfel - Apple Intelligence from the command line
+// Part of dev - Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
 import Hummingbird
-import ApfelCore
+import SayItDevCore
 
 /// Hummingbird middleware that enforces origin checking, token authentication,
 /// and CORS headers. Replaces the scattered ad-hoc CORS logic.

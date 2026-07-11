@@ -2,26 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
   Source-of-truth mirror of the launchd agent that runs the twice-daily nixpkgs
-  apfel-llm bump catch-up. The live copy lives at
-  ~/Library/LaunchAgents/com.arthurficial.apfel-nixpkgs-bump.plist.
+  dev-llm bump catch-up. The live copy lives at
+  ~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist.
 
   It runs scripts/nixpkgs-bump-cron.sh (NOT publish-nixpkgs-bump.sh directly):
   the wrapper classifies the bump outcome and emails Franz once per distinct
   failure, so a silent break can never again sit unnoticed.
 
   Install / refresh:
-    cp scripts/launchd/com.arthurficial.apfel-nixpkgs-bump.plist ~/Library/LaunchAgents/
-    launchctl unload ~/Library/LaunchAgents/com.arthurficial.apfel-nixpkgs-bump.plist 2>/dev/null
-    launchctl load   ~/Library/LaunchAgents/com.arthurficial.apfel-nixpkgs-bump.plist
+    cp scripts/launchd/com.innovatorved.sayitdev-nixpkgs-bump.plist ~/Library/LaunchAgents/
+    launchctl unload ~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist 2>/dev/null
+    launchctl load   ~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist
 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.arthurficial.apfel-nixpkgs-bump</string>
+    <string>com.innovatorved.sayitdev-nixpkgs-bump</string>
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/arthurficial/dev/apfel/scripts/nixpkgs-bump-cron.sh</string>
+        <string>/Users/arthurficial/dev/dev/scripts/nixpkgs-bump-cron.sh</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
@@ -46,8 +46,8 @@
         </dict>
     </array>
     <key>StandardOutPath</key>
-    <string>/Users/arthurficial/Library/Logs/apfel-nixpkgs-bump.log</string>
+    <string>/Users/arthurficial/Library/Logs/dev-nixpkgs-bump.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/arthurficial/Library/Logs/apfel-nixpkgs-bump.log</string>
+    <string>/Users/arthurficial/Library/Logs/dev-nixpkgs-bump.log</string>
 </dict>
 </plist>

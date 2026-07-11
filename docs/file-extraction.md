@@ -1,6 +1,6 @@
 # File extraction (`-f` and piped files)
 
-apfel turns files into prompt text on-device before sending them to the model. Text files
+dev turns files into prompt text on-device before sending them to the model. Text files
 pass through unchanged; PDFs and images are extracted with Apple's Vision and PDFKit via the
 shared [lesbar](https://github.com/Arthur-Ficial/lesbar) package (also used by
 [auge](https://github.com/Arthur-Ficial/auge)). No cloud, no API keys, no network.
@@ -21,17 +21,17 @@ items; a photo of a beach yields "beach, ocean, sky".
 ## Attach a file with `-f`
 
 ```bash
-apfel -f report.pdf "Summarize the key findings"
+dev -f report.pdf "Summarize the key findings"
 ```
 
 ```bash
-apfel -f receipt.jpg "What is the total?"
+dev -f receipt.jpg "What is the total?"
 ```
 
 Attach several files at once:
 
 ```bash
-apfel -f old.swift -f new.swift "What changed between these two files?"
+dev -f old.swift -f new.swift "What changed between these two files?"
 ```
 
 ## Pipe a file straight in
@@ -39,11 +39,11 @@ apfel -f old.swift -f new.swift "What changed between these two files?"
 Piping a PDF or image works the same way as `-f`:
 
 ```bash
-cat report.pdf | apfel "Summarize this"
+cat report.pdf | dev "Summarize this"
 ```
 
 ```bash
-cat photo.jpg | apfel "What is in this picture?"
+cat photo.jpg | dev "What is in this picture?"
 ```
 
 ## Check the token budget first
@@ -51,7 +51,7 @@ cat photo.jpg | apfel "What is in this picture?"
 Extraction is model-free, so you can preflight how much a file adds to the prompt:
 
 ```bash
-apfel --count-tokens -f report.pdf "Summarize this"
+dev --count-tokens -f report.pdf "Summarize this"
 ```
 
 ## Honest limits
@@ -59,8 +59,8 @@ apfel --count-tokens -f report.pdf "Summarize this"
 - The on-device model has a small context window (about 4096 tokens). A large PDF can exceed
   it; use `--count-tokens` to check.
 - OCR quality depends on the image. Engraved, handwritten, or low-contrast text may come out
-  partial. apfel reports what Vision actually read and never invents text.
-- Image classification labels are Vision's best guess. When nothing is confident, apfel says
+  partial. dev reports what Vision actually read and never invents text.
+- Image classification labels are Vision's best guess. When nothing is confident, dev says
   so ("could not confidently identify the image") rather than making something up.
 - HTML and web archives are not extracted (they can fetch remote resources); save as PDF or
   text first.

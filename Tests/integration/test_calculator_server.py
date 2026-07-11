@@ -1,8 +1,8 @@
 """
-apfel Integration Tests -- bundled MCP calculator server (direct JSON-RPC)
+dev Integration Tests -- bundled MCP calculator server (direct JSON-RPC)
 
 Model-free: talks JSON-RPC over stdio to mcp/calculator/server.py directly,
-no apfel binary and no Apple Intelligence needed. Guards #322: the calculator
+no dev binary and no Apple Intelligence needed. Guards #322: the calculator
 must never silently return a wrong answer for string-typed arguments (the
 on-device model routinely emits {"a":"999","b":"1"}), and must reject
 non-numeric arguments as a tool error instead of improvising.

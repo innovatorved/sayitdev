@@ -1,16 +1,16 @@
 # Install with Homebrew
 
-`apfel` is available in homebrew-core:
+`dev` is available in homebrew-core:
 
 ```bash
-brew install apfel
+brew install dev
 ```
 
 Verify the install:
 
 ```bash
-apfel --version
-apfel --release
+dev --version
+dev --release
 ```
 
 ## Requirements
@@ -19,20 +19,20 @@ apfel --release
 - macOS 26.4 or newer
 - Apple Intelligence enabled
 
-Homebrew installs the `apfel` binary. You do **not** need Xcode.
+Homebrew installs the `dev` binary. You do **not** need Xcode.
 
 ## Troubleshooting
 
 If the binary runs but generation is unavailable, check:
 
 ```bash
-apfel --model-info
+dev --model-info
 ```
 
-If you already installed `apfel` manually into `/usr/local/bin/apfel`, make sure the Homebrew binary is first in your `PATH`:
+If you already installed `dev` manually into `/usr/local/bin/dev`, make sure the Homebrew binary is first in your `PATH`:
 
 ```bash
-which apfel
+which dev
 brew --prefix
 ```
 

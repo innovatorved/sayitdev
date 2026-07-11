@@ -1,6 +1,6 @@
-import ApfelCore
+import SayItDevCore
 
-let errors: [ApfelError] = [
+let errors: [SayItDevError] = [
     .rateLimited,
     .contextOverflow,
     .unsupportedLanguage("tlh"),

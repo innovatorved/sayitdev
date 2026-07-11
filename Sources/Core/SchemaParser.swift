@@ -1,6 +1,6 @@
 // ============================================================================
 // SchemaParser.swift — Pure JSON Schema -> SchemaIR converter
-// Part of ApfelCore — no FoundationModels dependency
+// Part of SayItDevCore — no FoundationModels dependency
 //
 // Mirrors the subset of JSON Schema that FoundationModels'
 // DynamicGenerationSchema can represent: object, string (with enum),

@@ -1,5 +1,5 @@
 """
-apfel Integration Tests - nixpkgs bump failure alerting.
+dev Integration Tests - nixpkgs bump failure alerting.
 
 Two units make the nixpkgs pipeline self-healing instead of silently failing
 for days (as it did when a GitHub 2FA-compliance break stopped PR creation):
@@ -79,7 +79,7 @@ def cron_env(tmp_path):
         env["NIXPKGS_BUMP_SCRIPT"] = str(stub)
         return stub
 
-    state_file = state_home / "apfel" / "nixpkgs-bump-alert.state"
+    state_file = state_home / "dev" / "nixpkgs-bump-alert.state"
     return env, record, make_bump, state_file
 
 

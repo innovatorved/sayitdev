@@ -3,7 +3,7 @@
 
 `fetch_document` returns ~40 KB of text (well over the 4096-token window),
 framed with a distinct HEAD marker at the very start and TAIL marker at the very
-end. apfel must token-budget-truncate this head+tail before the follow-up
+end. dev must token-budget-truncate this head+tail before the follow-up
 prompt: in CLI mode the un-truncated result overflowed the context window after
 the tool already ran; in server mode the context trimmer dropped the oversized
 tool message whole while still instructing the model to answer from it. After

@@ -2,12 +2,12 @@
 // StreamingToolCallGate.swift - Decide whether streamed content so far could
 // still be the beginning of a tool call, so the SSE loop can hold it back
 // instead of leaking raw tool-call JSON as content deltas (#224).
-// Part of ApfelCore - pure Swift, no external dependencies.
+// Part of SayItDevCore - pure Swift, no external dependencies.
 // ============================================================================
 
 import Foundation
 
-/// When client tools (or MCP) are in play on `stream: true`, apfel must not
+/// When client tools (or MCP) are in play on `stream: true`, dev must not
 /// forward the model's tool-call JSON to the client as `delta.content` (OpenAI
 /// never emits tool calls as assistant text). The SSE loop buffers while this
 /// gate reports the accumulated content could still become a tool call, and

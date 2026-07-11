@@ -1,6 +1,6 @@
 // ============================================================================
 // MessagesInput.swift - Pure decoder for --messages conversation JSON (#363)
-// Part of ApfelCore - no FoundationModels dependency
+// Part of SayItDevCore - no FoundationModels dependency
 //
 // Accepts either a bare JSON array of OpenAI-style message objects or an
 // object with a `messages` key (both shapes are common in the wild). The

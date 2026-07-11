@@ -56,7 +56,7 @@ def test_every_require_model_caller_is_marked():
     """A test that gates on require_model() IS a model test - the decorator
     (or a module-level model pytestmark) must say so, or `-m "not model"`
     selects it and the fast phase pays for a model call (worse: on CI it
-    fails via the APFEL_MODELFREE_ONLY tripwire, ten minutes later)."""
+    fails via the DEV_MODELFREE_ONLY tripwire, ten minutes later)."""
     offenders = []
     for path in _suite_files():
         src = path.read_text()

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-release qualification for apfel.
+# Pre-release qualification for dev.
 # Run this before `make release` to verify everything is green locally.
 #
 # Default is the LIGHT preflight (#374): build + unit tests + the parallel
@@ -60,13 +60,13 @@ fi
 
 # --- 4b. Man page exists and lints cleanly ---
 step "Man page"
-if [ -f .build/release/apfel.1 ]; then
+if [ -f .build/release/dev.1 ]; then
     pass "man page generated"
 else
-    fail "man page missing at .build/release/apfel.1"
+    fail "man page missing at .build/release/dev.1"
 fi
 if command -v mandoc >/dev/null 2>&1; then
-    if mandoc -Tlint -W warning .build/release/apfel.1 >/tmp/mandoc.log 2>&1; then
+    if mandoc -Tlint -W warning .build/release/dev.1 >/tmp/mandoc.log 2>&1; then
         pass "mandoc -Tlint clean"
     else
         cat /tmp/mandoc.log
@@ -78,7 +78,7 @@ fi
 
 # --- 5. Unit tests ---
 step "Unit tests"
-if swift run apfel-tests 2>&1; then
+if swift run dev-tests 2>&1; then
     pass "unit tests"
 else
     fail "unit tests"
@@ -88,7 +88,7 @@ fi
 step "Integration tests"
 
 # Kill any leftover servers
-pkill -f "apfel --serve" 2>/dev/null || true
+pkill -f "dev --serve" 2>/dev/null || true
 sleep 1
 
 # Check ports
@@ -108,9 +108,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-.build/release/apfel --serve --port 11434 2>/dev/null &
+.build/release/dev --serve --port 11434 2>/dev/null &
 SERVER_PID=$!
-.build/release/apfel --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
+.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
 MCP_SERVER_PID=$!
 
 # Wait for health
@@ -128,7 +128,7 @@ if [ "$READY" -ne 1 ]; then
     fail "servers did not start within 15s"
 else
     # Directory discovery, not explicit lists - new test files are never
-    # silently excluded. APFEL_REQUIRE_FULL=1: any skipped test fails the run
+    # silently excluded. DEV_REQUIRE_FULL=1: any skipped test fails the run
     # (#227). Two phases (#374): the cheap model-free/parallel-safe partition
     # first (so a doc-drift gate fails in seconds, not after 10 min of model
     # tests), then - only with --full - the serial model phase. The two marker
@@ -137,13 +137,13 @@ else
     if python3 -c "import xdist" 2>/dev/null; then
         XDIST_ARGS="-n auto --dist loadfile"
     fi
-    if APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $XDIST_ARGS -v --tb=short -x 2>&1; then
+    if DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $XDIST_ARGS -v --tb=short -x 2>&1; then
         pass "integration tests (model-free phase)"
     else
         fail "integration tests (model-free phase)"
     fi
     if [ "$FULL" -eq 1 ]; then
-        if APFEL_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short -x 2>&1; then
+        if DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short -x 2>&1; then
             pass "integration tests (model phase, --full)"
         else
             fail "integration tests (model phase, --full)"
@@ -195,7 +195,7 @@ done
 step "Version check"
 v=$(cat .version)
 echo "Current version: $v"
-binary_v=$(.build/release/apfel --version 2>&1 | head -1)
+binary_v=$(.build/release/dev --version 2>&1 | head -1)
 echo "Binary reports: $binary_v"
 if echo "$binary_v" | grep -q "$v"; then
     pass "binary version matches .version"

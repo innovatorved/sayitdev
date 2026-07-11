@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """MCP server fixture that dies after the handshake.
 
-It answers initialize + tools/list (so apfel registers the `multiply` tool and
+It answers initialize + tools/list (so dev registers the `multiply` tool and
 the server becomes healthy) and then exits before any tools/call arrives. The
 next tool call therefore writes to a pipe whose read end is closed. Used to
-prove apfel no longer dies with SIGPIPE (issue #215) when a downstream MCP
+prove dev no longer dies with SIGPIPE (issue #215) when a downstream MCP
 server crashes between calls.
 """
 

@@ -6,24 +6,24 @@ At startup it inspects os.environ and exposes:
   - a ``leaked_<name>`` tool for every canary secret it can still see, and
   - a ``saw_<name>`` tool for every allowlisted passthrough var it received.
 
-apfel prints each connection's tool names on startup, so a model-free test can
+dev prints each connection's tool names on startup, so a model-free test can
 assert on the banner: no ``leaked_*`` tool means the child never inherited the
 secret; ``saw_pythonpath`` means the allowlisted PYTHON var passed through.
 
 This exercises the env-scrubbing fix: local MCP subprocesses must NOT inherit
-APFEL_TOKEN/APFEL_MCP_TOKEN or any TOKEN/KEY/SECRET var from the parent shell.
+DEV_TOKEN/DEV_MCP_TOKEN or any TOKEN/KEY/SECRET var from the parent shell.
 """
 
 import json
 import os
 import sys
 
-# Secrets that must NEVER reach the child. The test injects these into apfel's
+# Secrets that must NEVER reach the child. The test injects these into dev's
 # environment before spawning; the scrubber must strip them.
 CANARY_SECRETS = [
-    "APFEL_TOKEN",
-    "APFEL_MCP_TOKEN",
-    "APFEL_HOST",
+    "DEV_TOKEN",
+    "DEV_MCP_TOKEN",
+    "DEV_HOST",
     "TEST_CANARY_SECRET",
     "TEST_CANARY_API_KEY",
     "TEST_CANARY_TOKEN",

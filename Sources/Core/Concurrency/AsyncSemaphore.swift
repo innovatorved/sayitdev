@@ -1,9 +1,9 @@
 // ============================================================================
 // AsyncSemaphore.swift - Async semaphore for server concurrency limiting
-// Part of apfel - Apple Intelligence from the command line
+// Part of dev - Apple Intelligence from the command line
 // ============================================================================
-// Moved from Sources/Retry.swift (root target) into ApfelCore so the pure
-// Swift unit-test runner (apfel-tests) can exercise it (#214).
+// Moved from Sources/Retry.swift (root target) into SayItDevCore so the pure
+// Swift unit-test runner (dev-tests) can exercise it (#214).
 // ============================================================================
 
 import Foundation

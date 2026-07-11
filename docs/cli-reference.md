@@ -1,26 +1,26 @@
 # CLI Reference
 
-`apfel` has four primary modes: single prompt, `--stream`, `--chat`, and `--serve`. This page is the full flag, exit-code, and environment reference for the installed CLI.
+`dev` has four primary modes: single prompt, `--stream`, `--chat`, and `--serve`. This page is the full flag, exit-code, and environment reference for the installed CLI.
 
 ## Modes
 
 ```text
 MODES
-  apfel <prompt>                          Single prompt (default)
-  apfel --stream <prompt>                 Stream response tokens
-  apfel --chat                            Interactive conversation
-  apfel --serve                           Start OpenAI-compatible server
-  apfel --benchmark                       Run internal performance benchmarks
-  apfel --count-tokens <prompt>           Preflight token count (no inference)
+  dev <prompt>                          Single prompt (default)
+  dev --stream <prompt>                 Stream response tokens
+  dev --chat                            Interactive conversation
+  dev --serve                           Start OpenAI-compatible server
+  dev --benchmark                       Run internal performance benchmarks
+  dev --count-tokens <prompt>           Preflight token count (no inference)
 
 INPUT
-  apfel -f, --file <path> <prompt>        Attach file content (repeatable)
-  apfel -s, --system <text> <prompt>      Set system prompt
-  apfel --system-file <path> <prompt>     Read system prompt from file
-  apfel --mcp <path|url> <prompt>         Attach local or remote MCP tool server (repeatable)
-  apfel --mcp-token <token> <prompt>      Bearer token for remote MCP servers
-  apfel --mcp-timeout <n> <prompt>        MCP timeout in seconds [default: 5]
-  apfel --messages <path|->               One-shot multi-turn from OpenAI messages JSON (file or stdin)
+  dev -f, --file <path> <prompt>        Attach file content (repeatable)
+  dev -s, --system <text> <prompt>      Set system prompt
+  dev --system-file <path> <prompt>     Read system prompt from file
+  dev --mcp <path|url> <prompt>         Attach local or remote MCP tool server (repeatable)
+  dev --mcp-token <token> <prompt>      Bearer token for remote MCP servers
+  dev --mcp-timeout <n> <prompt>        MCP timeout in seconds [default: 5]
+  dev --messages <path|->               One-shot multi-turn from OpenAI messages JSON (file or stdin)
 
 OUTPUT
   -o, --output <fmt>                      Output format: plain, json
@@ -64,157 +64,157 @@ META
   --release                               Detailed build info
   --model-info                            Print model capabilities
   --update                                Check for updates via Homebrew
-  --demos [dir]                           Write bundled demo scripts to dir [default: ./apfel-demos]
+  --demos [dir]                           Write bundled demo scripts to dir [default: ./dev-demos]
 
 SUBCOMMANDS
-  apfel completions <shell>               Print shell completions (bash, zsh, fish)
+  dev completions <shell>               Print shell completions (bash, zsh, fish)
 ```
 
 ## Examples By Flag
 
 ```bash
 # -f, --file - attach file content to prompt (repeatable)
-apfel -f main.swift "Explain this code"
-apfel -f before.txt -f after.txt "What changed?"
+dev -f main.swift "Explain this code"
+dev -f before.txt -f after.txt "What changed?"
 
 # -s, --system - set a system prompt
-apfel -s "You are a pirate" "What is recursion?"
-apfel -s "Reply in JSON only" "List 3 colors"
+dev -s "You are a pirate" "What is recursion?"
+dev -s "Reply in JSON only" "List 3 colors"
 
 # --system-file - read system prompt from a file
-apfel --system-file persona.txt "Introduce yourself"
+dev --system-file persona.txt "Introduce yourself"
 
 # --schema - guaranteed schema-valid JSON output (single-prompt mode only)
-apfel --schema person.schema.json "Extract the person: Alice is 30 years old."
-apfel --schema invoice.schema.json -f invoice.txt "Extract the invoice data" | jq .total
+dev --schema person.schema.json "Extract the person: Alice is 30 years old."
+dev --schema invoice.schema.json -f invoice.txt "Extract the invoice data" | jq .total
 
 # --code - only the code, no prose, no fences (pipe-safe)
-apfel --code "a python function that deduplicates a list" > dedupe.py
-apfel --code "shell one-liner to find the 10 largest files here" | pbcopy
+dev --code "a python function that deduplicates a list" > dedupe.py
+dev --code "shell one-liner to find the 10 largest files here" | pbcopy
 
 # --messages - one-shot multi-turn: conversation JSON in, next assistant turn out
-apfel --messages conversation.json
-jq '. += [{"role":"user","content":"and in German?"}]' conv.json | apfel --messages -
+dev --messages conversation.json
+jq '. += [{"role":"user","content":"and in German?"}]' conv.json | dev --messages -
 
 # --mcp, --mcp-token, --mcp-timeout
-apfel --mcp ./mcp/calculator/server.py "What is 15 times 27?"
-apfel --mcp ./calc.py --mcp ./weather.py "Use both tools"
-apfel --mcp https://mcp.example.com/v1 "Remote MCP server"
-APFEL_MCP_TOKEN=mytoken apfel --mcp https://mcp.example.com/v1 "With auth"
-apfel --mcp-timeout 30 --mcp ./slow-remote-server.py "hello"
+dev --mcp ./mcp/calculator/server.py "What is 15 times 27?"
+dev --mcp ./calc.py --mcp ./weather.py "Use both tools"
+dev --mcp https://mcp.example.com/v1 "Remote MCP server"
+DEV_MCP_TOKEN=mytoken dev --mcp https://mcp.example.com/v1 "With auth"
+dev --mcp-timeout 30 --mcp ./slow-remote-server.py "hello"
 
 # -o, --output
-apfel -o json "Translate to German: hello" | jq .content
+dev -o json "Translate to German: hello" | jq .content
 
 # -q, --quiet
-apfel -q "Give me a UUID"
+dev -q "Give me a UUID"
 
 # --no-color
-NO_COLOR=1 apfel "Hello"
+NO_COLOR=1 dev "Hello"
 
 # --temperature
-apfel --temperature 0.0 "What is 2+2?"
-apfel --temperature 1.5 "Write a wild poem"
+dev --temperature 0.0 "What is 2+2?"
+dev --temperature 1.5 "Write a wild poem"
 
 # --top-p
-apfel --top-p 0.9 "Write a short poem"
+dev --top-p 0.9 "Write a short poem"
 
 # --seed
-apfel --seed 42 "Tell me a joke"
+dev --seed 42 "Tell me a joke"
 
 # --max-tokens
-apfel --max-tokens 50 "Explain quantum computing"
+dev --max-tokens 50 "Explain quantum computing"
 
 # --permissive
-apfel --permissive "Write a villain monologue"
-apfel --permissive -f long-document.md "Summarize this"
+dev --permissive "Write a villain monologue"
+dev --permissive -f long-document.md "Summarize this"
 
 # --retry
-apfel --retry "What is 2+2?"
+dev --retry "What is 2+2?"
 
 # --debug
-apfel --debug "Hello world"
-apfel --serve --debug
+dev --debug "Hello world"
+dev --serve --debug
 
 # --count-tokens, --strict
-apfel --count-tokens -f README.md "Summarize this"
-apfel --count-tokens -o json "hello" | jq .
-apfel --count-tokens --strict -f large-file.txt "process"
+dev --count-tokens -f README.md "Summarize this"
+dev --count-tokens -o json "hello" | jq .
+dev --count-tokens --strict -f large-file.txt "process"
 # Counts use the on-device tokenizer API (macOS 26.4+). When it is unusable
 # (older macOS, or Apple Intelligence off), counts are a chars/4 approximation:
 # a stderr warning names the reason and JSON output carries "approximate": true.
 
 # --stream
-apfel --stream "Write a haiku about code"
+dev --stream "Write a haiku about code"
 
 # --chat
-apfel --chat
-apfel --chat -s "You are a helpful coding assistant"
+dev --chat
+dev --chat -s "You are a helpful coding assistant"
 
 # --chat with persistent history across sessions (opt-in, off by default)
-APFEL_HISTFILE=~/.apfel_history apfel --chat
+DEV_HISTFILE=~/.dev_history dev --chat
 
 # --context-strategy
-apfel --chat --context-strategy newest-first
-apfel --chat --context-strategy sliding-window --context-max-turns 6
-apfel --chat --context-strategy summarize
-apfel --chat --context-output-reserve 256
-apfel --chat --context-status
+dev --chat --context-strategy newest-first
+dev --chat --context-strategy sliding-window --context-max-turns 6
+dev --chat --context-strategy summarize
+dev --chat --context-output-reserve 256
+dev --chat --context-status
 
 # --serve
-apfel --serve
-apfel --serve --port 3000 --host 0.0.0.0
+dev --serve
+dev --serve --port 3000 --host 0.0.0.0
 
 # --cors, --token, --footgun
-apfel --serve --cors
-apfel --serve --token "my-secret-token"
-apfel --serve --footgun
+dev --serve --cors
+dev --serve --token "my-secret-token"
+dev --serve --footgun
 
 # --token-auto, --public-health
-apfel --serve --token-auto --host 0.0.0.0 --public-health
+dev --serve --token-auto --host 0.0.0.0 --public-health
 
 # --allowed-origins, --no-origin-check
-apfel --serve --allowed-origins "https://myapp.com,https://staging.myapp.com"
-apfel --serve --no-origin-check
+dev --serve --allowed-origins "https://myapp.com,https://staging.myapp.com"
+dev --serve --no-origin-check
 
 # --max-concurrent
-apfel --serve --max-concurrent 2
+dev --serve --max-concurrent 2
 
 # --benchmark, --model-info, --update, --release, --version, --help
-apfel --benchmark -o json | jq '.benchmarks[] | {name, speedup_ratio}'
-apfel --model-info
-apfel --update
-apfel --release
-apfel --version
-apfel --help
+dev --benchmark -o json | jq '.benchmarks[] | {name, speedup_ratio}'
+dev --model-info
+dev --update
+dev --release
+dev --version
+dev --help
 
 # --demos: write the bundled demo scripts out (works on every install channel)
-apfel demos ./apfel-demos
-apfel --demos ./apfel-demos
+dev demos ./dev-demos
+dev --demos ./dev-demos
 ```
 
 Security details live in [server-security.md](server-security.md). Background-service usage lives in [background-service.md](background-service.md).
 
 ## Shell Completions
 
-`apfel completions <shell>` prints a completion script to stdout for `bash`, `zsh`, or `fish`. Homebrew installs them automatically. To enable them for a source/manual install, write the script to your shell's completion directory.
+`dev completions <shell>` prints a completion script to stdout for `bash`, `zsh`, or `fish`. Homebrew installs them automatically. To enable them for a source/manual install, write the script to your shell's completion directory.
 
 bash:
 
 ```bash
-apfel completions bash | sudo tee "$(brew --prefix)/etc/bash_completion.d/apfel" >/dev/null
+dev completions bash | sudo tee "$(brew --prefix)/etc/bash_completion.d/dev" >/dev/null
 ```
 
 zsh (a directory already on your `$fpath`):
 
 ```bash
-apfel completions zsh > "${fpath[1]}/_apfel"
+dev completions zsh > "${fpath[1]}/_apfel"
 ```
 
 fish:
 
 ```fish
-apfel completions fish > ~/.config/fish/completions/apfel.fish
+dev completions fish > ~/.config/fish/completions/dev.fish
 ```
 
 ## Exit Codes
@@ -234,18 +234,18 @@ apfel completions fish > ~/.config/fish/completions/apfel.fish
 
 | Variable | Description |
 |----------|-------------|
-| `APFEL_SYSTEM_PROMPT` | Default system prompt |
-| `APFEL_HOST` | Server bind address |
-| `APFEL_PORT` | Server port |
-| `APFEL_TOKEN` | Bearer token for server authentication |
-| `APFEL_TEMPERATURE` | Default temperature |
-| `APFEL_MAX_TOKENS` | Default max tokens |
-| `APFEL_CONTEXT_STRATEGY` | Default context strategy |
-| `APFEL_CONTEXT_MAX_TURNS` | Max turns for sliding-window |
-| `APFEL_CONTEXT_OUTPUT_RESERVE` | Tokens reserved for output |
-| `APFEL_MCP` | MCP server paths - colon-separated for local paths, comma-separated for mixed local+remote URLs |
-| `APFEL_MCP_TOKEN` | Bearer token for remote HTTP MCP servers (preferred over `--mcp-token`; not visible in `ps aux`) |
-| `APFEL_MCP_TIMEOUT` | MCP timeout in seconds (default: 5, max: 300) |
-| `APFEL_DEBUG` | Enable debug logging (same as `--debug`) |
-| `APFEL_HISTFILE` | Persist `--chat` line-editing history to this file across sessions (off by default; bounded to 500 entries, mode 0600) |
+| `DEV_SYSTEM_PROMPT` | Default system prompt |
+| `DEV_HOST` | Server bind address |
+| `DEV_PORT` | Server port |
+| `DEV_TOKEN` | Bearer token for server authentication |
+| `DEV_TEMPERATURE` | Default temperature |
+| `DEV_MAX_TOKENS` | Default max tokens |
+| `DEV_CONTEXT_STRATEGY` | Default context strategy |
+| `DEV_CONTEXT_MAX_TURNS` | Max turns for sliding-window |
+| `DEV_CONTEXT_OUTPUT_RESERVE` | Tokens reserved for output |
+| `DEV_MCP` | MCP server paths - colon-separated for local paths, comma-separated for mixed local+remote URLs |
+| `DEV_MCP_TOKEN` | Bearer token for remote HTTP MCP servers (preferred over `--mcp-token`; not visible in `ps aux`) |
+| `DEV_MCP_TIMEOUT` | MCP timeout in seconds (default: 5, max: 300) |
+| `DEV_DEBUG` | Enable debug logging (same as `--debug`) |
+| `DEV_HISTFILE` | Persist `--chat` line-editing history to this file across sessions (off by default; bounded to 500 entries, mode 0600) |
 | `NO_COLOR` | Disable colors ([https://no-color.org](https://no-color.org)) |

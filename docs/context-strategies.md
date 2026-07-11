@@ -1,15 +1,15 @@
 # Context Strategies
 
-apfel manages the 4096-token context window automatically so chat sessions and long prompts do not crash. Choose a strategy with `--context-strategy` based on what you want apfel to keep when history approaches the limit.
+dev manages the 4096-token context window automatically so chat sessions and long prompts do not crash. Choose a strategy with `--context-strategy` based on what you want dev to keep when history approaches the limit.
 
 ```bash
-apfel --chat --context-strategy newest-first     # default: keep recent turns
-apfel --chat --context-strategy oldest-first     # keep earliest turns
-apfel --chat --context-strategy sliding-window --context-max-turns 6
-apfel --chat --context-strategy summarize        # compress old turns via on-device model
-apfel --chat --context-strategy strict           # error on overflow, no trimming
-apfel --chat --context-output-reserve 256        # custom output token reserve
-apfel --chat --context-status                    # print context fill after each turn
+dev --chat --context-strategy newest-first     # default: keep recent turns
+dev --chat --context-strategy oldest-first     # keep earliest turns
+dev --chat --context-strategy sliding-window --context-max-turns 6
+dev --chat --context-strategy summarize        # compress old turns via on-device model
+dev --chat --context-strategy strict           # error on overflow, no trimming
+dev --chat --context-output-reserve 256        # custom output token reserve
+dev --chat --context-status                    # print context fill after each turn
 ```
 
 ## Strategies
@@ -28,14 +28,14 @@ apfel --chat --context-status                    # print context fill after each
 
 ## Context status
 
-`--context-status` prints the current chat context fill after each turn, for example `[context 2381/3584 tokens, 66%, 1203 remaining]`. It uses the same token count and input budget that apfel already checks before rotating context.
+`--context-status` prints the current chat context fill after each turn, for example `[context 2381/3584 tokens, 66%, 1203 remaining]`. It uses the same token count and input budget that dev already checks before rotating context.
 
 ## Environment variables
 
 These settings have env var equivalents:
 
-- `APFEL_CONTEXT_STRATEGY` - one of `newest-first`, `oldest-first`, `sliding-window`, `summarize`, `strict`
-- `APFEL_CONTEXT_MAX_TURNS` - positive integer for sliding-window
-- `APFEL_CONTEXT_OUTPUT_RESERVE` - positive integer, tokens reserved for output
+- `DEV_CONTEXT_STRATEGY` - one of `newest-first`, `oldest-first`, `sliding-window`, `summarize`, `strict`
+- `DEV_CONTEXT_MAX_TURNS` - positive integer for sliding-window
+- `DEV_CONTEXT_OUTPUT_RESERVE` - positive integer, tokens reserved for output
 
 CLI flags always override env vars.

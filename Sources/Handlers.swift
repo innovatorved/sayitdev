@@ -1,13 +1,13 @@
 // ============================================================================
 // Handlers.swift — HTTP request handlers for OpenAI-compatible API
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import FoundationModels
 import Foundation
 import Hummingbird
 import NIOCore
-import ApfelCore
+import SayItDevCore
 
 struct ChatRequestTrace: Sendable {
     let stream: Bool
@@ -167,7 +167,7 @@ func handleChatCompletion(_ request: Request, context: some RequestContext) asyn
             toolChoice: chatRequest.tool_choice
         )
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         let msg = classified.openAIMessage
         return chatFailure(
             status: .init(code: classified.httpStatusCode),
@@ -271,7 +271,7 @@ private func mcpAutoExecuteResponse(
             return result.content
         }
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         if case .refusal(let explanation) = classified {
             if streaming {
                 return await refusalStreamingResponse(
@@ -319,7 +319,7 @@ private func mcpAutoExecuteResponse(
             content = rawContent
         }
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         let msg = classified.openAIMessage
         return chatFailure(
             status: .init(code: classified.httpStatusCode),
@@ -422,7 +422,7 @@ private func nonStreamingResponse(
             try await collectStream(session, prompt: prompt, options: genOpts)
         }
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         if case .refusal(let explanation) = classified {
             return await refusalNonStreamingResponse(
                 id: id, created: created, promptTokens: promptTokens,
@@ -681,7 +681,7 @@ private func streamingResponse(
                 streamCancelled = true
                 await eventBox.append("stream cancelled by client")
             } catch {
-                let classified = ApfelError.classify(error)
+                let classified = SayItDevError.classify(error)
                 // Output-side context overflow with content already streamed is
                 // a graceful length-finish, not an error. See StreamErrorResolver.
                 if case .truncated(let truncatedContent) = StreamErrorResolver.resolve(prev: prev, error: classified) {
@@ -829,7 +829,7 @@ private func structuredNonStreamingResponse(
             return result.content.jsonString
         }
     } catch {
-        let classified = ApfelError.classify(error)
+        let classified = SayItDevError.classify(error)
         if case .refusal(let explanation) = classified {
             return await refusalNonStreamingResponse(
                 id: id, created: created, promptTokens: promptTokens,
@@ -973,7 +973,7 @@ private func structuredStreamingResponse(
                 streamCancelled = true
                 await eventBox.append("structured stream cancelled by client")
             } catch {
-                let classified = ApfelError.classify(error)
+                let classified = SayItDevError.classify(error)
                 if case .refusal(let explanation) = classified {
                     let refusalLine = sseDataLine(sseRefusalChunk(id: id, created: created, refusal: explanation, includeUsage: includeUsage))
                     responseLines?.append(refusalLine.trimmingCharacters(in: .whitespacesAndNewlines))

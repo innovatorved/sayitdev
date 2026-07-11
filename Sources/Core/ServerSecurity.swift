@@ -1,7 +1,7 @@
 // ============================================================================
 // ServerSecurity.swift - Pure server-hardening predicates (host classification,
 // startup-warning gates, Host-header allowlisting, MCP env scrubbing).
-// Lives in ApfelCore so it is unit-testable without Hummingbird or Foundation
+// Lives in SayItDevCore so it is unit-testable without Hummingbird or Foundation
 // networking.
 // ============================================================================
 
@@ -28,12 +28,12 @@ public enum ServerSecurity {
 
     /// Minimal environment handed to a local (stdio) MCP subprocess (#229).
     ///
-    /// A `Process` with `environment == nil` inherits apfel's entire environment,
-    /// leaking `APFEL_TOKEN`/`APFEL_MCP_TOKEN` and any cloud/API keys in the shell
+    /// A `Process` with `environment == nil` inherits dev's entire environment,
+    /// leaking `DEV_TOKEN`/`DEV_MCP_TOKEN` and any cloud/API keys in the shell
     /// to the third-party tool script. This returns an explicit allowlist instead:
     /// PATH/HOME/TMPDIR/LANG plus `LC_*`, `PYTHON*`, and `VIRTUAL_ENV` (what the
     /// calculator server and typical FastMCP/venv servers need). Everything else
-    /// is dropped, and any `APFEL_*` var or any var whose name contains
+    /// is dropped, and any `DEV_*` var or any var whose name contains
     /// TOKEN/KEY/SECRET is excluded even if it would otherwise match. PATH is
     /// synthesized when absent so `/usr/bin/env python3` still resolves.
     public static func scrubbedMCPEnvironment(from parent: [String: String]) -> [String: String] {
@@ -43,7 +43,7 @@ public enum ServerSecurity {
         for (key, value) in parent {
             let upper = key.uppercased()
             // Exclusions win over the allowlist.
-            if upper.hasPrefix("APFEL_") { continue }
+            if upper.hasPrefix("DEV_") { continue }
             if upper.contains("TOKEN") || upper.contains("KEY") || upper.contains("SECRET") { continue }
             if exactAllow.contains(upper) || prefixAllow.contains(where: { upper.hasPrefix($0) }) {
                 result[key] = value

@@ -1,5 +1,5 @@
 """
-apfel Integration Tests -- Chat Mode (TUI)
+dev Integration Tests -- Chat Mode (TUI)
 
 Comprehensive tests for --chat in all scenarios:
 - Startup & exit (plain, quit, exit, EOF, non-TTY)
@@ -11,7 +11,7 @@ Comprehensive tests for --chat in all scenarios:
 - Chat multi-turn context
 
 Run: python3 -m pytest Tests/integration/test_chat.py -v
-Requires: release binary at .build/release/apfel
+Requires: release binary at .build/release/dev
 Some tests require Apple Intelligence enabled (skipped otherwise).
 """
 
@@ -30,7 +30,7 @@ import pytest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 MCP_SERVER = ROOT / "mcp" / "calculator" / "server.py"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -42,8 +42,8 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 def _clean_env(env=None):
     merged = os.environ.copy()
     for key in [
-        "NO_COLOR", "APFEL_SYSTEM_PROMPT", "APFEL_HOST", "APFEL_PORT",
-        "APFEL_TEMPERATURE", "APFEL_MAX_TOKENS",
+        "NO_COLOR", "DEV_SYSTEM_PROMPT", "DEV_HOST", "DEV_PORT",
+        "DEV_TEMPERATURE", "DEV_MAX_TOKENS",
     ]:
         merged.pop(key, None)
     if env:
@@ -62,7 +62,7 @@ def run_cli(args, input_text=None, env=None, timeout=60):
 
 
 def run_chat_tty(args, steps, env=None, timeout=60, stop_when=None):
-    """Run apfel in a PTY, send interactive steps, collect all output."""
+    """Run dev in a PTY, send interactive steps, collect all output."""
     merged = _clean_env(env)
 
     with warnings.catch_warnings():
@@ -132,7 +132,7 @@ def run_chat_tty(args, steps, env=None, timeout=60, stop_when=None):
 
 
 def run_chat_json(args, steps, env=None, timeout=60, stop_when=None):
-    """Run apfel chat in a PTY with stdout separated from TTY output."""
+    """Run dev chat in a PTY with stdout separated from TTY output."""
     merged = _clean_env(env)
 
     stdout_read_fd, stdout_write_fd = os.pipe()
@@ -630,7 +630,7 @@ def test_chat_system_prompt_from_flag():
 
 @pytest.mark.model
 def test_chat_system_prompt_from_env():
-    """APFEL_SYSTEM_PROMPT env var must set the system prompt."""
+    """DEV_SYSTEM_PROMPT env var must set the system prompt."""
     require_model()
     returncode, output = run_chat_tty(
         ["--chat"],
@@ -638,7 +638,7 @@ def test_chat_system_prompt_from_env():
             (b"quit", b"quit\n"),
         ],
         stop_when=lambda out: b"Goodbye" in out,
-        env={"APFEL_SYSTEM_PROMPT": "You are a penguin."},
+        env={"DEV_SYSTEM_PROMPT": "You are a penguin."},
     )
     clean = strip_ansi(output)
     assert "You are a penguin" in clean, \
@@ -1088,12 +1088,12 @@ def test_chat_hint_message_shown():
 
 
 # ---------------------------------------------------------------------------
-# Persistent history (APFEL_HISTFILE, #259) - opt-in, off by default
+# Persistent history (DEV_HISTFILE, #259) - opt-in, off by default
 # ---------------------------------------------------------------------------
 
 @pytest.mark.model
 def test_chat_history_persists_with_histfile(tmp_path):
-    """With APFEL_HISTFILE set, a typed prompt is written to the file on exit.
+    """With DEV_HISTFILE set, a typed prompt is written to the file on exit.
 
     Model-dependent: --chat requires Apple Intelligence to start. The prompt
     is add_history'd before the model call, and the file is written in the
@@ -1111,7 +1111,7 @@ def test_chat_history_persists_with_histfile(tmp_path):
             (b"you", marker.encode() + b"\n"),
             (None, b"quit\n"),
         ],
-        env={"APFEL_HISTFILE": str(histfile)},
+        env={"DEV_HISTFILE": str(histfile)},
         timeout=90,
     )
     assert histfile.exists(), f"history file not written; output: {output[:300]!r}"
@@ -1129,7 +1129,7 @@ def test_chat_multibyte_backspace_buffer_is_clean_end_to_end(tmp_path):
     ops libedit paints, but a byte-wise regression that repaints with one
     destructive erase would slip past it - the dangling 0xC3 lives in the
     buffer, not necessarily after the last backspace in the echo stream.
-    Here the edited line is submitted and persisted via APFEL_HISTFILE, so
+    Here the edited line is submitted and persisted via DEV_HISTFILE, so
     the assertion runs against the exact bytes libedit kept: typing
     caf<e-acute><backspace>Xsentinel must persist "cafXsentinel" - one
     backspace removed the WHOLE 2-byte character. A byte-wise buffer would
@@ -1144,7 +1144,7 @@ def test_chat_multibyte_backspace_buffer_is_clean_end_to_end(tmp_path):
             (None, b"quit\n"),
         ],
         env={
-            "APFEL_HISTFILE": str(histfile),
+            "DEV_HISTFILE": str(histfile),
             "LANG": "en_US.UTF-8",
             "LC_CTYPE": "en_US.UTF-8",
         },
@@ -1160,9 +1160,9 @@ def test_chat_multibyte_backspace_buffer_is_clean_end_to_end(tmp_path):
 
 @pytest.mark.model
 def test_chat_history_off_by_default(tmp_path):
-    """Without APFEL_HISTFILE, a pre-seeded file is neither read nor rewritten.
+    """Without DEV_HISTFILE, a pre-seeded file is neither read nor rewritten.
 
-    The default is in-memory-only: apfel must not touch a history file the
+    The default is in-memory-only: dev must not touch a history file the
     user did not opt into. We seed a file, run a session with the env var
     UNSET, and assert the file is byte-for-byte unchanged.
     """
@@ -1184,7 +1184,7 @@ def test_chat_history_off_by_default(tmp_path):
 # ---------------------------------------------------------------------------
 # Category: -f / positional content seeded into chat context (#370)
 #
-# Regression for the silent-drop bug: `apfel -f file --chat` parsed the file
+# Regression for the silent-drop bug: `dev -f file --chat` parsed the file
 # but the .chat dispatch ignored it, so the content never reached the model.
 # The fix seeds the chat session transcript with that content as an initial
 # user turn and prints a one-line notice on startup.

@@ -1,21 +1,21 @@
-# apfel Tool Calling Guide
+# dev Tool Calling Guide
 
 Real findings from systematic experimentation with Apple's on-device FoundationModels LLM
-and apfel's OpenAI-compatible tool calling implementation.
+and dev's OpenAI-compatible tool calling implementation.
 
-**Findings from:** 2026-03-26 (apfel v0.5.0, macOS 26.3) | **Last verified:** 2026-07-02 (apfel v1.7.1, macOS 26.5.2). The documented behaviors are exercised by the MCP integration suites (`Tests/integration/mcp_server_test.py`, `Tests/integration/mcp_remote_test.py`) on every release.
+**Findings from:** 2026-03-26 (dev v0.5.0, macOS 26.3) | **Last verified:** 2026-07-02 (dev v1.7.1, macOS 26.5.2). The documented behaviors are exercised by the MCP integration suites (`Tests/integration/mcp_server_test.py`, `Tests/integration/mcp_remote_test.py`) on every release.
 
-> **Looking for ready-made MCPs?** [apfel-mcp.franzai.com](https://apfel-mcp.franzai.com/) ships three token-budget-optimized MCP servers designed for apfel's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. `brew install Arthur-Ficial/tap/apfel-mcp`. The repo is open for contributions of new apfel-optimized MCPs - see [apfel-mcp.franzai.com/#contribute](https://apfel-mcp.franzai.com/#contribute).
+> **Looking for ready-made MCPs?** [dev-mcp.franzai.com](https://dev-mcp.franzai.com/) ships three token-budget-optimized MCP servers designed for dev's 4096-token context window: `url-fetch`, `ddg-search`, and the flagship compound `search-and-fetch` tool. `brew install Arthur-Ficial/tap/dev-mcp`. The repo is open for contributions of new dev-optimized MCPs - see [dev-mcp.franzai.com/#contribute](https://dev-mcp.franzai.com/#contribute).
 
-> **Managing many MCPs?** [Arthur-Ficial/apfel-run](https://github.com/Arthur-Ficial/apfel-run) is an MIT wrapper that keeps an enabled/disabled list in `~/.config/apfel/mcps.conf` (comment out with `-` to disable), builds `APFEL_MCP`, and `execve`s apfel. Stop typing `--mcp` on every call; edit the file instead.
+> **Managing many MCPs?** [__UPSTREAM_DEV_REPO__-run](__UPSTREAM_DEV_URL__-run) is an MIT wrapper that keeps an enabled/disabled list in `~/.config/dev/mcps.conf` (comment out with `-` to disable), builds `DEV_MCP`, and `execve`s dev. Stop typing `--mcp` on every call; edit the file instead.
 
-> **Preflight your token budget:** MCP tool schemas consume context fast. Run `apfel --count-tokens --mcp ./server.py "prompt"` before attaching tools in scripts or integrations. See [cli-reference.md](cli-reference.md).
+> **Preflight your token budget:** MCP tool schemas consume context fast. Run `dev --count-tokens --mcp ./server.py "prompt"` before attaching tools in scripts or integrations. See [cli-reference.md](cli-reference.md).
 
 ---
 
 ## How It Works
 
-apfel converts OpenAI-format tool definitions into two paths:
+dev converts OpenAI-format tool definitions into two paths:
 
 1. **Native path:** Tool schemas are converted to `DynamicGenerationSchema` and passed
    via FoundationModels' `Transcript.ToolDefinition` API. The model outputs structured
@@ -23,7 +23,7 @@ apfel converts OpenAI-format tool definitions into two paths:
 
 2. **Fallback path:** If schema conversion fails (unsupported types), the tool definition
    is injected into the system prompt as text. The model is instructed to output a specific
-   JSON format, which apfel detects post-hoc via `ToolCallHandler.detectToolCall()`.
+   JSON format, which dev detects post-hoc via `ToolCallHandler.detectToolCall()`.
 
 Detection handles: clean JSON, markdown-wrapped ```` ```json ``` ```` blocks, and JSON
 after preamble text. Both paths produce identical OpenAI-compatible output.
@@ -39,7 +39,7 @@ after preamble text. Both paths produce identical OpenAI-compatible output.
 curl -s http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "apple-foundationmodel",
+    "model": "sayitdev-on-device",
     "messages": [{"role": "user", "content": "What is the weather in Vienna?"}],
     "tools": [{
       "type": "function",
@@ -84,7 +84,7 @@ curl -s http://localhost:11434/v1/chat/completions \
     ],
     "created": 1774531610,
     "id": "chatcmpl-6089d314-488",
-    "model": "apple-foundationmodel",
+    "model": "sayitdev-on-device",
     "object": "chat.completion",
     "usage": {
         "completion_tokens": 39,
@@ -128,7 +128,7 @@ curl -s http://localhost:11434/v1/chat/completions \
     ],
     "created": 1774531618,
     "id": "chatcmpl-72a34ab1-cf4",
-    "model": "apple-foundationmodel",
+    "model": "sayitdev-on-device",
     "object": "chat.completion",
     "usage": {
         "completion_tokens": 51,
@@ -180,7 +180,7 @@ User: "What is the weather in Vienna?"
     ],
     "created": 1774531637,
     "id": "chatcmpl-56676d6b-173",
-    "model": "apple-foundationmodel",
+    "model": "sayitdev-on-device",
     "object": "chat.completion",
     "usage": {
         "completion_tokens": 24,
@@ -222,7 +222,7 @@ User: "What is the weather in Vienna?"
 }
 ```
 
-**Result:** The model tried to call a tool, but it hallucinated a tool name (`addition` instead of `calculator`) with a made-up schema (`numbers` instead of `expression`). The JSON was also malformed (trailing `\"` inside the arguments string), so apfel's `detectToolCall()` couldn't parse it and it came back as raw `content` with `finish_reason: "stop"`. Note: `detectToolCall()` does NOT validate tool names against registered tools - it parses any valid `{"tool_calls": [...]}` JSON. The failure here was purely a JSON syntax error.
+**Result:** The model tried to call a tool, but it hallucinated a tool name (`addition` instead of `calculator`) with a made-up schema (`numbers` instead of `expression`). The JSON was also malformed (trailing `\"` inside the arguments string), so dev's `detectToolCall()` couldn't parse it and it came back as raw `content` with `finish_reason: "stop"`. Note: `detectToolCall()` does NOT validate tool names against registered tools - it parses any valid `{"tool_calls": [...]}` JSON. The failure here was purely a JSON syntax error.
 
 ---
 
@@ -283,7 +283,7 @@ User: "What is the weather in Vienna?"
 }
 ```
 
-**Result:** The model hallucinated a different tool name (`wikipedia.info` instead of `search`) and a different parameter name (`q` instead of `query`). The response also had malformed JSON (missing closing bracket), so `detectToolCall()` couldn't parse it. Note: even if the JSON had been valid, apfel would have accepted it - `detectToolCall()` does not validate tool names against registered tools. It would have returned `name: "wikipedia.info"` and the caller would need to handle the mismatch. The model sometimes "knows better" than your schema.
+**Result:** The model hallucinated a different tool name (`wikipedia.info` instead of `search`) and a different parameter name (`q` instead of `query`). The response also had malformed JSON (missing closing bracket), so `detectToolCall()` couldn't parse it. Note: even if the JSON had been valid, dev would have accepted it - `detectToolCall()` does not validate tool names against registered tools. It would have returned `name: "wikipedia.info"` and the caller would need to handle the mismatch. The model sometimes "knows better" than your schema.
 
 ---
 
@@ -317,7 +317,7 @@ User: "What is the weather in Vienna?"
     ],
     "created": 1774531677,
     "id": "chatcmpl-c237372f-77e",
-    "model": "apple-foundationmodel",
+    "model": "sayitdev-on-device",
     "object": "chat.completion",
     "usage": {
         "completion_tokens": 57,
@@ -486,7 +486,7 @@ data: {"usage":{"prompt_tokens":7,"completion_tokens":57,"total_tokens":64}}
 data: [DONE]
 ```
 
-**Result:** The raw tool call JSON streams as `content` deltas first (the model writes it as text). Then apfel detects the tool call pattern after the stream ends and emits a final chunk with the structured `delta.tool_calls`. Clients see the JSON as text, then get the clean tool call.
+**Result:** The raw tool call JSON streams as `content` deltas first (the model writes it as text). Then dev detects the tool call pattern after the stream ends and emits a final chunk with the structured `delta.tool_calls`. Clients see the JSON as text, then get the clean tool call.
 
 ---
 
@@ -563,7 +563,7 @@ Run 5 args: {"city": "London"}
 client = openai.OpenAI(base_url="http://localhost:11434/v1", api_key="ignored")
 
 resp = client.chat.completions.create(
-    model="apple-foundationmodel",
+    model="sayitdev-on-device",
     messages=[{"role": "user", "content": "What is the weather in Munich?"}],
     tools=[{
         "type": "function",
@@ -593,7 +593,7 @@ Run 3: finish=tool_calls tool=get_weather({"city": "Munich", "country": "Germany
 Tool calling is server-only (no `--tools` CLI flag), but you can simulate it:
 
 ```bash
-apfel -s 'You have a tool get_weather(city). When asked about weather, respond ONLY with: {"tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"city\": \"<city>\"}"}}]}' "Weather in London?"
+dev -s 'You have a tool get_weather(city). When asked about weather, respond ONLY with: {"tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"city\": \"<city>\"}"}}]}' "Weather in London?"
 ```
 
 **Actual output:**
@@ -647,7 +647,7 @@ apfel -s 'You have a tool get_weather(city). When asked about weather, respond O
 | Hallucinated extra params | ~50% of calls | Adds `country` when only `city` requested |
 | Renamed params | ~20% of calls | Uses `topic` instead of schema's `query` |
 | Parallel tool calls | Never works | Can't call same tool twice in one response |
-| Hallucinated tool names | Occasional | Calls `wikipedia.info` instead of `search` (apfel accepts it - name validation is caller's job) |
+| Hallucinated tool names | Occasional | Calls `wikipedia.info` instead of `search` (dev accepts it - name validation is caller's job) |
 | Confused input/output | Rare | Puts output values as input arguments |
 | Guardrail false positives | Occasional | "Stock price" blocked |
 
@@ -674,7 +674,7 @@ From 29 requests during testing:
 | Tool detection overhead | negligible |
 | Requests/minute throughput | 10.5 |
 | Error rate | 2/29 (7%) - both guardrail blocks |
-| MCP timeout | 5s default (`--mcp-timeout` / `APFEL_MCP_TIMEOUT` to change) |
+| MCP timeout | 5s default (`--mcp-timeout` / `DEV_MCP_TIMEOUT` to change) |
 
 ---
 

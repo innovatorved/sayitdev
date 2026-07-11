@@ -1,6 +1,6 @@
 // ============================================================================
 // BufferedLineReader.swift — Buffered newline-delimited reader for file descriptors
-// Part of ApfelCore — pure Swift, no FoundationModels dependency
+// Part of SayItDevCore — pure Swift, no FoundationModels dependency
 // ============================================================================
 
 import Foundation

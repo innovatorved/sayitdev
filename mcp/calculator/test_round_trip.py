@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Full tool-calling round trip: apfel server + MCP calculator.
+Full tool-calling round trip: dev server + MCP calculator.
 
 Proves:
-1. apfel returns finish_reason: tool_calls with correct schema
+1. dev returns finish_reason: tool_calls with correct schema
 2. MCP calculator evaluates the expression (handles model improvisation)
-3. apfel incorporates the tool result into a natural answer
+3. dev incorporates the tool result into a natural answer
 
 Usage: python3 test_round_trip.py [port] [question]
 """
@@ -39,7 +39,7 @@ def mcp_call(tool_name, arguments):
     init_msg = json.dumps({
         "jsonrpc": "2.0", "id": 1, "method": "initialize",
         "params": {"protocolVersion": "2025-06-18", "capabilities": {},
-                    "clientInfo": {"name": "apfel-test", "version": "1.0"}}
+                    "clientInfo": {"name": "dev-test", "version": "1.0"}}
     })
     call_msg = json.dumps({
         "jsonrpc": "2.0", "id": 2, "method": "tools/call",
@@ -61,9 +61,9 @@ def main():
     print(f"Question: {QUESTION}")
     print()
 
-    # Step 1: Ask apfel with calculator tool
+    # Step 1: Ask dev with calculator tool
     step1 = httpx.post(f"{BASE}/v1/chat/completions", json={
-        "model": "apple-foundationmodel",
+        "model": "sayitdev-on-device",
         "messages": [{"role": "user", "content": QUESTION}],
         "tools": TOOLS
     }, timeout=60).json()
@@ -84,10 +84,10 @@ def main():
     result = mcp_call(tool_name, args)
     print(f"Step 2: Calculator result: {result}")
 
-    # Step 3: Feed result back to apfel
+    # Step 3: Feed result back to dev
     assistant_msg = step1["choices"][0]["message"]
     step3 = httpx.post(f"{BASE}/v1/chat/completions", json={
-        "model": "apple-foundationmodel",
+        "model": "sayitdev-on-device",
         "messages": [
             {"role": "user", "content": QUESTION},
             assistant_msg,

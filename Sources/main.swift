@@ -1,44 +1,44 @@
 // ============================================================================
-// main.swift — Entry point for apfel
+// main.swift — Entry point for dev
 // Apple Intelligence from the command line.
-// https://github.com/Arthur-Ficial/apfel
+// __UPSTREAM_DEV_URL__
 // ============================================================================
 
 import Foundation
-import ApfelCore
-import ApfelCLI
+import SayItDevCore
+import SayItDevCLI
 import CReadline
 
 // MARK: - Configuration
 
 let version = buildVersion
-let appName = "apfel"
-let modelName = "apple-foundationmodel"
+let appName = "dev"
+let modelName = "sayitdev-on-device"
 
 // MARK: - Exit Codes
-// Declared as `let` here (not the ApfelExitCodes struct) so the
+// Declared as `let` here (not the SayItDevExitCodes struct) so the
 // man-page bidirectional-coverage test (test_bidirectional_exit_code_coverage)
 // can still scrape them via its `let\s+exit\w+` regex. Values are delegated
-// to ApfelCLI.ApfelExitCodes to keep the mapping unit-testable.
+// to SayItDevCLI.SayItDevExitCodes to keep the mapping unit-testable.
 
-let exitSuccess: Int32 = ApfelExitCodes.success
-let exitRuntimeError: Int32 = ApfelExitCodes.runtimeError
-let exitUsageError: Int32 = ApfelExitCodes.usageError
-let exitGuardrail: Int32 = ApfelExitCodes.guardrail
-let exitContextOverflow: Int32 = ApfelExitCodes.contextOverflow
-let exitModelUnavailable: Int32 = ApfelExitCodes.modelUnavailable
-let exitRateLimited: Int32 = ApfelExitCodes.rateLimited
+let exitSuccess: Int32 = SayItDevExitCodes.success
+let exitRuntimeError: Int32 = SayItDevExitCodes.runtimeError
+let exitUsageError: Int32 = SayItDevExitCodes.usageError
+let exitGuardrail: Int32 = SayItDevExitCodes.guardrail
+let exitContextOverflow: Int32 = SayItDevExitCodes.contextOverflow
+let exitModelUnavailable: Int32 = SayItDevExitCodes.modelUnavailable
+let exitRateLimited: Int32 = SayItDevExitCodes.rateLimited
 
-/// Map an ApfelError to the appropriate exit code.
-/// Thin wrapper around ApfelExitCodes.code(for:) (see Sources/CLI/ExitCodes.swift)
+/// Map an SayItDevError to the appropriate exit code.
+/// Thin wrapper around SayItDevExitCodes.code(for:) (see Sources/CLI/ExitCodes.swift)
 /// so the mapping is unit-testable.
-func exitCode(for error: ApfelError) -> Int32 {
-    ApfelExitCodes.code(for: error)
+func exitCode(for error: SayItDevError) -> Int32 {
+    SayItDevExitCodes.code(for: error)
 }
 
 // MARK: - Locale
 
-// Adopt the user's LC_CTYPE from the environment (LANG/LC_*). apfel otherwise
+// Adopt the user's LC_CTYPE from the environment (LANG/LC_*). dev otherwise
 // runs in the "C" locale, and libedit's multibyte handling (mbrtowc/ct_encode)
 // keys off LC_CTYPE - without this, chat line editing of non-ASCII input
 // (backspace/arrow over "ü"/emoji) operates byte-wise and corrupts the line.
@@ -47,17 +47,17 @@ setlocale(LC_CTYPE, "")
 
 // MARK: - Signal Handling
 
-apfel_install_sigint_exit_handler(isatty(STDOUT_FILENO) != 0 ? 1 : 0)
+dev_install_sigint_exit_handler(isatty(STDOUT_FILENO) != 0 ? 1 : 0)
 
 // Ignore SIGPIPE process-wide. A crashed MCP server (or any closed pipe/socket
-// peer) must not kill apfel: writes to a dead pipe would otherwise raise SIGPIPE
+// peer) must not kill dev: writes to a dead pipe would otherwise raise SIGPIPE
 // with the default disposition and terminate the process (exit 141), taking down
 // the whole --serve HTTP server. With SIG_IGN the write instead fails with EPIPE,
 // which the throwing write path in MCPClient maps to a recoverable error (#215).
 signal(SIGPIPE, SIG_IGN)
 
-// True when stdin is a FIFO/pipe (`command | apfel`) vs a regular file
-// redirect (`apfel < file`). We only suggest `2>&1` for the pipe case;
+// True when stdin is a FIFO/pipe (`command | dev`) vs a regular file
+// redirect (`dev < file`). We only suggest `2>&1` for the pipe case;
 // regular files don't need that advice.
 func stdinIsPipe() -> Bool {
     var st = stat()
@@ -72,7 +72,7 @@ func readStdinData() -> Data {
 
 /// Turn piped stdin into prompt text: a piped PDF or image is extracted via lesbar
 /// (OCR + "what the image is about", same as `-f`); anything else is decoded as UTF-8
-/// text — apfel's existing pipe behaviour. Empty stdin returns "".
+/// text — dev's existing pipe behaviour. Empty stdin returns "".
 /// Throws `CLIParseError` when the bytes are a PDF/image but extraction fails.
 func stdinPromptText(_ data: Data) throws -> String {
     if data.isEmpty { return "" }
@@ -88,16 +88,16 @@ func stdinPromptText(_ data: Data) throws -> String {
 let rawArgs = Array(CommandLine.arguments.dropFirst())
 
 // No args AND stdin is a TTY: nothing to read, nothing to do -> usage + exit 2.
-// This is the only no-args special case. The bare-pipe case (`echo hi | apfel`)
+// This is the only no-args special case. The bare-pipe case (`echo hi | dev`)
 // used to be a fast path that ran BEFORE parse() and therefore dropped every
-// APFEL_* env var and skipped the model-availability gate (#222). It now flows
+// DEV_* env var and skipped the model-availability gate (#222). It now flows
 // through the normal parse()/dispatch path below.
 if rawArgs.isEmpty && isatty(STDIN_FILENO) != 0 {
     printUsage(to: stderr)
     exit(exitUsageError)
 }
 
-// True for the bare-pipe invocation (`echo hi | apfel` with no flags). It
+// True for the bare-pipe invocation (`echo hi | dev` with no flags). It
 // streams by default to preserve the historical output behavior of that path.
 let noArgsPipe = rawArgs.isEmpty
 
@@ -140,14 +140,14 @@ default:
 if let fmt = parsed.outputFormat { outputFormat = fmt }
 if parsed.quiet { quietMode = true }
 if parsed.noColor { noColorFlag = true }
-if parsed.debug { ApfelDebugConfiguration.isEnabled = true }
+if parsed.debug { SayItDevDebugConfiguration.isEnabled = true }
 
-// Surface non-fatal parse warnings (invalid APFEL_* env values ignored in
+// Surface non-fatal parse warnings (invalid DEV_* env values ignored in
 // favor of defaults) on stderr unless --quiet. Collected by parse() so it
 // stays pure; printed here (#254).
 if !quietMode {
     for warning in parsed.warnings {
-        printStderr("\(styledErr("apfel:", .yellow)) \(warning)")
+        printStderr("\(styledErr("dev:", .yellow)) \(warning)")
     }
 }
 
@@ -206,9 +206,9 @@ if messagesJSON == nil && parsed.mode.acceptsStdinInput && isatty(STDIN_FILENO) 
         }
     } else if !quietMode && stdinIsPipe() {
         // Empty pipe: hint about stderr redirection. Fires whether or not a
-        // prompt was given, so the bare-pipe case (`somecmd | apfel`, no args)
+        // prompt was given, so the bare-pipe case (`somecmd | dev`, no args)
         // still gets the hint now that it flows through this path (#152, #222).
-        printStderr("\(styledErr("apfel:", .yellow)) piped input was empty - if the command prints to stderr, try: command 2>&1 | apfel")
+        printStderr("\(styledErr("dev:", .yellow)) piped input was empty - if the command prints to stderr, try: command 2>&1 | dev")
     }
 }
 
@@ -223,8 +223,8 @@ if !fileContents.isEmpty {
 }
 
 // Debuggable: with --debug, show exactly what each file extracted to and the full
-// prompt that goes to the model, so you can see what apfel actually puts to the API.
-if ApfelDebugConfiguration.isEnabled {
+// prompt that goes to the model, so you can see what dev actually puts to the API.
+if SayItDevDebugConfiguration.isEnabled {
     for attachment in parsed.fileAttachments {
         debugLog("extract", "\(attachment.path) -> \(attachment.content.count) chars:\n\(attachment.content)")
     }
@@ -264,16 +264,20 @@ let serverAllowedOrigins: [String] = {
 // gate, so "nothing to do" is a usage error (exit 2) regardless of whether the
 // model is available. This preserves the old bare-pipe behavior: an empty pipe
 // with no args prints the hint above and exits 2 without touching the model.
-if (parsed.mode == .single || parsed.mode == .stream) && prompt.isEmpty && messagesJSON == nil {
-    printError("no prompt provided")
-    exit(exitUsageError)
+if (parsed.mode == .single || parsed.mode == .stream || parsed.mode == .speak) && prompt.isEmpty && messagesJSON == nil {
+    if parsed.mode == .speak && isatty(STDIN_FILENO) == 0 {
+        // stdin pipe provides speak text
+    } else {
+        printError(parsed.mode == .speak ? "no text provided for --speak" : "no prompt provided")
+        exit(exitUsageError)
+    }
 }
 
-// Check model availability for modes that need it. If unavailable, surface
-// the specific reason (appleIntelligenceNotEnabled / deviceNotEligible /
-// modelNotReady) so users know exactly what to fix. See #59.
+let voiceConfig = VoiceConfig.resolve(from: parsed, env: ProcessInfo.processInfo.environment)
+
+// Check model availability for modes that need it.
 switch parsed.mode {
-case .modelInfo, .serve, .update, .countTokens:
+case .modelInfo, .serve, .update, .countTokens, .speak, .listen:
     break
 default:
     let availability = await TokenCounter.shared.availability
@@ -282,7 +286,7 @@ default:
         printStderr("")
         printStderr(availability.remediation)
         printStderr("")
-        printStderr("For full diagnostic info run: apfel --model-info")
+        printStderr("For full diagnostic info run: dev --model-info")
         exit(exitModelUnavailable)
     }
 }
@@ -342,6 +346,44 @@ do {
     case .benchmark:
         try await runBenchmarks()
 
+    case .speak:
+        do {
+            try await VoiceCommands.runSpeak(text: prompt, config: voiceConfig)
+        } catch SpeechInputError.permissionDenied(let msg) {
+            printError(msg)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.micPermissionDenied)
+        } catch ExitSignal.usage {
+            await shutdownMCP()
+            exit(exitUsageError)
+        }
+
+    case .listen:
+        do {
+            try await VoiceCommands.runListen(config: voiceConfig)
+        } catch SpeechInputError.permissionDenied(let msg) {
+            printError(msg)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.micPermissionDenied)
+        } catch SpeechInputError.noInputDevice {
+            printError(SpeechInputError.noInputDevice.localizedDescription)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.noInputDevice)
+        } catch SpeechInputError.emptyAudio {
+            printError("No speech detected")
+            await shutdownMCP()
+            exit(exitUsageError)
+        }
+
+    case .agent:
+        do {
+            try await AgentLoop.run(systemPrompt: parsed.systemPrompt, options: sessionOpts, config: voiceConfig)
+        } catch SpeechInputError.permissionDenied(let msg) {
+            printError(msg)
+            await shutdownMCP()
+            exit(SayItDevExitCodes.micPermissionDenied)
+        }
+
     case .chat:
         // `-f file` / piped / positional content is merged into `prompt` above;
         // seed it into the chat context instead of dropping it silently (#370).
@@ -392,7 +434,7 @@ do {
                 schemaJSON: schemaJSON, schemaName: parsed.schemaName ?? "schema",
                 options: sessionOpts)
         } else {
-            // The bare-pipe case (`echo hi | apfel`) streams to preserve its
+            // The bare-pipe case (`echo hi | dev`) streams to preserve its
             // historical output behavior; an explicit prompt does not (#222).
             let status = try await singlePrompt(prompt, systemPrompt: effectiveSystemPrompt, stream: noArgsPipe, options: sessionOpts, mcpManager: mcpManager, codeOnly: parsed.codeOnly)
             if status != 0 {
@@ -425,7 +467,7 @@ do {
         break   // Already handled above; exhaustive switch.
     }
 } catch {
-    let classified = ApfelError.classify(error)
+    let classified = SayItDevError.classify(error)
     printError("\(classified.cliLabel) \(classified.openAIMessage)")
     await shutdownMCP()
     exit(exitCode(for: classified))

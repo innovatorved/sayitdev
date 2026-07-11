@@ -3,11 +3,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "apfel",
+    name: "sayitdev",
     platforms: [.macOS(.v26)],
     products: [
-        .library(name: "ApfelCore", targets: ["ApfelCore"]),
-        .executable(name: "apfel", targets: ["apfel"])
+        .library(name: "SayItDevCore", targets: ["SayItDevCore"]),
+        .executable(name: "dev", targets: ["dev"])
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.0.0"),
@@ -24,23 +24,23 @@ let package = Package(
         ),
         // Pure-logic library — no FoundationModels, testable
         .target(
-            name: "ApfelCore",
+            name: "SayItDevCore",
             dependencies: [],
             path: "Sources/Core"
         ),
-        // CLI argument parsing — depends on ApfelCore for ContextStrategy
+        // CLI argument parsing — depends on SayItDevCore for ContextStrategy
         .target(
-            name: "ApfelCLI",
-            dependencies: ["ApfelCore"],
+            name: "SayItDevCLI",
+            dependencies: ["SayItDevCore"],
             path: "Sources/CLI"
         ),
-        // Main executable — depends on ApfelCore + ApfelCLI + Hummingbird + FoundationModels
+        // Main executable — depends on SayItDevCore + SayItDevCLI + Hummingbird + FoundationModels
         .executableTarget(
-            name: "apfel",
+            name: "dev",
             dependencies: [
                 .product(name: "Hummingbird", package: "hummingbird"),
-                "ApfelCore",
-                "ApfelCLI",
+                "SayItDevCore",
+                "SayItDevCLI",
                 "CReadline",
                 .product(name: "Lesbar", package: "lesbar"),
                 .product(name: "LesbarCore", package: "lesbar"),
@@ -58,33 +58,33 @@ let package = Package(
         ),
         // Test runner — pure Swift, no XCTest/Testing (Command Line Tools only)
         .executableTarget(
-            name: "apfel-tests",
-            dependencies: ["ApfelCore", "ApfelCLI"],
-            path: "Tests/apfelTests"
+            name: "sayitdev-tests",
+            dependencies: ["SayItDevCore", "SayItDevCLI"],
+            path: "Tests/sayitdevTests"
         ),
         .executableTarget(
-            name: "apfelcore-context-strategies-example",
-            dependencies: ["ApfelCore"],
+            name: "sayitdevcore-context-strategies-example",
+            dependencies: ["SayItDevCore"],
             path: "Examples/ContextStrategies"
         ),
         .executableTarget(
-            name: "apfelcore-openai-types-example",
-            dependencies: ["ApfelCore"],
+            name: "sayitdevcore-openai-types-example",
+            dependencies: ["SayItDevCore"],
             path: "Examples/OpenAITypes"
         ),
         .executableTarget(
-            name: "apfelcore-tool-calling-example",
-            dependencies: ["ApfelCore"],
+            name: "sayitdevcore-tool-calling-example",
+            dependencies: ["SayItDevCore"],
             path: "Examples/ToolCalling"
         ),
         .executableTarget(
-            name: "apfelcore-error-handling-example",
-            dependencies: ["ApfelCore"],
+            name: "sayitdevcore-error-handling-example",
+            dependencies: ["SayItDevCore"],
             path: "Examples/ErrorHandling"
         ),
         .executableTarget(
-            name: "apfelcore-mcp-protocol-example",
-            dependencies: ["ApfelCore"],
+            name: "sayitdevcore-mcp-protocol-example",
+            dependencies: ["SayItDevCore"],
             path: "Examples/MCPProtocol"
         ),
     ]

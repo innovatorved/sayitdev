@@ -1,5 +1,5 @@
 // ============================================================================
-// TokenCountFallback.swift — Why token counting fell back to chars/4 (ApfelCore)
+// TokenCountFallback.swift — Why token counting fell back to chars/4 (SayItDevCore)
 // ============================================================================
 
 import Foundation

@@ -1,4 +1,4 @@
-# Design: `apfel --count-tokens`
+# Design: `dev --count-tokens`
 
 **Status:** Implemented — shipped in `feat/count-tokens` (PR #207)  
 **Author:** Contributor design session (super-brainstorm)  
@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add `apfel --count-tokens`, a zero-inference CLI mode that reports how many tokens a prompt would consume before calling the on-device model. This addresses the project's central constraint — the 4096-token context window — which users hit frequently when attaching files (`-f`) or MCP tool schemas (`--mcp`).
+Add `dev --count-tokens`, a zero-inference CLI mode that reports how many tokens a prompt would consume before calling the on-device model. This addresses the project's central constraint — the 4096-token context window — which users hit frequently when attaching files (`-f`) or MCP tool schemas (`--mcp`).
 
 ## Problem
 
@@ -14,14 +14,14 @@ Users discover context overflow only at inference time (`[context overflow]`, ex
 
 ## Success Criteria
 
-- `apfel --count-tokens "prompt"` prints token count to stdout (plain or `-o json`)
+- `dev --count-tokens "prompt"` prints token count to stdout (plain or `-o json`)
 - Supports the same input resolution as normal prompt mode: positional prompt, stdin pipe, `-f` / `--system-file`, `-s` / `--system`
 - With `--mcp`, includes MCP tool-definition token cost in the breakdown (spawns MCP servers, same as inference)
 - Exit 0 by default (informational); `--strict` exits 4 when `total > budget`
 - Budget uses `--context-output-reserve` (default 512, same as inference via `ContextConfig.outputReserve`); `--max-tokens` does **not** affect preflight budget math
 - When Apple Intelligence / model is unavailable, continues with chars/4 fallback and `"approximate": true` in JSON (requires availability-gate exemption — see Architecture)
 - Documented in `docs/cli-reference.md`; cross-linked from `docs/tool-calling-guide.md`
-- TDD: unit tests in ApfelCore + CLIArgumentsTests; integration coverage in `cli_e2e_test.py`
+- TDD: unit tests in SayItDevCore + CLIArgumentsTests; integration coverage in `cli_e2e_test.py`
 
 ## Out of Scope
 
@@ -36,7 +36,7 @@ Users discover context overflow only at inference time (`[context overflow]`, ex
 
 | Layer | Change |
 |-------|--------|
-| **ApfelCore** | New pure type `TokenBudgetReport` + aggregator for per-component sums and `fits` computation |
+| **SayItDevCore** | New pure type `TokenBudgetReport` + aggregator for per-component sums and `fits` computation |
 | **CLI parsing** | New `Mode.countTokens` + `--count-tokens` / `--strict` flags in `CLIArguments.swift`; reject conflicts with `--serve`, `--chat`, `--stream`, `--benchmark`; extend file storage to retain `(path, content)` pairs for JSON breakdown |
 | **main.swift** | Add `.countTokens` to availability-gate exemption (alongside `.modelInfo`, `.serve`, `.update`) so preflight runs when model is unavailable; add `acceptsStdinInput: true` for countTokens mode |
 | **CLI execution** | New `countTokens()` in `CLI.swift`; reuses existing prompt/system/file resolution |
@@ -46,7 +46,7 @@ Users discover context overflow only at inference time (`[context overflow]`, ex
 
 ### Key Files
 
-- `Sources/Core/TokenBudgetReport.swift` (new, pure ApfelCore)
+- `Sources/Core/TokenBudgetReport.swift` (new, pure SayItDevCore)
 - `Sources/CLI/CLIArguments.swift` (add `Mode.countTokens`, `fileAttachments: [(path: String, content: String)]`, `--strict`)
 - `Sources/CLI.swift`
 - `Sources/main.swift`
@@ -129,7 +129,7 @@ One-line summary to stdout. Optional per-component breakdown on stderr when not 
 3. **Green:** Implement `TokenBudgetReport` + `countTokens()` wiring
 4. **Integration:** `cli_e2e_test.py` model-free validation of flag presence and JSON shape
 5. **Local (Apple Intelligence Mac):** real count with `-f README.md` and `--mcp mcp/calculator/server.py`
-6. **Gate:** `swift run apfel-tests` (CI) + `make test` (full local qualification)
+6. **Gate:** `swift run dev-tests` (CI) + `make test` (full local qualification)
 
 ## Backwards Compatibility
 
@@ -145,7 +145,7 @@ Additive CLI flag only. No API breakage. No changes to HTTP server or existing f
 
 - `docs/cli-reference.md` — new flag section with examples
 - `docs/tool-calling-guide.md` — "preflight your budget" cross-link
-- README Quick Start (UNIX section) — one example: `apfel --count-tokens -f README.md "summarize"`
+- README Quick Start (UNIX section) — one example: `dev --count-tokens -f README.md "summarize"`
 
 ## Decision Log
 
@@ -161,7 +161,7 @@ Additive CLI flag only. No API breakage. No changes to HTTP server or existing f
 
 ## GitHub Issue Draft
 
-**Title:** `feat(cli): apfel --count-tokens for token budget preflight`
+**Title:** `feat(cli): dev --count-tokens for token budget preflight`
 
 **Body:**
 

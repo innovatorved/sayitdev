@@ -24,7 +24,7 @@ BASE_URL = "http://127.0.0.1:11434"
 
 
 def prompt_tokens(messages, strategy=None):
-    payload = {"model": "apple-foundationmodel", "messages": messages, "max_tokens": 16}
+    payload = {"model": "sayitdev-on-device", "messages": messages, "max_tokens": 16}
     if strategy is not None:
         payload["x_context_strategy"] = strategy
     resp = httpx.post(f"{BASE_URL}/v1/chat/completions", json=payload, timeout=120)

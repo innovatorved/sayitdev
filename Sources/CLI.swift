@@ -1,12 +1,12 @@
 // ============================================================================
 // CLI.swift — Command-line interface commands
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import FoundationModels
 import Foundation
-import ApfelCore
-import ApfelCLI
+import SayItDevCore
+import SayItDevCLI
 import CReadline
 
 // MARK: - Chat Header
@@ -34,7 +34,7 @@ func printHeader() {
 /// Behavior depends on output format:
 /// - **plain**: Print response directly. If streaming, print tokens as they arrive.
 /// - **json**: Buffer the complete response, then emit a single JSON object.
-/// Returns the process exit code: 0, or `ApfelExitCodes.noCode` when
+/// Returns the process exit code: 0, or `SayItDevExitCodes.noCode` when
 /// `codeOnly` found no fenced block. Discardable because the `--stream` call
 /// sites cannot set `codeOnly` (rejected at parse time) and always get 0.
 @discardableResult
@@ -76,7 +76,7 @@ func singlePrompt(_ prompt: String, systemPrompt: String?, stream: Bool, options
     case .plain:
         if hasMCPTools || !stream { print(result.content) } else { print() }
     case .json:
-        let obj = ApfelResponse(
+        let obj = SayItDevResponse(
             model: modelName, content: result.content,
             metadata: .init(onDevice: true, version: version))
         print(jsonString(obj))
@@ -93,8 +93,8 @@ func singlePrompt(_ prompt: String, systemPrompt: String?, stream: Bool, options
 /// "no code" vs "run failed".
 func printCroppedResponse(_ content: String) -> Int32 {
     guard let crop = CodeCropper.crop(from: content) else {
-        printStderr("\(styledErr("apfel:", .yellow)) empty model response, no code to print")
-        return ApfelExitCodes.noCode
+        printStderr("\(styledErr("dev:", .yellow)) empty model response, no code to print")
+        return SayItDevExitCodes.noCode
     }
     switch outputFormat {
     case .plain:
@@ -102,7 +102,7 @@ func printCroppedResponse(_ content: String) -> Int32 {
         // deliberately empty block) — print verbatim, no extra terminator.
         print(crop.code, terminator: "")
     case .json:
-        let obj = ApfelResponse(
+        let obj = SayItDevResponse(
             model: modelName, content: crop.code, language: crop.language,
             metadata: .init(onDevice: true, version: version))
         print(jsonString(obj))
@@ -113,7 +113,7 @@ func printCroppedResponse(_ content: String) -> Int32 {
 /// Shared stderr warning for responses truncated at the context window.
 func printLengthWarningIfNeeded(_ finishReason: FinishReason?) {
     if finishReason == .length {
-        printStderr("\(styledErr("apfel:", .yellow)) response truncated at the context window (finish_reason=length). Pass --max-tokens to control the cap explicitly.")
+        printStderr("\(styledErr("dev:", .yellow)) response truncated at the context window (finish_reason=length). Pass --max-tokens to control the cap explicitly.")
     }
 }
 
@@ -124,7 +124,7 @@ func printLengthWarningIfNeeded(_ finishReason: FinishReason?) {
 /// The compiled `GenerationSchema` constrains decoding, so the output is
 /// always a schema-valid JSON object - no fence stripping, no retry-on-invalid
 /// JSON. Plain output prints the raw JSON (newline-terminated, jq-ready);
-/// `-o json` wraps it as a string in the standard ApfelResponse envelope.
+/// `-o json` wraps it as a string in the standard SayItDevResponse envelope.
 func structuredSinglePrompt(
     _ prompt: String,
     systemPrompt: String?,
@@ -146,7 +146,7 @@ func structuredSinglePrompt(
     case .plain:
         print(content)
     case .json:
-        let obj = ApfelResponse(
+        let obj = SayItDevResponse(
             model: modelName, content: content,
             metadata: .init(onDevice: true, version: version))
         print(jsonString(obj))
@@ -160,7 +160,7 @@ func structuredSinglePrompt(
 /// (`ContextManager.makeSession`) so CLI and server multi-turn semantics
 /// cannot drift. Composes with `--stream` (delta printing) and `--schema`
 /// (schema-guaranteed reply to the conversation).
-/// Returns the process exit code: 0, or `ApfelExitCodes.noCode` when
+/// Returns the process exit code: 0, or `SayItDevExitCodes.noCode` when
 /// `codeOnly` found no fenced block (same contract as `singlePrompt`).
 @discardableResult
 func messagesPrompt(
@@ -195,7 +195,7 @@ func messagesPrompt(
         case .plain:
             print(content)
         case .json:
-            let obj = ApfelResponse(
+            let obj = SayItDevResponse(
                 model: modelName, content: content,
                 metadata: .init(onDevice: true, version: version))
             print(jsonString(obj))
@@ -219,7 +219,7 @@ func messagesPrompt(
     case .plain:
         if hasMCPTools || !stream { print(result.content) } else { print() }
     case .json:
-        let obj = ApfelResponse(
+        let obj = SayItDevResponse(
             model: modelName, content: result.content,
             metadata: .init(onDevice: true, version: version))
         print(jsonString(obj))
@@ -339,9 +339,9 @@ func countTokens(
     )
 
     if let tokenCountFallback, !quietMode {
-        printStderr("\(styledErr("apfel:", .yellow)) \(tokenCountFallback.message)")
+        printStderr("\(styledErr("dev:", .yellow)) \(tokenCountFallback.message)")
     } else if fellBackAtRuntime, !quietMode {
-        printStderr("\(styledErr("apfel:", .yellow)) token count is approximate (the on-device tokenizer failed at runtime; using chars/4 fallback)")
+        printStderr("\(styledErr("dev:", .yellow)) token count is approximate (the on-device tokenizer failed at runtime; using chars/4 fallback)")
     }
 
     switch outputFormat {
@@ -389,7 +389,7 @@ func chat(systemPrompt: String?, initialContext: String? = nil, options: Session
 
     // Keep SIGINT blocked while chat bootstraps so background threads spawned
     // during model/session setup do not inherit an unblocked Ctrl-C.
-    apfel_block_sigint()
+    dev_block_sigint()
 
     let mcpTools = await mcpManager?.allTools() ?? []
     let hasMCPTools = !mcpTools.isEmpty
@@ -400,7 +400,7 @@ func chat(systemPrompt: String?, initialContext: String? = nil, options: Session
         // Build session with ALL tool schemas as text instructions and NO native
         // toolDefinitions. Native defs cause the FoundationModels framework to
         // intercept tool calls instead of surfacing them as text in the stream.
-        // apfel uses out-of-band text detection (ToolCallHandler.detectToolCall),
+        // dev uses out-of-band text detection (ToolCallHandler.detectToolCall),
         // so native interception breaks tool execution in chat mode (#144).
         var instrParts: [String] = []
         if let sys = systemPrompt { instrParts.append(sys) }
@@ -423,8 +423,8 @@ func chat(systemPrompt: String?, initialContext: String? = nil, options: Session
         session = makeSession(systemPrompt: combinedSystem.isEmpty ? nil : combinedSystem, options: options)
     }
     let genOpts = makeGenerationOptions(options)
-    // Persistent history is opt-in via APFEL_HISTFILE (off by default). The
-    // path decision is a pure, unit-tested policy in ApfelCLI (#259).
+    // Persistent history is opt-in via DEV_HISTFILE (off by default). The
+    // path decision is a pure, unit-tested policy in SayItDevCLI (#259).
     let historyFile = ChatHistory.filePath(env: ProcessInfo.processInfo.environment)
     let lineEditor = ChatLineEditor(
         outputFormat: outputFormat,
@@ -533,7 +533,7 @@ func chat(systemPrompt: String?, initialContext: String? = nil, options: Session
                 }
             }
         } catch {
-            let classified = ApfelError.classify(error)
+            let classified = SayItDevError.classify(error)
             printError("\(classified.cliLabel) \(classified.openAIMessage)")
         }
     }
@@ -584,7 +584,7 @@ func truncateTranscript(_ transcript: Transcript, budget: Int, config: ContextCo
         budget: budget,
         config: config
     ) else {
-        throw ApfelError.contextOverflow
+        throw SayItDevError.contextOverflow
     }
 
     return Transcript(entries: trimmed)
@@ -604,7 +604,7 @@ func printModelInfo() async {
         : styled(availability.shortLabel, .red)
 
     print("""
-    \(styled("apfel", .cyan, .bold)) v\(version) — model info
+    \(styled("dev", .cyan, .bold)) v\(version) — model info
     \(styled("├", .dim)) model:      \(modelName)
     \(styled("├", .dim)) on-device:  true (always)
     \(styled("├", .dim)) available:  \(availabilityLine)
@@ -644,8 +644,8 @@ func printRelease() {
     \(styled("└", .dim)) strategies: newest-first, oldest-first, sliding-window, summarize, strict
 
     \(styled("LINKS:", .yellow, .bold))
-    \(styled("├", .dim)) repo:       https://github.com/Arthur-Ficial/apfel
-    \(styled("├", .dim)) gui:        https://github.com/Arthur-Ficial/apfel-gui
+    \(styled("├", .dim)) repo:       __UPSTREAM_DEV_URL__
+    \(styled("├", .dim)) gui:        __UPSTREAM_DEV_URL__-gui
     \(styled("└", .dim)) requires:   macOS 26+, Apple Silicon, Apple Intelligence enabled
     """)
 }
@@ -657,12 +657,12 @@ func printRelease() {
 /// tap, and source builds - there is no brew `--with-demo` option that could.
 /// Returns a process exit code.
 func runDemosInstall(target: String?) -> Int32 {
-    let dirPath = target ?? "apfel-demos"
+    let dirPath = target ?? "dev-demos"
     let dir = URL(fileURLWithPath: dirPath)
     do {
         let installed = try DemoInstaller.install(into: dir)
         let resolved = dir.path
-        print("\(styled("apfel:", .green, .bold)) wrote \(installed.count) demo files to \(styled(resolved, .cyan))")
+        print("\(styled("dev:", .green, .bold)) wrote \(installed.count) demo files to \(styled(resolved, .cyan))")
         for demo in installed where demo.executable {
             print("  \(styled("•", .dim)) \(demo.name)")
         }
@@ -681,7 +681,7 @@ func runDemosInstall(target: String?) -> Int32 {
 
 // MARK: - Self-Update
 
-/// Check for updates and optionally run `brew upgrade apfel`.
+/// Check for updates and optionally run `brew upgrade dev`.
 /// Detects install method from the binary path, prompts y/N on TTY.
 func performUpdate() {
     let current = version
@@ -696,8 +696,8 @@ func performUpdate() {
     let brewExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/brew" }
         ?? findExecutableInPath("brew")
         ?? "brew"
-    let apfelExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/apfel" }
-        ?? findExecutableInPath("apfel")
+    let apfelExec = homebrewPrefix(fromBinaryPath: resolved).map { "\($0)/bin/dev" }
+        ?? findExecutableInPath("dev")
         ?? resolved
 
     switch installMethod {
@@ -705,17 +705,17 @@ func performUpdate() {
         print("\(appName) v\(current) (installed via Homebrew)")
     case .macports:
         print("\(appName) v\(current) (installed via MacPorts)")
-        print("To update: sudo port sync && sudo port update apfel")
+        print("To update: sudo port sync && sudo port update dev")
         return
     case .source:
         print("\(appName) v\(current) (installed from source)")
         print("To update: git pull && make install")
-        print("Or visit: https://github.com/Arthur-Ficial/apfel/releases")
+        print("Or visit: __UPSTREAM_DEV_URL__/releases")
         return
     }
 
     // Check for updates via brew
-    let outdatedJSON = shellOutput(brewExec, args: ["info", "--json=v2", "apfel"])
+    let outdatedJSON = shellOutput(brewExec, args: ["info", "--json=v2", "dev"])
     guard let data = outdatedJSON.data(using: .utf8),
           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let formulae = json["formulae"] as? [[String: Any]],
@@ -723,7 +723,7 @@ func performUpdate() {
           let installed = formula["installed"] as? [[String: Any]],
           let installedVersion = installed.first?["version"] as? String,
           let stable = (formula["versions"] as? [String: Any])?["stable"] as? String else {
-        print("Could not check for updates. Try: brew upgrade apfel")
+        print("Could not check for updates. Try: brew upgrade dev")
         return
     }
 
@@ -737,7 +737,7 @@ func performUpdate() {
 
     // Non-interactive: report only
     guard isatty(STDIN_FILENO) != 0 else {
-        print("Run `apfel --update` in a terminal to update.")
+        print("Run `dev --update` in a terminal to update.")
         return
     }
 
@@ -748,18 +748,18 @@ func performUpdate() {
         return
     }
 
-    print(styled("Running: brew upgrade apfel", .dim))
-    let result = shellPassthrough(brewExec, args: ["upgrade", "apfel"])
+    print(styled("Running: brew upgrade dev", .dim))
+    let result = shellPassthrough(brewExec, args: ["upgrade", "dev"])
     if result == 0 {
         let newVersion = shellOutput(apfelExec, args: ["--version"]).trimmingCharacters(in: .whitespacesAndNewlines)
         print(styled("Updated to \(newVersion)", .green))
     } else {
-        printError("brew upgrade failed (exit \(result)). Try manually: brew upgrade apfel")
+        printError("brew upgrade failed (exit \(result)). Try manually: brew upgrade dev")
     }
 }
 
 /// Locate an executable by scanning `PATH`. Returns the first absolute path
-/// that exists and is executable, or nil. Used as a fallback for `brew`/`apfel`
+/// that exists and is executable, or nil. Used as a fallback for `brew`/`dev`
 /// when the binary path is not a recognizable Homebrew layout (#260).
 private func findExecutableInPath(_ name: String) -> String? {
     guard let pathVar = ProcessInfo.processInfo.environment["PATH"] else { return nil }
@@ -830,6 +830,9 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) --chat                   Interactive conversation
       \(appName) --stream <prompt>        Stream a single response
       \(appName) --serve                  Start OpenAI-compatible HTTP server
+      \(appName) --speak <text>           Text-to-speech (stdin or argument)
+      \(appName) --listen                 Speech-to-text from default microphone
+      \(appName) --agent                  Voice agent: listen → LLM → speak (Ctrl+C to quit)
       \(appName) --benchmark              Run internal performance benchmarks
       \(appName) --count-tokens <prompt>  Preflight token count (no inference)
       \(appName) completions <shell>      Print shell completions (bash, zsh, fish)
@@ -850,7 +853,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
           --seed <n>             Random seed for reproducible output
           --max-tokens <n>       Maximum response tokens
           --mcp <path|url>       Attach local or remote MCP tool server (repeatable)
-          --mcp-token <token>    Bearer token for remote MCP servers (prefer APFEL_MCP_TOKEN env)
+          --mcp-token <token>    Bearer token for remote MCP servers (prefer DEV_MCP_TOKEN env)
           --mcp-timeout <n>      MCP server timeout in seconds [default: 5]
           --permissive           Use permissive content guardrails
           --retry [n]            Enable retry with exponential backoff [default: 3 retries]
@@ -861,8 +864,17 @@ func printUsage(to handle: FileHandle = .standardOutput) {
           --count-tokens         Count tokens without calling the model
           --strict               With --count-tokens: exit 4 if over budget
           --update               Check for updates and upgrade via Homebrew
-          --demos [dir]          Write the bundled demo scripts to dir [default: ./apfel-demos]
+          --demos [dir]          Write the bundled demo scripts to dir [default: ./dev-demos]
           --debug                Enable debug logging to stderr (all modes)
+
+    \(styled("VOICE OPTIONS:", .yellow, .bold))
+          --input-device <uid>   Microphone device UID [default: system default]
+          --voice-name <id>      TTS voice id or 'personal' [DEV_TTS_VOICE]
+          --locale <id>          STT locale (e.g. en-US) [DEV_STT_LOCALE]
+          --rate <n>             TTS speaking rate 0.25–4.0 [DEV_TTS_RATE]
+          --audio-format <fmt>   TTS file format: wav, pcm, aac [DEV_TTS_FORMAT]
+          --timestamps           Include timing in transcriptions (verbose_json/srt/vtt)
+
       -h, --help                Show this help
       -v, --version             Print version
           --release             Show detailed release and build info
@@ -892,21 +904,21 @@ func printUsage(to handle: FileHandle = .standardOutput) {
 
 
     \(styled("ENVIRONMENT:", .yellow, .bold))
-      APFEL_SYSTEM_PROMPT       Default system prompt
-      APFEL_MCP                 MCP server paths (comma-separated; colon accepted for local paths)
-      APFEL_MCP_TIMEOUT         MCP timeout in seconds [default: 5]
-      APFEL_MCP_TOKEN           Bearer token for remote MCP servers
-      APFEL_HOST                Server bind address [default: 127.0.0.1]
-      APFEL_PORT                Server port [default: 11434]
-      APFEL_TOKEN               Bearer token for server authentication
-      APFEL_TEMPERATURE         Default temperature
-      APFEL_MAX_TOKENS          Default max tokens
-      APFEL_CONTEXT_STRATEGY    Default context strategy
-      APFEL_CONTEXT_MAX_TURNS   Max turns for sliding-window
-      APFEL_CONTEXT_OUTPUT_RESERVE
+      DEV_SYSTEM_PROMPT       Default system prompt
+      DEV_MCP                 MCP server paths (comma-separated; colon accepted for local paths)
+      DEV_MCP_TIMEOUT         MCP timeout in seconds [default: 5]
+      DEV_MCP_TOKEN           Bearer token for remote MCP servers
+      DEV_HOST                Server bind address [default: 127.0.0.1]
+      DEV_PORT                Server port [default: 11434]
+      DEV_TOKEN               Bearer token for server authentication
+      DEV_TEMPERATURE         Default temperature
+      DEV_MAX_TOKENS          Default max tokens
+      DEV_CONTEXT_STRATEGY    Default context strategy
+      DEV_CONTEXT_MAX_TURNS   Max turns for sliding-window
+      DEV_CONTEXT_OUTPUT_RESERVE
                                 Tokens reserved for output
-      APFEL_DEBUG               Enable debug logging (same as --debug)
-      APFEL_HISTFILE            Persist --chat history to this file (off by default)
+      DEV_DEBUG               Enable debug logging (same as --debug)
+      DEV_HISTFILE            Persist --chat history to this file (off by default)
       NO_COLOR                  Disable colored output (https://no-color.org)
 
     \(styled("EXIT CODES:", .yellow, .bold))
@@ -931,7 +943,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) -o json "Translate to German: hello" | jq .content
       \(appName) --count-tokens -f README.md "Summarize this"
       \(appName) --count-tokens -o json "hello" | jq .
-      APFEL_SYSTEM_PROMPT="Be brief" \(appName) "Explain TCP"
+      DEV_SYSTEM_PROMPT="Be brief" \(appName) "Explain TCP"
       \(appName) --serve --port 3000 --host 0.0.0.0 --cors
     """
     handle.write(Data((text + "\n").utf8))

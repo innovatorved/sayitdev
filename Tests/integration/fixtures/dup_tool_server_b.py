@@ -3,7 +3,7 @@
 
 Exposes the same `shared_tool` as dup_tool_server_a.py plus a unique `only_b`
 tool. Registered second in the test, so its `shared_tool` is the shadowed
-duplicate: apfel must warn and route `shared_tool` to server A instead.
+duplicate: dev must warn and route `shared_tool` to server A instead.
 """
 
 import json

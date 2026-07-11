@@ -1,11 +1,11 @@
 // ============================================================================
 // MCPClient.swift - MCP server connection and tool execution
-// Part of apfel - spawns MCP servers and manages tool calling
+// Part of dev - spawns MCP servers and manages tool calling
 // ============================================================================
 
 import Foundation
 import Darwin
-import ApfelCore
+import SayItDevCore
 
 /// Grace period after SIGTERM before escalating to SIGKILL when reaping a local
 /// MCP child (#216).
@@ -63,7 +63,7 @@ final class MCPConnection: @unchecked Sendable {
         proc.standardOutput = stdoutP
         proc.standardError = FileHandle.nullDevice
         // Scrub the child's environment so a third-party MCP script never
-        // inherits APFEL_TOKEN/APFEL_MCP_TOKEN or any cloud/API keys in the
+        // inherits DEV_TOKEN/DEV_MCP_TOKEN or any cloud/API keys in the
         // shell. With environment == nil, Process inherits the full parent env
         // (#229). The allowlist keeps what python3/FastMCP/venv servers need.
         proc.environment = ServerSecurity.scrubbedMCPEnvironment(from: ProcessInfo.processInfo.environment)
@@ -273,7 +273,7 @@ actor RemoteMCPConnection: Sendable {
         self.timeoutSeconds = timeoutSeconds
         // Ephemeral session: no shared cookie jar, no disk cache.
         let config = URLSessionConfiguration.ephemeral
-        config.httpAdditionalHeaders = ["User-Agent": "apfel/\(buildVersion)"]
+        config.httpAdditionalHeaders = ["User-Agent": "dev/\(buildVersion)"]
         self.session = URLSession(configuration: config)
 
         do {

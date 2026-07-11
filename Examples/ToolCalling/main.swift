@@ -1,4 +1,4 @@
-import ApfelCore
+import SayItDevCore
 
 let tool = ToolDef(
     name: "add",

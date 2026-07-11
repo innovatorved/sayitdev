@@ -1,0 +1,1220 @@
+// ============================================================================
+// CLIArgumentsTests.swift - Exhaustive unit tests for CLIArguments.parse()
+// Every flag, every validation error, every env default, mode conflicts, and
+// typed OutputFormat checks. Error tests verify CLIParseError type + message.
+// ============================================================================
+
+import Foundation
+import SayItDevCore
+import SayItDevCLI
+
+func runCLIArgumentsTests() {
+
+    // ========================================================================
+    // MARK: - Mode flags (happy path)
+    // ========================================================================
+
+    test("no args produces single mode with empty prompt") {
+        let args = try CLIArguments.parse([])
+        try assertEqual(args.mode, .single)
+        try assertEqual(args.prompt, "")
+    }
+
+    test("--help sets help mode") {
+        let args = try CLIArguments.parse(["--help"])
+        try assertEqual(args.mode, .help)
+    }
+
+    test("-h sets help mode") {
+        let args = try CLIArguments.parse(["-h"])
+        try assertEqual(args.mode, .help)
+    }
+
+    test("--version sets version mode") {
+        let args = try CLIArguments.parse(["--version"])
+        try assertEqual(args.mode, .version)
+    }
+
+    test("-v sets version mode") {
+        let args = try CLIArguments.parse(["-v"])
+        try assertEqual(args.mode, .version)
+    }
+
+    test("--release sets release mode") {
+        let args = try CLIArguments.parse(["--release"])
+        try assertEqual(args.mode, .release)
+    }
+
+    test("--chat sets chat mode") {
+        let args = try CLIArguments.parse(["--chat"])
+        try assertEqual(args.mode, .chat)
+    }
+
+    test("--stream sets stream mode") {
+        let args = try CLIArguments.parse(["--stream", "hi"])
+        try assertEqual(args.mode, .stream)
+    }
+
+    test("--serve sets serve mode") {
+        let args = try CLIArguments.parse(["--serve"])
+        try assertEqual(args.mode, .serve)
+    }
+
+    test("--benchmark sets benchmark mode") {
+        let args = try CLIArguments.parse(["--benchmark"])
+        try assertEqual(args.mode, .benchmark)
+    }
+
+    test("--count-tokens sets countTokens mode") {
+        let args = try CLIArguments.parse(["--count-tokens", "hello"])
+        try assertEqual(args.mode, .countTokens)
+        try assertEqual(args.prompt, "hello")
+    }
+
+    test("--count-tokens --strict sets strictCount") {
+        let args = try CLIArguments.parse(["--count-tokens", "--strict", "hello"])
+        try assertEqual(args.mode, .countTokens)
+        try assertTrue(args.strictCount)
+    }
+
+    test("--strict without --count-tokens throws") {
+        do {
+            _ = try CLIArguments.parse(["--strict", "hello"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--strict"))
+            try assertTrue(e.message.contains("--count-tokens"))
+        }
+    }
+
+    test("--count-tokens --serve throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--count-tokens", "--serve"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("--count-tokens --chat throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--count-tokens", "--chat"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("--count-tokens --stream throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--count-tokens", "--stream", "hi"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("-f retains path in fileAttachments") {
+        let args = try CLIArguments.parse(["-f", "README.md", "summarize"], extractFile: { path in
+            guard path == "README.md" else { throw CLIParseError("unexpected path") }
+            return "# Title"
+        })
+        try assertEqual(args.fileAttachments.count, 1)
+        try assertEqual(args.fileAttachments[0].path, "README.md")
+        try assertEqual(args.fileAttachments[0].content, "# Title")
+    }
+
+    test("--model-info sets modelInfo mode") {
+        let args = try CLIArguments.parse(["--model-info"])
+        try assertEqual(args.mode, .modelInfo)
+    }
+
+    test("--update sets update mode") {
+        let args = try CLIArguments.parse(["--update"])
+        try assertEqual(args.mode, .update)
+    }
+
+    test("--demos sets demos mode with no target") {
+        let args = try CLIArguments.parse(["--demos"])
+        try assertEqual(args.mode, .demos)
+        try assertNil(args.demosTarget)
+    }
+
+    test("--demos <dir> captures the target directory") {
+        let args = try CLIArguments.parse(["--demos", "/tmp/x"])
+        try assertEqual(args.mode, .demos)
+        try assertEqual(args.demosTarget, "/tmp/x")
+    }
+
+    test("demos subcommand sets demos mode") {
+        let args = try CLIArguments.parse(["demos"])
+        try assertEqual(args.mode, .demos)
+        try assertNil(args.demosTarget)
+    }
+
+    test("demos subcommand with dir captures the target") {
+        let args = try CLIArguments.parse(["demos", "./my-demos"])
+        try assertEqual(args.mode, .demos)
+        try assertEqual(args.demosTarget, "./my-demos")
+    }
+
+    test("quoted prompt 'demos' is NOT the subcommand when it is the prompt value") {
+        // A real prompt that happens to equal "demos" still triggers the
+        // subcommand (bare first token); users wanting it as a prompt can phrase
+        // it differently. This documents the intended precedence.
+        let args = try CLIArguments.parse(["demos"])
+        try assertEqual(args.mode, .demos)
+    }
+
+    test("tag is no longer a subcommand - treated as a normal prompt (moved to dev-tag)") {
+        let args = try CLIArguments.parse(["tag"])
+        try assertEqual(args.mode, .single)
+        try assertEqual(args.prompt, "tag")
+    }
+
+    test("demos --help shows help instead of writing files (#248)") {
+        let args = try CLIArguments.parse(["demos", "--help"])
+        try assertEqual(args.mode, .help)
+    }
+
+    test("demos -h shows help instead of writing files (#248)") {
+        let args = try CLIArguments.parse(["demos", "-h"])
+        try assertEqual(args.mode, .help)
+    }
+
+    test("demos with an unknown dash token throws unknownOption (#248)") {
+        do {
+            _ = try CLIArguments.parse(["demos", "-q"])
+            throw TestFailure("expected CLIParseError for demos -q")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("unknown option"))
+            try assertTrue(e.message.contains("-q"))
+        }
+    }
+
+    test("demos with --output after it throws unknownOption (#248)") {
+        do {
+            _ = try CLIArguments.parse(["demos", "--output", "json"])
+            throw TestFailure("expected CLIParseError for demos --output json")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("unknown option"))
+            try assertTrue(e.message.contains("--output"))
+        }
+    }
+
+    test("demos <dir> before a dash token still throws (#248)") {
+        do {
+            _ = try CLIArguments.parse(["demos", "./out", "-q"])
+            throw TestFailure("expected CLIParseError for demos ./out -q")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("unknown option"))
+        }
+    }
+
+    // ========================================================================
+    // MARK: - acceptsStdinInput (GH-82)
+    // ========================================================================
+
+    test("single mode accepts stdin input") {
+        let args = try CLIArguments.parse(["hello"])
+        try assertTrue(args.mode.acceptsStdinInput)
+    }
+
+    test("stream mode accepts stdin input") {
+        let args = try CLIArguments.parse(["--stream", "hello"])
+        try assertTrue(args.mode.acceptsStdinInput)
+    }
+
+    test("chat mode does not accept stdin input") {
+        let args = try CLIArguments.parse(["--chat"])
+        try assertTrue(!args.mode.acceptsStdinInput)
+    }
+
+    test("serve mode does not accept stdin input") {
+        let args = try CLIArguments.parse(["--serve"])
+        try assertTrue(!args.mode.acceptsStdinInput)
+    }
+
+    // ========================================================================
+    // MARK: - Prompt parsing
+    // ========================================================================
+
+    test("bare words become the prompt") {
+        let args = try CLIArguments.parse(["hello", "world"])
+        try assertEqual(args.prompt, "hello world")
+    }
+
+    test("prompt after flags preserves flag effects") {
+        let args = try CLIArguments.parse(["--quiet", "tell", "me", "a", "joke"])
+        try assertEqual(args.prompt, "tell me a joke")
+        try assertTrue(args.quiet)
+    }
+
+    test("single-word prompt parses") {
+        let args = try CLIArguments.parse(["hello"])
+        try assertEqual(args.prompt, "hello")
+    }
+
+    test("-- ends option parsing: dash-prefixed prompt passes through") {
+        let args = try CLIArguments.parse(["--", "-hello"])
+        try assertEqual(args.prompt, "-hello")
+    }
+
+    test("-- ends option parsing: flag-looking words become the prompt") {
+        let args = try CLIArguments.parse(["--", "--verbose", "mode", "explained"])
+        try assertEqual(args.prompt, "--verbose mode explained")
+    }
+
+    test("flags before -- still take effect") {
+        let args = try CLIArguments.parse(["--quiet", "--", "--stream"])
+        try assertTrue(args.quiet)
+        try assertEqual(args.prompt, "--stream")
+        try assertEqual(args.mode, .single)
+    }
+
+    test("bare -- with nothing after leaves prompt empty (stdin path)") {
+        let args = try CLIArguments.parse(["--"])
+        try assertEqual(args.prompt, "")
+    }
+
+    test("known flag after the prompt is swallowed but warns (#255)") {
+        let args = try CLIArguments.parse(["summarize", "this", "--output", "json"])
+        // Non-breaking: the tail is still the prompt verbatim.
+        try assertEqual(args.prompt, "summarize this --output json")
+        try assertTrue(args.warnings.contains { $0.contains("--output") })
+        try assertTrue(args.warnings.contains { $0.contains("--") })
+    }
+
+    test("short flag after the prompt warns (#255)") {
+        let args = try CLIArguments.parse(["hello", "-q"])
+        try assertEqual(args.prompt, "hello -q")
+        try assertTrue(args.warnings.contains { $0.contains("-q") })
+    }
+
+    test("plain prompt tail with no known flags produces no warning (#255)") {
+        let args = try CLIArguments.parse(["what", "is", "-2", "minus", "3"])
+        try assertEqual(args.prompt, "what is -2 minus 3")
+        try assertTrue(args.warnings.isEmpty)
+    }
+
+    test("non-flag dash tokens in the prompt tail do not warn (#255)") {
+        // Genuinely-textual dash tokens that are not known flags are fine.
+        let args = try CLIArguments.parse(["diff", "--foobar", "please"])
+        try assertEqual(args.prompt, "diff --foobar please")
+        try assertTrue(args.warnings.isEmpty)
+    }
+
+    test("-- before a flag-like prompt suppresses the #255 warning") {
+        let args = try CLIArguments.parse(["--", "summarize", "--output", "json"])
+        try assertEqual(args.prompt, "summarize --output json")
+        try assertTrue(args.warnings.isEmpty)
+    }
+
+    // ========================================================================
+    // MARK: - System prompt
+    // ========================================================================
+
+    test("--system sets systemPrompt") {
+        let args = try CLIArguments.parse(["--system", "You are helpful", "hi"])
+        try assertEqual(args.systemPrompt, "You are helpful")
+    }
+
+    test("-s sets systemPrompt") {
+        let args = try CLIArguments.parse(["-s", "Be brief", "hi"])
+        try assertEqual(args.systemPrompt, "Be brief")
+    }
+
+    test("--system without value throws CLIParseError") {
+        do {
+            _ = try CLIArguments.parse(["--system"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--system"))
+            try assertTrue(e.message.contains("requires"))
+        }
+    }
+
+    test("DEV_SYSTEM_PROMPT env sets systemPrompt") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_SYSTEM_PROMPT": "Be brief"])
+        try assertEqual(args.systemPrompt, "Be brief")
+    }
+
+    // ========================================================================
+    // MARK: - Output flags
+    // ========================================================================
+
+    test("-o plain sets outputFormat to .plain") {
+        let args = try CLIArguments.parse(["-o", "plain", "hi"])
+        try assertEqual(args.outputFormat, .plain)
+    }
+
+    test("--output json sets outputFormat to .json") {
+        let args = try CLIArguments.parse(["--output", "json", "hi"])
+        try assertEqual(args.outputFormat, .json)
+    }
+
+    test("outputFormat is nil when not specified") {
+        let args = try CLIArguments.parse(["hi"])
+        try assertNil(args.outputFormat)
+    }
+
+    test("--output invalid format throws with format name") {
+        do {
+            _ = try CLIArguments.parse(["--output", "xml"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("unknown output format"))
+            try assertTrue(e.message.contains("xml"))
+        }
+    }
+
+    test("--output without value throws CLIParseError") {
+        do {
+            _ = try CLIArguments.parse(["--output"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--output"))
+        }
+    }
+
+    test("--quiet sets quiet") {
+        let args = try CLIArguments.parse(["-q", "hi"])
+        try assertTrue(args.quiet)
+    }
+
+    test("--no-color sets noColor") {
+        let args = try CLIArguments.parse(["--no-color", "hi"])
+        try assertTrue(args.noColor)
+    }
+
+    // ========================================================================
+    // MARK: - Server flags
+    // ========================================================================
+
+    test("--port parses valid port") {
+        let args = try CLIArguments.parse(["--serve", "--port", "8080"])
+        try assertEqual(args.serverPort, 8080)
+    }
+
+    test("--port out of range throws") {
+        do {
+            _ = try CLIArguments.parse(["--port", "99999"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--port"))
+        }
+    }
+
+    test("--port zero throws") {
+        do {
+            _ = try CLIArguments.parse(["--port", "0"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--port"))
+        }
+    }
+
+    test("--port non-numeric throws") {
+        do {
+            _ = try CLIArguments.parse(["--port", "eighty"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--port"))
+        }
+    }
+
+    test("--host sets serverHost") {
+        let args = try CLIArguments.parse(["--serve", "--host", "0.0.0.0"])
+        try assertEqual(args.serverHost, "0.0.0.0")
+    }
+
+    test("--host without value throws CLIParseError") {
+        do {
+            _ = try CLIArguments.parse(["--host"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--host"))
+        }
+    }
+
+    test("--cors sets serverCORS") {
+        let args = try CLIArguments.parse(["--serve", "--cors"])
+        try assertTrue(args.serverCORS)
+    }
+
+    test("--max-concurrent parses positive") {
+        let args = try CLIArguments.parse(["--serve", "--max-concurrent", "10"])
+        try assertEqual(args.serverMaxConcurrent, 10)
+    }
+
+    test("--max-concurrent zero throws") {
+        do {
+            _ = try CLIArguments.parse(["--max-concurrent", "0"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--max-concurrent"))
+        }
+    }
+
+    test("--debug sets debug") {
+        let args = try CLIArguments.parse(["--debug", "hi"])
+        try assertTrue(args.debug)
+    }
+
+    test("--token sets serverToken") {
+        let args = try CLIArguments.parse(["--serve", "--token", "secret123"])
+        try assertEqual(args.serverToken, "secret123")
+    }
+
+    test("--token-auto sets serverTokenAuto") {
+        let args = try CLIArguments.parse(["--serve", "--token-auto"])
+        try assertTrue(args.serverTokenAuto)
+    }
+
+    test("--public-health sets serverPublicHealth") {
+        let args = try CLIArguments.parse(["--serve", "--public-health"])
+        try assertTrue(args.serverPublicHealth)
+    }
+
+    test("--no-origin-check disables origin check") {
+        let args = try CLIArguments.parse(["--serve", "--no-origin-check"])
+        try assertTrue(!args.serverOriginCheckEnabled)
+    }
+
+    test("--footgun disables origin check AND enables CORS") {
+        let args = try CLIArguments.parse(["--serve", "--footgun"])
+        try assertTrue(!args.serverOriginCheckEnabled)
+        try assertTrue(args.serverCORS)
+    }
+
+    test("--allowed-origins parses comma-separated list") {
+        let args = try CLIArguments.parse(["--serve", "--allowed-origins", "http://a.com,http://b.com"])
+        try assertEqual(args.serverAllowedOrigins.count, 2)
+        try assertTrue(args.serverAllowedOrigins.contains("http://a.com"))
+        try assertTrue(args.serverAllowedOrigins.contains("http://b.com"))
+    }
+
+    test("--allowed-origins deduplicates repeated values") {
+        let args = try CLIArguments.parse(["--serve", "--allowed-origins", "http://a.com,http://a.com,http://b.com"])
+        try assertEqual(args.serverAllowedOrigins.count, 2)
+    }
+
+    test("--allowed-origins empty string throws") {
+        do {
+            _ = try CLIArguments.parse(["--allowed-origins", ""])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--allowed-origins"))
+        }
+    }
+
+    // ========================================================================
+    // MARK: - MCP flags
+    // ========================================================================
+
+    test("--mcp adds server path") {
+        let args = try CLIArguments.parse(["--mcp", "/path/to/server.py", "hi"])
+        try assertEqual(args.mcpServerPaths, ["/path/to/server.py"])
+    }
+
+    test("multiple --mcp flags accumulate") {
+        let args = try CLIArguments.parse(["--mcp", "a.py", "--mcp", "b.py", "hi"])
+        try assertEqual(args.mcpServerPaths, ["a.py", "b.py"])
+    }
+
+    test("--mcp-timeout parses") {
+        let args = try CLIArguments.parse(["--mcp-timeout", "10", "hi"])
+        try assertEqual(args.mcpTimeoutSeconds, 10)
+    }
+
+    test("--mcp-timeout clamps at 300") {
+        let args = try CLIArguments.parse(["--mcp-timeout", "999", "hi"])
+        try assertEqual(args.mcpTimeoutSeconds, 300)
+    }
+
+    test("--mcp-timeout zero throws") {
+        do {
+            _ = try CLIArguments.parse(["--mcp-timeout", "0"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--mcp-timeout"))
+        }
+    }
+
+    test("--mcp-token sets mcpBearerToken") {
+        let args = try CLIArguments.parse(["--mcp", "https://remote.example.com/mcp", "--mcp-token", "secret123"])
+        try assertEqual(args.mcpBearerToken, "secret123")
+    }
+
+    test("--mcp-token without value throws") {
+        do {
+            _ = try CLIArguments.parse(["--mcp-token"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--mcp-token"))
+        }
+    }
+
+    test("--mcp accepts http URL") {
+        let args = try CLIArguments.parse(["--mcp", "http://localhost:9000/mcp"])
+        try assertEqual(args.mcpServerPaths, ["http://localhost:9000/mcp"])
+    }
+
+    test("--mcp accepts https URL") {
+        let args = try CLIArguments.parse(["--mcp", "https://mcp.example.com/v1/mcp"])
+        try assertEqual(args.mcpServerPaths, ["https://mcp.example.com/v1/mcp"])
+    }
+
+    test("--mcp and --mcp-token together set both fields") {
+        let args = try CLIArguments.parse([
+            "--mcp", "https://remote.example.com/mcp",
+            "--mcp-token", "mytoken",
+        ])
+        try assertEqual(args.mcpServerPaths, ["https://remote.example.com/mcp"])
+        try assertEqual(args.mcpBearerToken, "mytoken")
+    }
+
+    test("DEV_MCP_TOKEN env sets mcpBearerToken") {
+        let args = try CLIArguments.parse([], env: ["DEV_MCP_TOKEN": "envtoken"])
+        try assertEqual(args.mcpBearerToken, "envtoken")
+    }
+
+    test("DEV_MCP_TOKEN empty string produces nil") {
+        let args = try CLIArguments.parse([], env: ["DEV_MCP_TOKEN": ""])
+        try assertTrue(args.mcpBearerToken == nil)
+    }
+
+    test("--mcp-token CLI flag overrides DEV_MCP_TOKEN env") {
+        let args = try CLIArguments.parse(
+            ["--mcp-token", "cli-token"],
+            env: ["DEV_MCP_TOKEN": "env-token"]
+        )
+        try assertEqual(args.mcpBearerToken, "cli-token")
+    }
+
+    test("DEV_MCP env splits on colon separator for local paths") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MCP": "a.py:b.py"])
+        try assertEqual(args.mcpServerPaths, ["a.py", "b.py"])
+    }
+
+    test("DEV_MCP env single URL is not split") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MCP": "https://mcp.example.com/mcp"])
+        try assertEqual(args.mcpServerPaths, ["https://mcp.example.com/mcp"])
+    }
+
+    test("DEV_MCP env URL with port is not mangled") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_MCP": "https://localhost:8080/mcp"]
+        )
+        try assertEqual(args.mcpServerPaths, ["https://localhost:8080/mcp"])
+    }
+
+    test("DEV_MCP env two colon-separated URLs preserved as two entries") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_MCP": "https://a.example.com/mcp:https://b.example.com/mcp"]
+        )
+        try assertEqual(args.mcpServerPaths, ["https://a.example.com/mcp", "https://b.example.com/mcp"])
+    }
+
+    test("DEV_MCP env comma separator for mixed local and remote") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_MCP": "/path/calc.py,https://remote.example.com/mcp"]
+        )
+        try assertEqual(args.mcpServerPaths, ["/path/calc.py", "https://remote.example.com/mcp"])
+    }
+
+    test("DEV_MCP env URL plus local path colon-separated gives two entries") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_MCP": "https://remote-host:8080/mcp:/local/calc.py"]
+        )
+        try assertEqual(args.mcpServerPaths, ["https://remote-host:8080/mcp", "/local/calc.py"])
+    }
+
+    test("mcpBearerToken defaults to nil") {
+        let args = try CLIArguments.parse([])
+        try assertTrue(args.mcpBearerToken == nil)
+    }
+
+    // ========================================================================
+    // MARK: - Generation flags
+    // ========================================================================
+
+    test("--temperature parses") {
+        let args = try CLIArguments.parse(["--temperature", "0.7", "hi"])
+        try assertEqual(args.temperature, 0.7)
+    }
+
+    test("--temperature zero is valid") {
+        let args = try CLIArguments.parse(["--temperature", "0", "hi"])
+        try assertEqual(args.temperature, 0.0)
+    }
+
+    test("--temperature negative throws") {
+        do {
+            _ = try CLIArguments.parse(["--temperature", "-1"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--temperature"))
+        }
+    }
+
+    test("--temperature non-numeric throws") {
+        do {
+            _ = try CLIArguments.parse(["--temperature", "hot"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--temperature"))
+        }
+    }
+
+    test("--top-p parses") {
+        let args = try CLIArguments.parse(["--top-p", "0.9", "hi"])
+        try assertEqual(args.topP, 0.9)
+    }
+
+    test("--top-p of 1 is valid") {
+        let args = try CLIArguments.parse(["--top-p", "1", "hi"])
+        try assertEqual(args.topP, 1.0)
+    }
+
+    test("--top-p zero throws") {
+        do {
+            _ = try CLIArguments.parse(["--top-p", "0"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--top-p"))
+        }
+    }
+
+    test("--top-p above 1 throws") {
+        do {
+            _ = try CLIArguments.parse(["--top-p", "1.5"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--top-p"))
+        }
+    }
+
+    test("--top-p non-numeric throws") {
+        do {
+            _ = try CLIArguments.parse(["--top-p", "wide"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--top-p"))
+        }
+    }
+
+    test("--seed parses") {
+        let args = try CLIArguments.parse(["--seed", "42", "hi"])
+        try assertEqual(args.seed, 42)
+    }
+
+    test("--max-tokens parses") {
+        let args = try CLIArguments.parse(["--max-tokens", "100", "hi"])
+        try assertEqual(args.maxTokens, 100)
+    }
+
+    test("--max-tokens zero throws") {
+        do {
+            _ = try CLIArguments.parse(["--max-tokens", "0"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--max-tokens"))
+        }
+    }
+
+    test("--permissive sets permissive") {
+        let args = try CLIArguments.parse(["--permissive", "hi"])
+        try assertTrue(args.permissive)
+    }
+
+    // ========================================================================
+    // MARK: - Retry flags
+    // ========================================================================
+
+    test("--retry with no number uses default 3") {
+        let args = try CLIArguments.parse(["--retry", "hi"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 3)
+    }
+
+    test("--retry with explicit count parses optional argument") {
+        let args = try CLIArguments.parse(["--retry", "5", "hi"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 5)
+    }
+
+    test("--retry followed by flag keeps default count") {
+        let args = try CLIArguments.parse(["--retry", "--quiet", "hi"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 3)
+        try assertTrue(args.quiet)
+    }
+
+    test("--retry 0 throws (non-positive count rejected, like other numeric flags) (#177)") {
+        // Pre-#177 this silently fell back to 3 and folded "0" into the prompt.
+        // #177 makes a non-positive --retry value a hard error, matching --port etc.
+        do {
+            _ = try CLIArguments.parse(["--retry", "0", "hi"])
+            throw TestFailure("expected CLIParseError for --retry 0")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--retry"))
+        }
+    }
+
+    test("--retry N as the only remaining token keeps N as the prompt (#253)") {
+        // No token follows the number, so it is the prompt, not the count.
+        let args = try CLIArguments.parse(["--retry", "7"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 3)
+        try assertEqual(args.prompt, "7")
+    }
+
+    test("--retry N with a following token still consumes N as the count (#253)") {
+        // Backward compatibility: `dev --retry 3 \"prompt here\"`.
+        let args = try CLIArguments.parse(["--retry", "3", "prompt here"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 3)
+        try assertEqual(args.prompt, "prompt here")
+    }
+
+    test("--retry=N sets the count unambiguously (#253)") {
+        let args = try CLIArguments.parse(["--retry=5", "hi"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 5)
+        try assertEqual(args.prompt, "hi")
+    }
+
+    test("--retry=N with no prompt keeps the count and leaves the prompt empty (#253)") {
+        let args = try CLIArguments.parse(["--retry=8"])
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 8)
+        try assertEqual(args.prompt, "")
+    }
+
+    test("--retry=0 throws (non-positive count rejected) (#253)") {
+        do {
+            _ = try CLIArguments.parse(["--retry=0"])
+            throw TestFailure("expected CLIParseError for --retry=0")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--retry"))
+        }
+    }
+
+    test("--retry=abc throws (non-numeric count rejected) (#253)") {
+        do {
+            _ = try CLIArguments.parse(["--retry=abc"])
+            throw TestFailure("expected CLIParseError for --retry=abc")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--retry"))
+        }
+    }
+
+    // ========================================================================
+    // MARK: - Context flags
+    // ========================================================================
+
+    test("--context-strategy newest-first") {
+        let args = try CLIArguments.parse(["--context-strategy", "newest-first", "--chat"])
+        try assertEqual(args.contextStrategy, .newestFirst)
+    }
+
+    test("--context-strategy sliding-window") {
+        let args = try CLIArguments.parse(["--context-strategy", "sliding-window", "--chat"])
+        try assertEqual(args.contextStrategy, .slidingWindow)
+    }
+
+    test("--context-strategy strict") {
+        let args = try CLIArguments.parse(["--context-strategy", "strict", "--chat"])
+        try assertEqual(args.contextStrategy, .strict)
+    }
+
+    test("--context-strategy invalid throws") {
+        do {
+            _ = try CLIArguments.parse(["--context-strategy", "invalid"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("--context-strategy"))
+        }
+    }
+
+    test("--context-max-turns parses") {
+        let args = try CLIArguments.parse(["--context-max-turns", "10", "--chat"])
+        try assertEqual(args.contextMaxTurns, 10)
+    }
+
+    test("--context-output-reserve parses") {
+        let args = try CLIArguments.parse(["--context-output-reserve", "256", "--chat"])
+        try assertEqual(args.contextOutputReserve, 256)
+    }
+
+    test("--context-status enables chat context meter") {
+        let args = try CLIArguments.parse(["--context-status", "--chat"])
+        try assertTrue(args.contextStatus)
+    }
+
+    // ========================================================================
+    // MARK: - Unknown flags
+    // ========================================================================
+
+    test("unknown flag throws with flag name in message") {
+        do {
+            _ = try CLIArguments.parse(["--nonexistent"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("unknown option"))
+            try assertTrue(e.message.contains("--nonexistent"))
+        }
+    }
+
+    // ========================================================================
+    // MARK: - Environment variable defaults
+    // ========================================================================
+
+    test("DEV_PORT env sets default port") {
+        let args = try CLIArguments.parse(["--serve"], env: ["DEV_PORT": "9090"])
+        try assertEqual(args.serverPort, 9090)
+    }
+
+    test("CLI --port overrides env DEV_PORT") {
+        let args = try CLIArguments.parse(["--serve", "--port", "8080"], env: ["DEV_PORT": "9090"])
+        try assertEqual(args.serverPort, 8080)
+    }
+
+    test("DEV_HOST env sets serverHost") {
+        let args = try CLIArguments.parse(["--serve"], env: ["DEV_HOST": "0.0.0.0"])
+        try assertEqual(args.serverHost, "0.0.0.0")
+    }
+
+    test("DEV_TOKEN env sets serverToken") {
+        let args = try CLIArguments.parse(["--serve"], env: ["DEV_TOKEN": "mytoken"])
+        try assertEqual(args.serverToken, "mytoken")
+    }
+
+    test("DEV_TEMPERATURE env sets temperature") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_TEMPERATURE": "0.5"])
+        try assertEqual(args.temperature, 0.5)
+    }
+
+    test("DEV_MAX_TOKENS env sets maxTokens") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MAX_TOKENS": "200"])
+        try assertEqual(args.maxTokens, 200)
+    }
+
+    test("DEV_CONTEXT_STRATEGY env sets contextStrategy") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_STRATEGY": "strict"])
+        try assertEqual(args.contextStrategy, .strict)
+    }
+
+    test("DEV_CONTEXT_MAX_TURNS env sets contextMaxTurns") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_MAX_TURNS": "20"])
+        try assertEqual(args.contextMaxTurns, 20)
+    }
+
+    test("DEV_CONTEXT_OUTPUT_RESERVE env sets contextOutputReserve") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_OUTPUT_RESERVE": "1024"])
+        try assertEqual(args.contextOutputReserve, 1024)
+    }
+
+    test("DEV_DEBUG env enables debug (#164)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_DEBUG": "1"])
+        try assertTrue(args.debug)
+    }
+
+    test("DEV_DEBUG env with any non-empty value enables debug (#164)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_DEBUG": "true"])
+        try assertTrue(args.debug)
+    }
+
+    test("DEV_DEBUG env empty string does not enable debug (#164)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_DEBUG": ""])
+        try assertTrue(!args.debug)
+    }
+
+    test("--debug CLI flag still works without DEV_DEBUG env (#164)") {
+        let args = try CLIArguments.parse(["--debug", "hi"])
+        try assertTrue(args.debug)
+    }
+
+    // ========================================================================
+    // MARK: - Invalid env value warnings (#254)
+    // ========================================================================
+
+    test("valid env values produce no warnings (#254)") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_PORT": "8080", "DEV_TEMPERATURE": "0.5",
+                  "DEV_MAX_TOKENS": "200", "DEV_CONTEXT_STRATEGY": "strict"]
+        )
+        try assertTrue(args.warnings.isEmpty)
+    }
+
+    test("DEV_PORT out of range warns and falls back to default (#254)") {
+        let args = try CLIArguments.parse(["--serve"], env: ["DEV_PORT": "99999"])
+        try assertEqual(args.serverPort, 11434)
+        try assertEqual(args.warnings.count, 1)
+        try assertTrue(args.warnings[0].contains("DEV_PORT"))
+        try assertTrue(args.warnings[0].contains("99999"))
+    }
+
+    test("DEV_TEMPERATURE non-numeric warns (#254)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_TEMPERATURE": "abc"])
+        try assertNil(args.temperature)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_TEMPERATURE") && $0.contains("abc") })
+    }
+
+    test("DEV_TEMPERATURE negative warns (#254)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_TEMPERATURE": "-1"])
+        try assertNil(args.temperature)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_TEMPERATURE") })
+    }
+
+    test("DEV_MAX_TOKENS non-positive warns (#254)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MAX_TOKENS": "0"])
+        try assertNil(args.maxTokens)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_MAX_TOKENS") && $0.contains("0") })
+    }
+
+    test("DEV_MCP_TIMEOUT invalid warns (#254)") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MCP_TIMEOUT": "-5"])
+        try assertEqual(args.mcpTimeoutSeconds, 5)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_MCP_TIMEOUT") })
+    }
+
+    test("DEV_CONTEXT_STRATEGY unknown warns (#254)") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_STRATEGY": "newest_first"])
+        try assertNil(args.contextStrategy)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_CONTEXT_STRATEGY") && $0.contains("newest_first") })
+    }
+
+    test("DEV_CONTEXT_MAX_TURNS invalid warns (#254)") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_MAX_TURNS": "abc"])
+        try assertNil(args.contextMaxTurns)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_CONTEXT_MAX_TURNS") })
+    }
+
+    test("DEV_CONTEXT_OUTPUT_RESERVE invalid warns (#254)") {
+        let args = try CLIArguments.parse(["--chat"], env: ["DEV_CONTEXT_OUTPUT_RESERVE": "0"])
+        try assertNil(args.contextOutputReserve)
+        try assertTrue(args.warnings.contains { $0.contains("DEV_CONTEXT_OUTPUT_RESERVE") })
+    }
+
+    test("multiple invalid env values each produce a warning (#254)") {
+        let args = try CLIArguments.parse(
+            ["hi"],
+            env: ["DEV_PORT": "99999", "DEV_TEMPERATURE": "abc",
+                  "DEV_CONTEXT_STRATEGY": "bogus"]
+        )
+        try assertEqual(args.warnings.count, 3)
+    }
+
+    test("empty env value is ignored without warning (#254)") {
+        // An unset/empty var is not a misconfiguration, just absence.
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_PORT": "", "DEV_TEMPERATURE": ""])
+        try assertTrue(args.warnings.isEmpty)
+    }
+
+    test("DEV_MCP env splits on colon separator") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MCP": "a.py:b.py"])
+        try assertEqual(args.mcpServerPaths, ["a.py", "b.py"])
+    }
+
+    test("DEV_MCP_TIMEOUT env sets mcpTimeoutSeconds") {
+        let args = try CLIArguments.parse(["hi"], env: ["DEV_MCP_TIMEOUT": "30"])
+        try assertEqual(args.mcpTimeoutSeconds, 30)
+    }
+
+    // ========================================================================
+    // MARK: - File reader injection
+    // ========================================================================
+
+    test("--file uses injected extractFile closure") {
+        let args = try CLIArguments.parse(
+            ["--file", "test.txt", "summarize"],
+            extractFile: { path in
+                try assertEqual(path, "test.txt")
+                return "file content here"
+            }
+        )
+        try assertEqual(args.fileContents, ["file content here"])
+        try assertEqual(args.prompt, "summarize")
+    }
+
+    test("--system-file uses injected readFile and trims whitespace") {
+        let args = try CLIArguments.parse(
+            ["--system-file", "system.txt", "hi"],
+            readFile: { _ in "\n  Be concise  \n" }
+        )
+        try assertEqual(args.systemPrompt, "Be concise")
+    }
+
+    test("file read failure throws CLIParseError with path in message") {
+        struct FakeError: Error {}
+        do {
+            _ = try CLIArguments.parse(
+                ["--file", "missing.txt", "hi"],
+                readFile: { _ in throw FakeError() }
+            )
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("missing.txt"))
+        }
+    }
+
+    test("multiple --file flags accumulate via injected reader") {
+        var callCount = 0
+        let args = try CLIArguments.parse(
+            ["-f", "a.txt", "-f", "b.txt", "compare"],
+            extractFile: { path in
+                callCount += 1
+                return "content of \(path)"
+            }
+        )
+        try assertEqual(args.fileContents, ["content of a.txt", "content of b.txt"])
+        try assertEqual(callCount, 2)
+    }
+
+    // ========================================================================
+    // MARK: - Mode conflict detection (NEW behavior)
+    // ========================================================================
+
+    test("--chat --serve throws mode conflict error") {
+        do {
+            _ = try CLIArguments.parse(["--chat", "--serve"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+            try assertTrue(e.message.contains("--chat"))
+            try assertTrue(e.message.contains("--serve"))
+        }
+    }
+
+    test("--serve --chat throws mode conflict (first flag wins ordering)") {
+        do {
+            _ = try CLIArguments.parse(["--serve", "--chat"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+            try assertTrue(e.message.contains("--serve"))
+            try assertTrue(e.message.contains("--chat"))
+        }
+    }
+
+    test("--chat --benchmark throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--chat", "--benchmark"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("--stream --chat throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--stream", "--chat"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("--chat --update throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--chat", "--update"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("--model-info --serve throws mode conflict") {
+        do {
+            _ = try CLIArguments.parse(["--model-info", "--serve"])
+            try assertTrue(false, "should have thrown")
+        } catch let e as CLIParseError {
+            try assertTrue(e.message.contains("cannot combine"))
+        }
+    }
+
+    test("single mode flag does not trigger conflict") {
+        // sanity check that a single --chat still works
+        let args = try CLIArguments.parse(["--chat"])
+        try assertEqual(args.mode, .chat)
+    }
+
+    // ========================================================================
+    // MARK: - Combined integration tests
+    // ========================================================================
+
+    test("full server config parses all flags") {
+        let args = try CLIArguments.parse([
+            "--serve", "--port", "8080", "--host", "0.0.0.0",
+            "--cors", "--max-concurrent", "10", "--token", "secret",
+            "--public-health", "--retry", "5", "--debug",
+            "--mcp", "calc.py"
+        ])
+        try assertEqual(args.mode, .serve)
+        try assertEqual(args.serverPort, 8080)
+        try assertEqual(args.serverHost, "0.0.0.0")
+        try assertTrue(args.serverCORS)
+        try assertEqual(args.serverMaxConcurrent, 10)
+        try assertEqual(args.serverToken, "secret")
+        try assertTrue(args.serverPublicHealth)
+        try assertTrue(args.retryEnabled)
+        try assertEqual(args.retryCount, 5)
+        try assertTrue(args.debug)
+        try assertEqual(args.mcpServerPaths, ["calc.py"])
+    }
+
+    test("full CLI config parses all flags") {
+        let args = try CLIArguments.parse([
+            "--system", "Be brief", "--temperature", "0.8",
+            "--seed", "42", "--max-tokens", "100",
+            "--permissive", "--retry", "--quiet", "--no-color",
+            "--output", "json",
+            "what is Swift?"
+        ])
+        try assertEqual(args.mode, .single)
+        try assertEqual(args.systemPrompt, "Be brief")
+        try assertEqual(args.temperature, 0.8)
+        try assertEqual(args.seed, 42)
+        try assertEqual(args.maxTokens, 100)
+        try assertTrue(args.permissive)
+        try assertTrue(args.retryEnabled)
+        try assertTrue(args.quiet)
+        try assertTrue(args.noColor)
+        try assertEqual(args.outputFormat, .json)
+        try assertEqual(args.prompt, "what is Swift?")
+    }
+
+    test("--speak sets speak mode") {
+        let args = try CLIArguments.parse(["--speak", "hello"])
+        try assertEqual(args.mode, .speak)
+        try assertEqual(args.prompt, "hello")
+    }
+
+    test("--listen sets listen mode") {
+        let args = try CLIArguments.parse(["--listen"])
+        try assertEqual(args.mode, .listen)
+    }
+
+    test("--agent sets agent mode") {
+        let args = try CLIArguments.parse(["--agent"])
+        try assertEqual(args.mode, .agent)
+    }
+
+    test("voice env DEV_TTS_VOICE is applied") {
+        let args = try CLIArguments.parse([], env: ["DEV_TTS_VOICE": "com.apple.voice.compact.en-US.Samantha"])
+        try assertEqual(args.voiceName, "com.apple.voice.compact.en-US.Samantha")
+    }
+
+    test("VoiceConfig resolves locale from flag") {
+        let args = try CLIArguments.parse(["--listen", "--locale", "ja-JP"])
+        let cfg = VoiceConfig.resolve(from: args, env: [:])
+        try assertEqual(cfg.locale.identifier, "ja-JP")
+    }
+}

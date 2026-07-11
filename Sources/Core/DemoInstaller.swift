@@ -26,7 +26,7 @@ public enum DemoInstallError: Error, Equatable, CustomStringConvertible {
 
 /// Writes the demos embedded in the binary (see ``embeddedDemos``) out to a
 /// directory. Because the demos travel inside the executable, this behaves
-/// identically no matter how apfel was installed - homebrew-core, the
+/// identically no matter how dev was installed - homebrew-core, the
 /// Arthur-Ficial tap, or a source build - which is the whole point: there is no
 /// brew `--with-demo` option that could work the same on every channel.
 public enum DemoInstaller {

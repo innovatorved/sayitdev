@@ -1,5 +1,5 @@
 """
-apfel Integration Tests - Concurrency permit release on early-failing
+dev Integration Tests - Concurrency permit release on early-failing
 streaming requests (#213).
 
 Before the fix, every "stream": true request that failed before the SSE
@@ -10,7 +10,7 @@ unauthenticated DoS: all later requests queued to the 30s timeout.
 
 Model-free: every request here fails with 400 before touching the model.
 
-Requires: apfel --serve running on localhost:11434 (conftest fixtures).
+Requires: dev --serve running on localhost:11434 (conftest fixtures).
 Run: python3 -m pytest Tests/integration/test_stream_permit_release.py -v
 """
 
@@ -50,7 +50,7 @@ def test_validation_failing_streaming_requests_release_permits():
     """Empty messages + stream:true -> 400, and no permit/counter leak."""
     for _ in range(DEFAULT_MAX_CONCURRENT):
         resp = _post_chat(
-            {"model": "apple-foundationmodel", "stream": True, "messages": []}
+            {"model": "sayitdev-on-device", "stream": True, "messages": []}
         )
         assert resp.status_code == 400
     assert _active_requests() == 0
@@ -61,7 +61,7 @@ def test_json_schema_failing_streaming_requests_release_permits():
     for _ in range(DEFAULT_MAX_CONCURRENT):
         resp = _post_chat(
             {
-                "model": "apple-foundationmodel",
+                "model": "sayitdev-on-device",
                 "stream": True,
                 "messages": [{"role": "user", "content": "hi"}],
                 "response_format": {"type": "json_schema", "json_schema": {"name": "x"}},
@@ -77,10 +77,10 @@ def test_server_still_answers_after_early_failing_streams():
     hang after queueing for a permit)."""
     for _ in range(DEFAULT_MAX_CONCURRENT):
         _post_chat(
-            {"model": "apple-foundationmodel", "stream": True, "messages": []}
+            {"model": "sayitdev-on-device", "stream": True, "messages": []}
         )
     resp = _post_chat(
-        {"model": "apple-foundationmodel", "stream": False, "messages": []}
+        {"model": "sayitdev-on-device", "stream": False, "messages": []}
     )
     assert resp.status_code == 400
     assert _active_requests() == 0

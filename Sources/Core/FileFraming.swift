@@ -1,6 +1,6 @@
 import Foundation
 
-/// Pure framing for files that apfel extracts before feeding them to the model.
+/// Pure framing for files that dev extracts before feeding them to the model.
 ///
 /// Plain-text files keep their raw passthrough (no header) so existing `-f` behaviour is
 /// unchanged. Newly-supported PDF and image inputs get a small, honest framed block so the

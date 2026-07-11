@@ -1,10 +1,10 @@
 // ============================================================================
 // OriginValidator.swift - Localhost CSRF protection logic
-// Part of apfel - Apple Intelligence from the command line
+// Part of dev - Apple Intelligence from the command line
 // ============================================================================
 
 /// Pure validation logic for origin checking and token authentication.
-/// Lives in ApfelCore so it's unit-testable without Hummingbird.
+/// Lives in SayItDevCore so it's unit-testable without Hummingbird.
 public enum OriginValidator {
 
     /// Default allowed origins - localhost patterns only.

@@ -4,7 +4,7 @@ Source: https://github.com/openai/openai-openapi (branch `2025-03-21`)
 
 Downloaded: 2026-04-12
 
-Used by `openapi_conformance_test.py` to validate apfel's HTTP responses against
+Used by `openapi_conformance_test.py` to validate dev's HTTP responses against
 the official OpenAI API schema at runtime. Vendored locally so tests are hermetic
 (no network fetch at test time).
 

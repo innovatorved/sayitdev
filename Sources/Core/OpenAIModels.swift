@@ -1,13 +1,13 @@
 // ============================================================================
 // OpenAIModels.swift — Pure OpenAI-compatible request and tool calling types
-// Part of ApfelCore — shared between the executable and the test runner
+// Part of SayItDevCore — shared between the executable and the test runner
 // ============================================================================
 
 import Foundation
 
 /// OpenAI-compatible chat-completions request payload.
 public struct ChatCompletionRequest: Decodable, Sendable, Equatable, Hashable {
-    /// The requested model name. ApfelCore accepts `apple-foundationmodel`.
+    /// The requested model name. SayItDevCore accepts `sayitdev-on-device`.
     public let model: String
     /// The conversation transcript sent to the model.
     public let messages: [OpenAIMessage]
@@ -396,7 +396,7 @@ public struct JSONSchemaSpec: Decodable, Sendable, Equatable, Hashable {
     public let name: String
     /// The raw JSON Schema the output must conform to.
     public let schema: RawJSON?
-    /// Whether strict conformance is requested. apfel always generates against
+    /// Whether strict conformance is requested. dev always generates against
     /// the schema, so this is accepted and recorded but does not change behaviour.
     public let strict: Bool?
 

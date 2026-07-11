@@ -1,7 +1,7 @@
 """
-apfel Integration Tests — OpenAI API Schema Validation
+dev Integration Tests — OpenAI API Schema Validation
 
-Validates that apfel's server responses conform to the OpenAI API schema
+Validates that dev's server responses conform to the OpenAI API schema
 at the structural level. This proves compatibility beyond "the Python client
 accepts it" — every field, type, and required property is checked.
 
@@ -9,7 +9,7 @@ Schemas are derived from the official OpenAI API reference:
 https://platform.openai.com/docs/api-reference/chat/object
 
 Requires: pip install jsonschema httpx pyyaml
-Requires: apfel --serve running on localhost:11434
+Requires: dev --serve running on localhost:11434
 
 Run: python3 -m pytest Tests/integration/openapi_spec_test.py -v
 """
@@ -20,7 +20,7 @@ import httpx
 from jsonschema import validate, ValidationError
 
 BASE_URL = "http://localhost:11434"
-MODEL = "apple-foundationmodel"
+MODEL = "sayitdev-on-device"
 
 
 # ============================================================================
@@ -207,7 +207,7 @@ ERROR_RESPONSE_SCHEMA = {
 
 
 # ============================================================================
-# Health Endpoint Schema (apfel-specific, not OpenAI)
+# Health Endpoint Schema (dev-specific, not OpenAI)
 # ============================================================================
 
 HEALTH_SCHEMA = {

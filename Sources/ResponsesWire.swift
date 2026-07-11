@@ -1,12 +1,12 @@
 // ============================================================================
 // ResponsesWire.swift - OpenAI Responses API wire format (#365)
 // Response envelope, output items, usage, and the named-SSE event encoders.
-// The request side lives in ApfelCore (ResponsesModels.swift); this file is
+// The request side lives in SayItDevCore (ResponsesModels.swift); this file is
 // executable-side because responses encode next to the HTTP server.
 // ============================================================================
 
 import Foundation
-import ApfelCore
+import SayItDevCore
 
 // MARK: - Raw JSON re-encoding
 

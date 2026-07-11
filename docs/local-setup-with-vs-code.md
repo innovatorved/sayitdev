@@ -2,17 +2,17 @@
 
 The shape of the setup is:
 
-1. Run `apfel --serve` as a local OpenAI-compatible server.
+1. Run `dev --serve` as a local OpenAI-compatible server.
 2. Use the Continue extension in Visual Studio Code.
-3. Route **chat/code review** to local `apfel`.
+3. Route **chat/code review** to local `dev`.
 4. Route **edit/apply** to a second model.
 5. Keep `~/.continue/.env` in sync from the shell so Continue can read `OPENAI_API_KEY`.
 
 For the underlying API contract, see [openai-api-compatibility.md](openai-api-compatibility.md) and [server-security.md](server-security.md).
 
-## 1. Start `apfel` as the local server
+## 1. Start `dev` as the local server
 
-Use `apfel` as the local OpenAI-compatible base URL:
+Use `dev` as the local OpenAI-compatible base URL:
 
 ```text
 http://127.0.0.1:11434/v1
@@ -21,18 +21,18 @@ http://127.0.0.1:11434/v1
 Start it in the foreground:
 
 ```bash
-apfel --serve
+dev --serve
 ```
 
 Or run it in the background:
 
 ```bash
-brew services start apfel
+brew services start dev
 ```
 
 Background-service details: [background-service.md](background-service.md)
 
-Important: this setup uses **Chat Completions** (`POST /v1/chat/completions`), which is what Continue's `openai` provider speaks. apfel also implements the newer Responses API (`POST /v1/responses`), but Continue does not use it here.
+Important: this setup uses **Chat Completions** (`POST /v1/chat/completions`), which is what Continue's `openai` provider speaks. dev also implements the newer Responses API (`POST /v1/responses`), but Continue does not use it here.
 
 ## 2. Install the Continue extension in Visual Studio Code
 
@@ -45,7 +45,7 @@ Continue reads configuration from:
 
 ## 3. Configure Continue with two models
 
-Use local `apfel` for safer chat/review work and a second model for edit/apply.
+Use local `dev` for safer chat/review work and a second model for edit/apply.
 
 Create or replace `~/.continue/config.yaml` with:
 
@@ -55,9 +55,9 @@ version: 0.0.1
 schema: v1
 
 models:
-  - name: apfel-review
+  - name: dev-review
     provider: openai
-    model: apple-foundationmodel
+    model: sayitdev-on-device
     apiBase: http://127.0.0.1:11434/v1
     apiKey: ignored
     roles:
@@ -93,10 +93,10 @@ context:
 
 Why this split works:
 
-- `apfel-review` is restricted to `chat`, so it becomes the local review lane.
+- `dev-review` is restricted to `chat`, so it becomes the local review lane.
 - `gpt-5.1-apply` handles `edit` and `apply`, where a stronger hosted model is more useful.
 - `temperature: 0.0` keeps both lanes deterministic.
-- `contextLength: 4096` matches `apfel`'s local context budget.
+- `contextLength: 4096` matches `dev`'s local context budget.
 
 ## 4. Provide `OPENAI_API_KEY` to Continue
 
@@ -142,7 +142,7 @@ Cmd + Shift + P -> Developer: Restart Extension Host
 
 ## 7. Recommended day-to-day usage
 
-Use local `apfel` for:
+Use local `dev` for:
 
 - review the current diff
 - review the selected function
@@ -157,25 +157,25 @@ Use the hosted edit/apply model for:
 - rewriting a selected block
 - generating a patch after review findings are clear
 
-This is the important habit: keep `apfel` focused on **small review contexts**. It works best on a diff, one file, or one selected region, not giant repo-wide prompts.
+This is the important habit: keep `dev` focused on **small review contexts**. It works best on a diff, one file, or one selected region, not giant repo-wide prompts.
 
 ## 8. Typical workflow
 
-1. Start `apfel` with `apfel --serve` or `brew services start apfel`.
+1. Start `dev` with `dev --serve` or `brew services start dev`.
 2. Open Visual Studio Code.
 3. Run `cli` in your shell to authenticate Codex and update `~/.continue/.env`.
 4. Restart the Visual Studio Code extension host.
-5. Ask Continue chat to review the current diff or selected code using the local `apfel-review` model.
+5. Ask Continue chat to review the current diff or selected code using the local `dev-review` model.
 6. Once the review is clear, use Edit/Apply to hand the actual code change to the hosted `gpt-5.1-apply` model.
 7. Run `clo` when you are done to clear the shell key and remove `OPENAI_API_KEY` from `~/.continue/.env`.
 
 ## 9. Troubleshooting
 
-If Continue cannot talk to local `apfel`:
+If Continue cannot talk to local `dev`:
 
-- make sure `apfel --serve` is running
+- make sure `dev --serve` is running
 - confirm the base URL is `http://127.0.0.1:11434/v1`
-- confirm the model name is `apple-foundationmodel`
+- confirm the model name is `sayitdev-on-device`
 - make sure the client is pointed at Chat Completions (`/v1/chat/completions`)
 
 If Continue cannot use the hosted edit/apply model:
@@ -186,7 +186,7 @@ If Continue cannot use the hosted edit/apply model:
 
 If you need a browser client instead of Continue:
 
-- use `apfel --serve --cors --allowed-origins "<your local origin>"`
+- use `dev --serve --cors --allowed-origins "<your local origin>"`
 
 For security and browser details, see [server-security.md](server-security.md).
 

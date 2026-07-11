@@ -1,11 +1,11 @@
 // ============================================================================
 // ChatRequestValidator.swift — Shared validation for chat completion requests
-// Part of ApfelCore — pure request validation, no HTTP/framework dependency
+// Part of SayItDevCore — pure request validation, no HTTP/framework dependency
 // ============================================================================
 
 import Foundation
 
-/// Chat-completions request fields that ApfelCore rejects explicitly.
+/// Chat-completions request fields that SayItDevCore rejects explicitly.
 public enum UnsupportedChatParameter: String, Sendable, Equatable, Hashable, CustomStringConvertible, CustomDebugStringConvertible {
     /// Requests token log probabilities in the response.
     case logprobs
@@ -71,7 +71,7 @@ public enum UnsupportedChatParameter: String, Sendable, Equatable, Hashable, Cus
 public enum ChatRequestValidationFailure: Sendable, Equatable, Hashable, CustomStringConvertible, CustomDebugStringConvertible {
     /// The request did not include any messages.
     case emptyMessages
-    /// The request used a parameter ApfelCore does not support.
+    /// The request used a parameter SayItDevCore does not support.
     case unsupportedParameter(UnsupportedChatParameter)
     /// The final message role was not `user` or `tool`.
     case invalidLastRole
@@ -81,7 +81,7 @@ public enum ChatRequestValidationFailure: Sendable, Equatable, Hashable, CustomS
     case imageContent
     /// A numeric or string parameter had an invalid value.
     case invalidParameterValue(String)
-    /// The request asked for a model name other than `apple-foundationmodel`.
+    /// The request asked for a model name other than `sayitdev-on-device`.
     case invalidModel(String)
 
     /// The stable HTTP-facing error message for this validation failure.
@@ -100,7 +100,7 @@ public enum ChatRequestValidationFailure: Sendable, Equatable, Hashable, CustomS
         case .invalidParameterValue(let detail):
             return detail
         case .invalidModel(let model):
-            return "The model '\(model)' does not exist. The only available model is 'apple-foundationmodel'."
+            return "The model '\(model)' does not exist. The only available model is 'sayitdev-on-device'."
         }
     }
 
@@ -162,7 +162,7 @@ public enum ChatRequestValidationFailure: Sendable, Equatable, Hashable, CustomS
 
 public enum ChatRequestValidator {
     /// The only model name this server accepts.
-    public static let validModel = "apple-foundationmodel"
+    public static let validModel = "sayitdev-on-device"
 
     /// Validates a decoded chat-completions request.
     ///

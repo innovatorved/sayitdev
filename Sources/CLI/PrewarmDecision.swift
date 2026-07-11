@@ -1,6 +1,6 @@
 // ============================================================================
 // PrewarmDecision.swift - Pure CLI prewarm policy (#364)
-// Part of ApfelCLI - no FoundationModels dependency
+// Part of SayItDevCLI - no FoundationModels dependency
 //
 // The executable fires a fire-and-forget model prewarm before reading stdin
 // or conversation JSON, so the model cold-start overlaps input I/O instead
@@ -22,10 +22,11 @@ public enum PrewarmDecision {
     /// - everything else never generates.
     public static func shouldPrewarm(mode: CLIArguments.Mode) -> Bool {
         switch mode {
-        case .single, .stream, .chat:
+        case .single, .stream, .chat, .agent:
             return true
         case .serve, .benchmark, .countTokens, .modelInfo, .update,
-             .demos, .completions, .help, .version, .release:
+             .demos, .completions, .help, .version, .release,
+             .speak, .listen:
             return false
         }
     }

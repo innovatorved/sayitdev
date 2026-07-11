@@ -2,13 +2,13 @@
 
 Call Apple's on-device Foundation Model from Perl using `HTTP::Tiny` + `JSON::PP` - both ship with the system Perl on macOS, so no CPAN needed.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/perl](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/perl).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/perl](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/perl).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel`
-- `apfel --serve` running (port `11434`)
+- `brew install dev`
+- `dev --serve` running (port `11434`)
 - Perl 5.34+ (ships with macOS at `/usr/bin/perl`)
 
 No `cpanm` required - `HTTP::Tiny` and `JSON::PP` are core modules.
@@ -23,7 +23,7 @@ use HTTP::Tiny;
 use JSON::PP;
 
 my $body = encode_json({
-    model      => 'apple-foundationmodel',
+    model      => 'sayitdev-on-device',
     messages   => [{ role => 'user', content => 'In one sentence, what is the Swift programming language?' }],
     max_tokens => 80,
 });
@@ -45,7 +45,7 @@ Real output:
 Swift is a modern, safe, and efficient programming language developed by Apple for building user interfaces, server-side applications, and command-line tools.
 ```
 
-Lab script: [`01_oneshot.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/01_oneshot.pl).
+Lab script: [`01_oneshot.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/01_oneshot.pl).
 
 ## 2. Streaming
 
@@ -57,7 +57,7 @@ use strict; use warnings;
 use HTTP::Tiny; use JSON::PP;
 
 my $body = encode_json({
-    model => 'apple-foundationmodel',
+    model => 'sayitdev-on-device',
     messages => [{ role => 'user', content => 'List three Apple silicon chips, one per line.' }],
     max_tokens => 80,
     stream => JSON::PP::true,
@@ -93,7 +93,7 @@ Apple M2
 Apple M3
 ```
 
-Lab script: [`02_stream.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/02_stream.pl).
+Lab script: [`02_stream.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/02_stream.pl).
 
 ## 3. JSON mode
 
@@ -103,7 +103,7 @@ my $res = HTTP::Tiny->new->request(
     {
         headers => { 'Content-Type' => 'application/json' },
         content => encode_json({
-            model => 'apple-foundationmodel',
+            model => 'sayitdev-on-device',
             messages => [{ role => 'user', content => "Return JSON with fields chip, year, cores. Describe the Apple M1 chip. Return ONLY JSON." }],
             response_format => { type => 'json_object' },
             max_tokens => 120,
@@ -132,7 +132,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/03_json.pl).
+Lab script: [`03_json.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/03_json.pl).
 
 ## 4. Error handling
 
@@ -140,7 +140,7 @@ Lab script: [`03_json.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blo
 my $res = HTTP::Tiny->new->request(
     POST => 'http://localhost:11434/v1/embeddings',
     { headers => { 'Content-Type' => 'application/json' },
-      content => encode_json({ model => 'apple-foundationmodel', input => 'apfel runs 100% on-device.' }) }
+      content => encode_json({ model => 'sayitdev-on-device', input => 'dev runs 100% on-device.' }) }
 );
 
 if ($res->{status} >= 400) {
@@ -159,11 +159,11 @@ Real output:
 Got expected error: HTTP 501 - Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/04_errors.pl).
+Lab script: [`04_errors.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/04_errors.pl).
 
 ## 5. Tool calling
 
-Full round-trip; see [`05_tools.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/05_tools.pl) for the complete script. Key snippet:
+Full round-trip; see [`05_tools.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/05_tools.pl) for the complete script. Key snippet:
 
 ```perl
 binmode STDOUT, ':encoding(UTF-8)';  # avoid issues with °C, EUR etc.
@@ -195,7 +195,7 @@ $text //= ''; $text =~ s/^\s+|\s+$//g;
 die "usage: cat file.txt | perl 06_example.pl\n" unless length $text;
 
 my $body = encode_json({
-    model => 'apple-foundationmodel',
+    model => 'sayitdev-on-device',
     messages => [
         { role => 'system', content => 'You are a concise summarizer. Reply with one short paragraph.' },
         { role => 'user', content => "Summarize:\n\n$text" },
@@ -218,7 +218,7 @@ Real output:
 The Apple M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/perl/06_example.pl).
+Lab script: [`06_example.pl`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/perl/06_example.pl).
 
 ## Troubleshooting
 
@@ -228,12 +228,12 @@ Lab script: [`06_example.pl`](https://github.com/Arthur-Ficial/apfel-guides-lab/
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - Perl 5.34.1 (system) / HTTP::Tiny 0.076 / JSON::PP 4.06
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_perl.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_perl.py).
+Runnable tests: [tests/test_perl.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_perl.py).
 
 ## See also
 
-[python.md](python.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [awk.md](awk.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[python.md](python.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [awk.md](awk.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

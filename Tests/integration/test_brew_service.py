@@ -1,12 +1,12 @@
 """
-apfel Integration Tests -- Brew Service Mode
+dev Integration Tests -- Brew Service Mode
 
-Tests that `brew services start apfel` works correctly.
+Tests that `brew services start dev` works correctly.
 These tests manage the service lifecycle themselves:
 start before tests, stop after.
 
 Run: python3 -m pytest Tests/integration/test_brew_service.py -v
-Requires: apfel installed via Homebrew with service block in formula.
+Requires: dev installed via Homebrew with service block in formula.
 """
 
 import json
@@ -29,10 +29,10 @@ SERVICE_URL = f"http://127.0.0.1:{SERVICE_PORT}"
 
 
 def _brew_service_available():
-    """Check if apfel is installed via Homebrew with a service block."""
+    """Check if dev is installed via Homebrew with a service block."""
     try:
         result = subprocess.run(
-            ["brew", "services", "info", "apfel", "--json"],
+            ["brew", "services", "info", "dev", "--json"],
             capture_output=True, text=True, timeout=10,
         )
         if result.returncode != 0:
@@ -55,15 +55,15 @@ def _service_running():
 def brew_service():
     """Start brew service before tests, stop after."""
     if not _brew_service_available():
-        pytest.skip("apfel not installed via Homebrew or missing service block")
+        pytest.skip("dev not installed via Homebrew or missing service block")
 
     # Stop if already running (clean slate)
-    subprocess.run(["brew", "services", "stop", "apfel"],
+    subprocess.run(["brew", "services", "stop", "dev"],
                     capture_output=True, timeout=10)
     time.sleep(1)
 
     # Start
-    result = subprocess.run(["brew", "services", "start", "apfel"],
+    result = subprocess.run(["brew", "services", "start", "dev"],
                              capture_output=True, text=True, timeout=10)
     if result.returncode != 0:
         pytest.skip(f"brew services start failed: {result.stderr}")
@@ -79,7 +79,7 @@ def brew_service():
     yield
 
     # Cleanup
-    subprocess.run(["brew", "services", "stop", "apfel"],
+    subprocess.run(["brew", "services", "stop", "dev"],
                     capture_output=True, timeout=10)
 
 
@@ -93,11 +93,11 @@ def test_brew_service_health(brew_service):
 
 
 def test_brew_service_models(brew_service):
-    """Brew service /v1/models returns apple-foundationmodel."""
+    """Brew service /v1/models returns sayitdev-on-device."""
     resp = httpx.get(f"{SERVICE_URL}/v1/models", timeout=5)
     assert resp.status_code == 200
     data = resp.json()
-    assert any(m["id"] == "apple-foundationmodel" for m in data["data"])
+    assert any(m["id"] == "sayitdev-on-device" for m in data["data"])
 
 
 @pytest.mark.model
@@ -106,7 +106,7 @@ def test_brew_service_chat_completion(brew_service):
     resp = httpx.post(
         f"{SERVICE_URL}/v1/chat/completions",
         json={
-            "model": "apple-foundationmodel",
+            "model": "sayitdev-on-device",
             "messages": [{"role": "user", "content": "What is 2+2? Reply with just the number."}],
             "max_tokens": 10,
         },
@@ -126,7 +126,7 @@ def test_brew_service_streaming(brew_service):
         "POST",
         f"{SERVICE_URL}/v1/chat/completions",
         json={
-            "model": "apple-foundationmodel",
+            "model": "sayitdev-on-device",
             "messages": [{"role": "user", "content": "Say OK."}],
             "stream": True,
             "max_tokens": 5,
@@ -149,27 +149,27 @@ def test_brew_service_info_shows_loaded(brew_service):
             break
         time.sleep(0.5)
     result = subprocess.run(
-        ["brew", "services", "info", "apfel", "--json"],
+        ["brew", "services", "info", "dev", "--json"],
         capture_output=True, text=True, timeout=10,
     )
     assert result.returncode == 0
     info = json.loads(result.stdout)
     assert info[0]["loaded"] is True
-    assert "apfel" in info[0]["command"]
+    assert "dev" in info[0]["command"]
     assert "--serve" in info[0]["command"]
 
 
 def test_brew_service_logs_exist(brew_service):
     """Brew service log file exists and has content."""
-    log_path = pathlib.Path("/opt/homebrew/var/log/apfel.log")
+    log_path = pathlib.Path("/opt/homebrew/var/log/dev.log")
     assert log_path.exists(), f"Log file not found at {log_path}"
     content = log_path.read_text()
-    assert "apfel server" in content, "Log file missing server startup output"
+    assert "dev server" in content, "Log file missing server startup output"
 
 
 def test_brew_service_restart(brew_service):
     """Brew service can be restarted."""
-    result = subprocess.run(["brew", "services", "restart", "apfel"],
+    result = subprocess.run(["brew", "services", "restart", "dev"],
                              capture_output=True, text=True, timeout=15)
     assert result.returncode == 0
     # Wait for health after restart

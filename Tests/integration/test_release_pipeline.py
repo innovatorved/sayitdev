@@ -1,5 +1,5 @@
 """
-apfel Integration Tests - release pipeline wiring (static, model-free).
+dev Integration Tests - release pipeline wiring (static, model-free).
 
 These tests assert structural facts about the release scripts and CI so a
 regression in the release plumbing is caught without cutting a real release.

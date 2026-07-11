@@ -1,41 +1,41 @@
 # nixpkgs distribution
 
-apfel ships on [nixpkgs](https://github.com/NixOS/nixpkgs) under the attribute `apfel-llm`. This page covers the install, the name choice, and how new versions land upstream.
+dev ships on [nixpkgs](https://github.com/NixOS/nixpkgs) under the attribute `dev-llm`. This page covers the install, the name choice, and how new versions land upstream.
 
 ## Install (end users)
 
 ```bash
-nix profile install nixpkgs#apfel-llm
+nix profile install nixpkgs#dev-llm
 ```
 
 Runtime requirements are the same as Homebrew: macOS 26 Tahoe or later, Apple Silicon, Apple Intelligence enabled, Siri language matching device language.
 
-The binary on your `$PATH` is still `apfel` - only the install-time attribute is `apfel-llm`.
+The binary on your `$PATH` is still `dev` - only the install-time attribute is `dev-llm`.
 
-## Why `apfel-llm` and not `apfel`
+## Why `dev-llm` and not `dev`
 
-nixpkgs already has an unrelated package at [`pkgs/by-name/ap/apfel`](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/ap/apfel/package.nix): the [scarrazza/apfel](https://github.com/scarrazza/apfel) particle-physics PDF Evolution Library (GPL3, maintained by `veprbl`). The name was taken years before apfel existed in its AI form, so nixpkgs convention requires disambiguation.
+nixpkgs already has an unrelated package at [`pkgs/by-name/ap/dev`](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/ap/dev/package.nix): the [scarrazza/dev](https://github.com/scarrazza/dev) particle-physics PDF Evolution Library (GPL3, maintained by `veprbl`). The name was taken years before dev existed in its AI form, so nixpkgs convention requires disambiguation.
 
-The disambiguator that landed upstream is `apfel-llm` (via [NixOS/nixpkgs#508084](https://github.com/NixOS/nixpkgs/pull/508084)). The binary on `$PATH` is still `apfel` either way - only the install attribute differs.
+The disambiguator that landed upstream is `dev-llm` (via [NixOS/nixpkgs#508084](https://github.com/NixOS/nixpkgs/pull/508084)). The binary on `$PATH` is still `dev` either way - only the install attribute differs.
 
 ## Why a pre-built binary derivation
 
-apfel links against Apple's [`FoundationModels`](https://developer.apple.com/documentation/foundationmodels) framework, which requires the macOS 26 SDK and Apple Silicon at build time. The nixpkgs darwin stdenv does not currently ship those prerequisites, so building from source inside a Nix sandbox is not reliably supported today.
+dev links against Apple's [`FoundationModels`](https://developer.apple.com/documentation/foundationmodels) framework, which requires the macOS 26 SDK and Apple Silicon at build time. The nixpkgs darwin stdenv does not currently ship those prerequisites, so building from source inside a Nix sandbox is not reliably supported today.
 
-The derivation installs the same signed release tarball that Homebrew consumes (`apfel-${version}-arm64-macos.tar.gz` attached to each GitHub Release), and declares `sourceProvenance = [ binaryNativeCode ]` to be honest about that.
+The derivation installs the same signed release tarball that Homebrew consumes (`dev-${version}-arm64-macos.tar.gz` attached to each GitHub Release), and declares `sourceProvenance = [ binaryNativeCode ]` to be honest about that.
 
 If nixpkgs' darwin stdenv later gains macOS 26 SDK support, we switch to a source build in a follow-up PR.
 
 ## How new versions land
 
-**The pipeline: `make release` opens a build-verified bump PR on `NixOS/nixpkgs`; a nixpkgs committer merges it.** There is no zero-touch auto-merge for apfel-llm, and that is a hard architectural limit, not a gap we can close. Here is why, because it dictates everything else.
+**The pipeline: `make release` opens a build-verified bump PR on `NixOS/nixpkgs`; a nixpkgs committer merges it.** There is no zero-touch auto-merge for dev-llm, and that is a hard architectural limit, not a gap we can close. Here is why, because it dictates everything else.
 
 ### Why r-ryantm and the merge bot cannot help (the darwin-only wall)
 
-apfel-llm is `meta.platforms = [ "aarch64-darwin" ]`. The official nixpkgs update bot [`r-ryantm`](https://github.com/nix-community/nixpkgs-update) runs **only on `x86_64-linux`** and has no darwin workers, so it **refuses to evaluate** the package and **never opens a bump PR**. This is provable from the bot's own log for apfel-llm at [nixpkgs-update-logs.nix-community.org/apfel-llm](https://nixpkgs-update-logs.nix-community.org/apfel-llm/):
+dev-llm is `meta.platforms = [ "aarch64-darwin" ]`. The official nixpkgs update bot [`r-ryantm`](https://github.com/nix-community/nixpkgs-update) runs **only on `x86_64-linux`** and has no darwin workers, so it **refuses to evaluate** the package and **never opens a bump PR**. This is provable from the bot's own log for dev-llm at [nixpkgs-update-logs.nix-community.org/dev-llm](https://nixpkgs-update-logs.nix-community.org/dev-llm/):
 
 ```
-error: Refusing to evaluate package 'apfel-llm-1.5.5' because it is not
+error: Refusing to evaluate package 'dev-llm-1.5.5' because it is not
 available on the requested hostPlatform:
   hostPlatform.system = "x86_64-linux"
   package.meta.platforms = [ "aarch64-darwin" ]
@@ -49,20 +49,20 @@ Because r-ryantm never opens a PR, the [nixpkgs merge bot](https://github.com/Ni
 
 ### The pipeline (self-opened, build-verified PR)
 
-1. **`make release`** runs `scripts/publish-nixpkgs-bump.sh` after the GitHub Release and Homebrew tap are updated. It forks `NixOS/nixpkgs` to `Arthur-Ficial/nixpkgs` (one-time), syncs from upstream master, edits `pkgs/by-name/ap/apfel-llm/package.nix`, **build-verifies the result with `nix-build -A apfel-llm` on this aarch64-darwin host** (r-ryantm cannot do this; we can, because the host matches `meta.platforms`), pushes, and opens/advances one PR on `NixOS/nixpkgs`. Idempotent at every layer (fork, branch, PR) and **non-fatal**: a bump failure does not fail the release. A failed `nix-build` aborts before any PR is opened, so we never submit a broken hash.
-2. It runs **twice daily via launchd** (`~/Library/LaunchAgents/com.arthurficial.apfel-nixpkgs-bump.plist`, logs at `~/Library/Logs/apfel-nixpkgs-bump.log`) as a catch-up, keeping the single open PR pointed at the latest GitHub release even if a release run skipped the bump. The launchd job runs it through `scripts/nixpkgs-bump-cron.sh`, which classifies the outcome and emails Franz once per distinct failure - so a silent break (see "Recognizing the 2FA-compliance failure" below) can never again sit unnoticed.
-3. The PR follows nixpkgs best practice: `apfel-llm: <old> -> <new>` commit/title, touches only `pkgs/by-name`, fills the **Things done** checklist with the real aarch64-darwin build, and carries an **automation/AI disclosure** per [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy). The bump commit carries **no `Assisted-by:` trailer** - a deterministic version+hash bump is exempt as standard update-script automation (the same exemption r-ryantm's own commits rely on).
+1. **`make release`** runs `scripts/publish-nixpkgs-bump.sh` after the GitHub Release and Homebrew tap are updated. It forks `NixOS/nixpkgs` to `Arthur-Ficial/nixpkgs` (one-time), syncs from upstream master, edits `pkgs/by-name/ap/dev-llm/package.nix`, **build-verifies the result with `nix-build -A dev-llm` on this aarch64-darwin host** (r-ryantm cannot do this; we can, because the host matches `meta.platforms`), pushes, and opens/advances one PR on `NixOS/nixpkgs`. Idempotent at every layer (fork, branch, PR) and **non-fatal**: a bump failure does not fail the release. A failed `nix-build` aborts before any PR is opened, so we never submit a broken hash.
+2. It runs **twice daily via launchd** (`~/Library/LaunchAgents/com.innovatorved.sayitdev-nixpkgs-bump.plist`, logs at `~/Library/Logs/dev-nixpkgs-bump.log`) as a catch-up, keeping the single open PR pointed at the latest GitHub release even if a release run skipped the bump. The launchd job runs it through `scripts/nixpkgs-bump-cron.sh`, which classifies the outcome and emails Franz once per distinct failure - so a silent break (see "Recognizing the 2FA-compliance failure" below) can never again sit unnoticed.
+3. The PR follows nixpkgs best practice: `dev-llm: <old> -> <new>` commit/title, touches only `pkgs/by-name`, fills the **Things done** checklist with the real aarch64-darwin build, and carries an **automation/AI disclosure** per [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#automationai-policy). The bump commit carries **no `Assisted-by:` trailer** - a deterministic version+hash bump is exempt as standard update-script automation (the same exemption r-ryantm's own commits rely on).
 4. A **nixpkgs committer merges it** when they get to it. We can only reduce friction (clean PR, green CI, maintained package); we cannot remove the wait.
 
 ### One advancing PR, not one per release
 
-Each run reuses the existing open apfel-llm bump PR (it force-pushes the same branch, which updates that PR in place) and closes any stragglers, so there is always **exactly one** open bump PR pointing at the latest version. Earlier the branch name embedded the version (`apfel-llm-${VERSION}`), so every release opened a fresh PR and they piled up unmerged (1.3.5 / 1.3.6 / 1.3.7 / 1.3.8 were all open at once). The dedup is scoped to bump branches (`apfel-llm-bump` and `apfel-llm-<version>`); non-bump PRs such as `apfel-llm-add-maintainer` are never touched.
+Each run reuses the existing open dev-llm bump PR (it force-pushes the same branch, which updates that PR in place) and closes any stragglers, so there is always **exactly one** open bump PR pointing at the latest version. Earlier the branch name embedded the version (`dev-llm-${VERSION}`), so every release opened a fresh PR and they piled up unmerged (1.3.5 / 1.3.6 / 1.3.7 / 1.3.8 were all open at once). The dedup is scoped to bump branches (`dev-llm-bump` and `dev-llm-<version>`); non-bump PRs such as `dev-llm-add-maintainer` are never touched.
 
 ### Why nixpkgs lags
 
-In the normal case the bump automation is not the bottleneck - it opens a correct, build-verified PR on every release. The lag is then **merge latency**: only nixpkgs committers can merge, and a maintainer-opened bump for a darwin-only package cannot use the merge bot (the "opened by r-ryantm or a committer" rule), so it sits in the committer queue for days to weeks. Being a maintainer helps a committer merge it faster but does not remove the wait, and no automation can - it is inherent to darwin-only + non-committer. Treat nixpkgs as the slower channel: Homebrew (`brew install apfel`, autobumped) and the [Arthur-Ficial tap](https://github.com/Arthur-Ficial/homebrew-tap) (pushed synchronously by `make release`) are the fast paths we fully control.
+In the normal case the bump automation is not the bottleneck - it opens a correct, build-verified PR on every release. The lag is then **merge latency**: only nixpkgs committers can merge, and a maintainer-opened bump for a darwin-only package cannot use the merge bot (the "opened by r-ryantm or a committer" rule), so it sits in the committer queue for days to weeks. Being a maintainer helps a committer merge it faster but does not remove the wait, and no automation can - it is inherent to darwin-only + non-committer. Treat nixpkgs as the slower channel: Homebrew (`brew install dev`, autobumped) and the [Arthur-Ficial tap](https://github.com/Arthur-Ficial/homebrew-tap) (pushed synchronously by `make release`) are the fast paths we fully control.
 
-But "automation is not the bottleneck" only holds while the automation can actually reach GitHub. There is a second, nastier failure mode that once stranded nixpkgs at 1.0.5 for days while apfel shipped 1.6.0.
+But "automation is not the bottleneck" only holds while the automation can actually reach GitHub. There is a second, nastier failure mode that once stranded nixpkgs at 1.0.5 for days while dev shipped 1.6.0.
 
 ### Recognizing the 2FA-compliance failure
 
@@ -107,22 +107,22 @@ cd /tmp/nixpkgs-bump
 git remote add fork git@github.com:YOUR_USER/nixpkgs.git
 
 VERSION="X.Y.Z"   # e.g. 1.3.4
-URL="https://github.com/Arthur-Ficial/apfel/releases/download/v${VERSION}/apfel-${VERSION}-arm64-macos.tar.gz"
+URL="__UPSTREAM_DEV_URL__/releases/download/v${VERSION}/dev-${VERSION}-arm64-macos.tar.gz"
 HASH=$(nix-prefetch-url --type sha256 "$URL" | xargs nix-hash --to-sri --type sha256)
 
-git checkout -b "apfel-llm-${VERSION}"
+git checkout -b "dev-llm-${VERSION}"
 sed -i.bak -E "s/version = \"[^\"]+\"/version = \"${VERSION}\"/; s|hash = \"sha256-[^\"]+\"|hash = \"${HASH}\"|" \
-  pkgs/by-name/ap/apfel-llm/package.nix
-rm pkgs/by-name/ap/apfel-llm/package.nix.bak
+  pkgs/by-name/ap/dev-llm/package.nix
+rm pkgs/by-name/ap/dev-llm/package.nix.bak
 
-git add pkgs/by-name/ap/apfel-llm/package.nix
-git commit -m "apfel-llm: ${VERSION}"
-git push fork "apfel-llm-${VERSION}"
+git add pkgs/by-name/ap/dev-llm/package.nix
+git commit -m "dev-llm: ${VERSION}"
+git push fork "dev-llm-${VERSION}"
 
 gh pr create --repo NixOS/nixpkgs \
-  --head "YOUR_USER:apfel-llm-${VERSION}" \
+  --head "YOUR_USER:dev-llm-${VERSION}" \
   --base master \
-  --title "apfel-llm: ${VERSION}" \
+  --title "dev-llm: ${VERSION}" \
   --body "Routine version bump."
 ```
 
@@ -131,15 +131,15 @@ gh pr create --repo NixOS/nixpkgs \
 ```bash
 git clone --depth 1 https://github.com/NixOS/nixpkgs.git /tmp/nixpkgs-test
 cd /tmp/nixpkgs-test
-nix-build -A apfel-llm --no-out-link
+nix-build -A dev-llm --no-out-link
 
-ls /nix/store/*-apfel-llm-*/bin/apfel
+ls /nix/store/*-dev-llm-*/bin/dev
 ```
 
-Run it: `/nix/store/...-apfel-llm-.../bin/apfel --version`.
+Run it: `/nix/store/...-dev-llm-.../bin/dev --version`.
 
 ## Tracking
 
-- Package source: <https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/ap/apfel-llm/package.nix>
-- nixpkgs PRs: <https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+apfel-llm>
-- r-ryantm PRs for apfel-llm: <https://github.com/NixOS/nixpkgs/pulls/r-ryantm?q=apfel-llm>
+- Package source: <https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/ap/dev-llm/package.nix>
+- nixpkgs PRs: <https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+dev-llm>
+- r-ryantm PRs for dev-llm: <https://github.com/NixOS/nixpkgs/pulls/r-ryantm?q=dev-llm>

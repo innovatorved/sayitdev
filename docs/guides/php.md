@@ -1,14 +1,14 @@
 # How to use the Apple Foundation Model from PHP
 
-Call Apple's on-device Foundation Model from PHP using `openai-php/client`, pointed at a local `apfel --serve`. 100% on-device, zero API cost.
+Call Apple's on-device Foundation Model from PHP using `openai-php/client`, pointed at a local `dev --serve`. 100% on-device, zero API cost.
 
-Runnable scripts + tests: [Arthur-Ficial/apfel-guides-lab/scripts/php](https://github.com/Arthur-Ficial/apfel-guides-lab/tree/main/scripts/php).
+Runnable scripts + tests: [__UPSTREAM_DEV_REPO__-guides-lab/scripts/php](__UPSTREAM_DEV_URL__-guides-lab/tree/main/scripts/php).
 
 ## Prerequisites
 
 - macOS 26+ Tahoe, Apple Silicon, Apple Intelligence enabled
-- `brew install apfel`
-- `apfel --serve` running (port `11434`)
+- `brew install dev`
+- `dev --serve` running (port `11434`)
 - PHP 8.1+ and Composer (`brew install php composer`)
 - `composer require openai-php/client guzzlehttp/guzzle`
 
@@ -26,7 +26,7 @@ $client = OpenAI::factory()
     ->make();
 
 $response = $client->chat()->create([
-    "model" => "apple-foundationmodel",
+    "model" => "sayitdev-on-device",
     "messages" => [
         ["role" => "user", "content" => "In one sentence, what is the Swift programming language?"],
     ],
@@ -42,7 +42,7 @@ Real output:
 Swift is a modern, open-source programming language developed by Apple for developing software on platforms like iOS, macOS, watchOS, and tvOS, known for its safety, performance, and simplicity.
 ```
 
-Lab script: [`01_oneshot.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/01_oneshot.php).
+Lab script: [`01_oneshot.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/01_oneshot.php).
 
 ## 2. Streaming
 
@@ -55,7 +55,7 @@ require __DIR__ . "/vendor/autoload.php";
 $client = OpenAI::factory()->withBaseUri("http://localhost:11434/v1")->withApiKey("not-needed")->make();
 
 $stream = $client->chat()->createStreamed([
-    "model" => "apple-foundationmodel",
+    "model" => "sayitdev-on-device",
     "messages" => [["role" => "user", "content" => "List three Apple silicon chips, one per line."]],
     "max_tokens" => 80,
 ]);
@@ -76,7 +76,7 @@ Apple M2
 Apple M2 Pro
 ```
 
-Lab script: [`02_stream.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/02_stream.php).
+Lab script: [`02_stream.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/02_stream.php).
 
 ## 3. JSON mode
 
@@ -87,7 +87,7 @@ require __DIR__ . "/vendor/autoload.php";
 $client = OpenAI::factory()->withBaseUri("http://localhost:11434/v1")->withApiKey("not-needed")->make();
 
 $response = $client->chat()->create([
-    "model" => "apple-foundationmodel",
+    "model" => "sayitdev-on-device",
     "messages" => [["role" => "user", "content" => "Return JSON with fields 'chip', 'year', 'cores'. Describe the Apple M1 chip. Return ONLY JSON."]],
     "response_format" => ["type" => "json_object"],
     "max_tokens" => 120,
@@ -112,7 +112,7 @@ Real output:
 }
 ```
 
-Lab script: [`03_json.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/03_json.php).
+Lab script: [`03_json.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/03_json.php).
 
 ## 4. Error handling
 
@@ -125,8 +125,8 @@ $client = OpenAI::factory()->withBaseUri("http://localhost:11434/v1")->withApiKe
 
 try {
     $client->embeddings()->create([
-        "model" => "apple-foundationmodel",
-        "input" => "apfel runs 100% on-device.",
+        "model" => "sayitdev-on-device",
+        "input" => "dev runs 100% on-device.",
     ]);
 } catch (ErrorException $e) {
     echo "Got expected error (HTTP 501): {$e->getMessage()}\n";
@@ -139,7 +139,7 @@ Real output:
 Got expected error (HTTP 501): Embeddings not supported by Apple's on-device model.
 ```
 
-Lab script: [`04_errors.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/04_errors.php).
+Lab script: [`04_errors.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/04_errors.php).
 
 ## 5. Tool calling
 
@@ -171,7 +171,7 @@ function get_weather(array $args): string {
 $messages = [["role" => "user", "content" => "What is the temperature in Vienna right now?"]];
 
 $first = $client->chat()->create([
-    "model" => "apple-foundationmodel", "messages" => $messages, "tools" => $tools, "max_tokens" => 256,
+    "model" => "sayitdev-on-device", "messages" => $messages, "tools" => $tools, "max_tokens" => 256,
 ]);
 $msg = $first->choices[0]->message;
 $messages[] = $msg->toArray();
@@ -182,7 +182,7 @@ if (!empty($msg->toolCalls)) {
         $messages[] = ["role" => "tool", "tool_call_id" => $call->id, "content" => get_weather($args)];
     }
     $final = $client->chat()->create([
-        "model" => "apple-foundationmodel", "messages" => $messages, "max_tokens" => 120,
+        "model" => "sayitdev-on-device", "messages" => $messages, "max_tokens" => 120,
     ]);
     echo trim($final->choices[0]->message->content ?? "") . "\n";
 }
@@ -194,7 +194,7 @@ Real output:
 The current temperature in Vienna is 15°C.
 ```
 
-Lab script: [`05_tools.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/05_tools.php).
+Lab script: [`05_tools.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/05_tools.php).
 
 ## 6. Real example - summarize stdin
 
@@ -211,7 +211,7 @@ if ($text === "") {
 $client = OpenAI::factory()->withBaseUri("http://localhost:11434/v1")->withApiKey("not-needed")->make();
 
 $response = $client->chat()->create([
-    "model" => "apple-foundationmodel",
+    "model" => "sayitdev-on-device",
     "messages" => [
         ["role" => "system", "content" => "You are a concise summarizer. Reply with one short paragraph."],
         ["role" => "user", "content" => "Summarize:\n\n$text"],
@@ -227,22 +227,22 @@ Real output:
 Apple's M1 chip, released in November 2020, was Apple's first ARM-based system-on-a-chip for Mac computers. It uses an 8-core CPU with four performance and four efficiency cores, plus an integrated GPU with up to 8 cores. The chip unified CPU, GPU, memory, and neural engine on a single die, delivering significant performance-per-watt improvements over the Intel chips it replaced.
 ```
 
-Lab script: [`06_example.php`](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/scripts/php/06_example.php).
+Lab script: [`06_example.php`](__UPSTREAM_DEV_URL__-guides-lab/blob/main/scripts/php/06_example.php).
 
 ## Troubleshooting
 
 - **`No PSR-18 clients found`** - `composer require guzzlehttp/guzzle`.
 - **TLS / SSL errors** - make sure your `baseUri` starts with `http://`, not `https://`.
-- **Laravel / Symfony** - works inside any container; register `OpenAI::factory()->make()` as a singleton pointed at `APFEL_BASE_URL`.
+- **Laravel / Symfony** - works inside any container; register `OpenAI::factory()->make()` as a singleton pointed at `DEV_BASE_URL`.
 
 ## Tested with
 
-- apfel v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by apfel's test suite on every version)
+- dev v1.0.3 / macOS 26.3.1 Apple Silicon (original capture; the CLI and HTTP surfaces used here are release-gated by dev's test suite on every version)
 - PHP 8.5.5 / openai-php/client 0.10.3 / Guzzle
 - Date: 2026-04-16
 
-Runnable tests: [tests/test_php.py](https://github.com/Arthur-Ficial/apfel-guides-lab/blob/main/tests/test_php.py).
+Runnable tests: [tests/test_php.py](__UPSTREAM_DEV_URL__-guides-lab/blob/main/tests/test_php.py).
 
 ## See also
 
-[python.md](python.md), [nodejs.md](nodejs.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab)
+[python.md](python.md), [nodejs.md](nodejs.md), [ruby.md](ruby.md), [bash-curl.md](bash-curl.md), [dev-guides-lab](__UPSTREAM_DEV_URL__-guides-lab)

@@ -11,38 +11,38 @@
 ## Option 1: Homebrew (recommended)
 
 ```bash
-brew install apfel
+brew install dev
 ```
 
-The tap publishes same-day releases (homebrew-core autobump can lag up to ~24h) and bundles the demo scripts as `apfel-<name>` commands:
+The tap publishes same-day releases (homebrew-core autobump can lag up to ~24h) and bundles the demo scripts as `dev-<name>` commands:
 
 ```bash
-brew install Arthur-Ficial/tap/apfel
+brew install Arthur-Ficial/tap/dev
 ```
 
-The tap installs eight companion commands alongside `apfel`: `apfel-cmd`, `apfel-explain`, `apfel-gitsum`, `apfel-mac-narrator`, `apfel-naming`, `apfel-oneliner`, `apfel-port`, `apfel-wtd`. Source in [`demo/`](../demo/README.md). The `apfel-` prefix avoids global PATH collisions (`port` would shadow MacPorts).
+The tap installs eight companion commands alongside `dev`: `dev-cmd`, `dev-explain`, `dev-gitsum`, `dev-mac-narrator`, `dev-naming`, `dev-oneliner`, `dev-port`, `dev-wtd`. Source in [`demo/`](../demo/README.md). The `dev-` prefix avoids global PATH collisions (`port` would shadow MacPorts).
 
 No build tools needed. See [brew-install.md](brew-install.md) for troubleshooting.
 
 ## Option 2: Nix (nixpkgs)
 
 ```bash
-nix profile install nixpkgs#apfel-llm
+nix profile install nixpkgs#dev-llm
 ```
 
-Attribute name is `apfel-llm` because nixpkgs already has an unrelated `apfel` package (a particle-physics PDF library); the binary on `$PATH` is still `apfel`. The package landed via [NixOS/nixpkgs#508084](https://github.com/NixOS/nixpkgs/pull/508084). See [docs/nixpkgs.md](nixpkgs.md) for automation details.
+Attribute name is `dev-llm` because nixpkgs already has an unrelated `dev` package (a particle-physics PDF library); the binary on `$PATH` is still `dev`. The package landed via [NixOS/nixpkgs#508084](https://github.com/NixOS/nixpkgs/pull/508084). See [docs/nixpkgs.md](nixpkgs.md) for automation details.
 
 ## Option 3: Build from source
 
 Requires Swift 6.3+ with developer tools that include the **macOS 26.4 SDK**. Xcode is **not** required - Command Line Tools are enough.
 
 ```bash
-git clone https://github.com/Arthur-Ficial/apfel.git
-cd apfel
+git clone __UPSTREAM_DEV_URL__.git
+cd dev
 make install
 ```
 
-`make install` builds a release binary and installs to `/usr/local/bin/apfel`.
+`make install` builds a release binary and installs to `/usr/local/bin/dev`.
 
 ### Verify your toolchain
 
@@ -92,28 +92,28 @@ make install
 ### Mint
 
 ```bash
-mint install Arthur-Ficial/apfel
+mint install __UPSTREAM_DEV_REPO__
 ```
 
 ### mise
 
 ```bash
-mise use -g github:Arthur-Ficial/apfel
+mise use -g github:__UPSTREAM_DEV_REPO__
 ```
 
-Supports project-scoped installs (`mise use github:Arthur-Ficial/apfel` without `-g`). Installs directly from GitHub releases.
+Supports project-scoped installs (`mise use github:__UPSTREAM_DEV_REPO__` without `-g`). Installs directly from GitHub releases.
 
 ## Verify
 
 ```bash
-apfel 'Hello, world!'
-apfel --version
-apfel --release       # full build info
+dev 'Hello, world!'
+dev --version
+dev --release       # full build info
 ```
 
 ## Troubleshooting: "Model unavailable"
 
-If `apfel --model-info` shows `available: no`, the specific reason is printed alongside it. There are three possible causes, all from Apple's FoundationModels framework:
+If `dev --model-info` shows `available: no`, the specific reason is printed alongside it. There are three possible causes, all from Apple's FoundationModels framework:
 
 | Reason | What it means | Fix |
 |---|---|---|
@@ -121,7 +121,7 @@ If `apfel --model-info` shows `available: no`, the specific reason is printed al
 | **Device not eligible** | Intel Mac, or Mac older than M1 | Apple Silicon (M1 or later) is required. This is a hard Apple requirement - there is no workaround. |
 | **Model not ready** | On-device model is still downloading (~3-4 GB on first enable) | Keep your Mac on **Wi-Fi and power**. Check download progress in System Settings > Apple Intelligence & Siri. Try again in a few minutes. |
 
-apfel is a thin wrapper around Apple's on-device model - it cannot turn on Apple Intelligence for you. Once the underlying Apple toggle is on and models are downloaded, apfel just works.
+dev is a thin wrapper around Apple's on-device model - it cannot turn on Apple Intelligence for you. Once the underlying Apple toggle is on and models are downloaded, dev just works.
 
 Apple's full Apple Intelligence setup guide: [support.apple.com/en-us/121115](https://support.apple.com/en-us/121115)
 

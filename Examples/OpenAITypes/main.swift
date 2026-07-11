@@ -1,7 +1,7 @@
-import ApfelCore
+import SayItDevCore
 
 let request = ChatCompletionRequest(
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [
         OpenAIMessage(role: "system", content: .text("Be concise.")),
         OpenAIMessage(role: "user", content: .text("Say hello")),

@@ -1,6 +1,6 @@
 // ============================================================================
 // ResponsesModels.swift - Pure request layer for POST /v1/responses (#365)
-// Part of ApfelCore - no FoundationModels dependency
+// Part of SayItDevCore - no FoundationModels dependency
 //
 // The OpenAI Responses API is served as a translation layer: decode a
 // ResponsesRequest here, validate it (honest 501s for everything the
@@ -13,7 +13,7 @@ import Foundation
 
 // MARK: - Request
 
-/// Decoded `POST /v1/responses` request (the subset apfel supports plus the
+/// Decoded `POST /v1/responses` request (the subset dev supports plus the
 /// fields it must SEE to reject honestly).
 public struct ResponsesRequest: Decodable, Sendable {
 
@@ -174,7 +174,7 @@ public enum ResponsesMapper {
 /// shape: one ordered pass, each failure knows its HTTP status and message.
 public enum ResponsesRequestValidator {
 
-    static let validModel = "apple-foundationmodel"
+    static let validModel = "sayitdev-on-device"
     static let allowedRoles: Set<String> = ["system", "developer", "user", "assistant"]
     static let allowedFormats: Set<String> = ["text", "json_object", "json_schema"]
 
@@ -223,9 +223,9 @@ public enum ResponsesRequestValidator {
             case .unsupported(let feature):
                 switch feature {
                 case "previous_response_id":
-                    return "'previous_response_id' is not supported: apfel is stateless and never stores responses. Resend the full conversation in 'input'."
+                    return "'previous_response_id' is not supported: dev is stateless and never stores responses. Resend the full conversation in 'input'."
                 case "store":
-                    return "'store: true' is not supported: apfel is stateless and never stores responses."
+                    return "'store: true' is not supported: dev is stateless and never stores responses."
                 case "background":
                     return "'background' is not supported by this on-device server."
                 case "reasoning":

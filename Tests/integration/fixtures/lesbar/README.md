@@ -1,6 +1,6 @@
 # lesbar extraction fixtures (public domain)
 
-Real-world files for the `apfel -f` / piped-file extraction integration tests
+Real-world files for the `dev -f` / piped-file extraction integration tests
 ([../../test_file_extraction.py](../../test_file_extraction.py)). All are public domain
 so they can be committed and redistributed freely.
 

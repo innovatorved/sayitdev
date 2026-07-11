@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BINARY = ROOT / ".build" / "release" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
 MCP_SERVER = ROOT / "mcp" / "calculator" / "server.py"
 OPENAI_SPEC = pathlib.Path(__file__).parent / "openai_spec" / "openapi.yaml"
 
@@ -33,14 +33,14 @@ def require_model():
     """Shared model gate for every suite (single source, was duplicated per file).
 
     Marker discipline (#266): on a deliberately model-free run (CI sets
-    APFEL_MODELFREE_ONLY=1 and selects `-m "not model"`), a model test should
+    DEV_MODELFREE_ONLY=1 and selects `-m "not model"`), a model test should
     never reach this point - if it does, its @pytest.mark.model decorator is
     missing and it leaked past the filter. Fail loudly instead of skipping so
     the forgotten marker turns CI red rather than passing green-by-skip.
     """
     if model_available():
         return
-    if os.environ.get("APFEL_MODELFREE_ONLY"):
+    if os.environ.get("DEV_MODELFREE_ONLY"):
         pytest.fail(
             "model test ran in a model-free selection (-m 'not model'); it is "
             "missing @pytest.mark.model"
@@ -56,11 +56,11 @@ def pytest_sessionfinish(session, exitstatus):
     regression that prevents the server from starting (or any other broken-by-
     skip failure) turned the suite green-by-skip and let `make release` publish.
 
-    When APFEL_REQUIRE_FULL=1 (exported by `make test`, release-preflight.sh, and
+    When DEV_REQUIRE_FULL=1 (exported by `make test`, release-preflight.sh, and
     publish-release.sh) any skipped test fails the whole session. In ordinary
     local/CI runs the variable is unset, so environment-gated skips still work.
     """
-    if not os.environ.get("APFEL_REQUIRE_FULL"):
+    if not os.environ.get("DEV_REQUIRE_FULL"):
         return
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is None:
@@ -70,10 +70,10 @@ def pytest_sessionfinish(session, exitstatus):
         return
     nodeids = sorted({rep.nodeid for rep in skipped})
     reporter.write_sep(
-        "=", "APFEL_REQUIRE_FULL=1: skipped tests are forbidden", red=True
+        "=", "DEV_REQUIRE_FULL=1: skipped tests are forbidden", red=True
     )
     for nid in nodeids:
-        reporter.write_line(f"  SKIPPED (forbidden under APFEL_REQUIRE_FULL): {nid}")
+        reporter.write_line(f"  SKIPPED (forbidden under DEV_REQUIRE_FULL): {nid}")
     session.exitstatus = 1
 
 
@@ -105,9 +105,9 @@ def openai_spec():
 # refusal for several prompts). The refusal arrives IN-BAND: normal content,
 # finish_reason "stop", HTTP 200 - detectable only by its text. Tests that
 # pin a seed and assert on content must rotate seeds past refusals; the
-# property under test is apfel's behavior, not one seed's guardrail luck.
+# property under test is dev's behavior, not one seed's guardrail luck.
 # Detection stays test-side by design - do NOT add refusal-sniffing to
-# Sources/ (honesty principle: apfel must not editorialize model output).
+# Sources/ (honesty principle: dev must not editorialize model output).
 # ============================================================================
 
 GUARDRAIL_SEEDS = (42, 7, 123)
@@ -161,7 +161,7 @@ def post_chat_rotating_seeds(url, payload, timeout, seeds=GUARDRAIL_SEEDS, accep
 
 
 def run_cli_rotating_seeds(run_cli, args, timeout, seeds=GUARDRAIL_SEEDS):
-    """CLI twin of post_chat_rotating_seeds: run `apfel <args> --seed <s>`,
+    """CLI twin of post_chat_rotating_seeds: run `dev <args> --seed <s>`,
     rotating seeds past guardrail blocks (exit 3) and in-band refusals.
     Returns the first usable CompletedProcess; fails loudly if every seed
     refuses. Adopt per test on observed flake - the first was
@@ -191,7 +191,7 @@ def _server_alive(url: str) -> bool:
 
 
 def _start_server(port, extra_args=None):
-    """Start an apfel server on the given port. Returns the Popen object."""
+    """Start an dev server on the given port. Returns the Popen object."""
     cmd = [str(BINARY), "--serve", "--port", str(port)]
     if extra_args:
         cmd.extend(extra_args)
@@ -217,7 +217,7 @@ def _start_server(port, extra_args=None):
 
 @pytest.fixture(scope="session", autouse=True)
 def guard_server_11434():
-    """Start apfel server on port 11434 if not already running, skip if impossible."""
+    """Start dev server on port 11434 if not already running, skip if impossible."""
     if _server_alive("http://127.0.0.1:11434"):
         yield
         return
@@ -227,7 +227,7 @@ def guard_server_11434():
         # A server that will not start is a critical failure, never a skip (#227):
         # skipping here turned every server test green and let a startup-breaking
         # regression pass release qualification.
-        pytest.fail("Could not start apfel server on port 11434")
+        pytest.fail("Could not start dev server on port 11434")
         return
 
     yield
@@ -242,7 +242,7 @@ def guard_server_11434():
 
 @pytest.fixture(scope="session", autouse=True)
 def guard_server_11435():
-    """Start apfel MCP server on port 11435 if not already running, skip if impossible."""
+    """Start dev MCP server on port 11435 if not already running, skip if impossible."""
     if _server_alive("http://127.0.0.1:11435"):
         yield
         return
@@ -250,7 +250,7 @@ def guard_server_11435():
     proc = _start_server(11435, ["--mcp", str(MCP_SERVER)])
     if proc is None:
         # See guard_server_11434: a non-starting server is a failure (#227).
-        pytest.fail("Could not start apfel MCP server on port 11435")
+        pytest.fail("Could not start dev MCP server on port 11435")
         return
 
     yield

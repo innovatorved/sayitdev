@@ -9,7 +9,8 @@ package enum BodyLimits {
     /// Prevents OOM from a malicious or misconfigured client.
     public static let maxRequestBodyBytes: Int = 1024 * 1024
 
-    /// Tokens reserved for the model's response when fitting the prompt
+    /// Cap on audio upload bodies (25 MiB).
+    public static let maxAudioUploadBytes: Int = 25 * 1024 * 1024
     /// into the 4096-token context window.
     public static let defaultOutputReserveTokens: Int = 512
 
@@ -21,7 +22,7 @@ package enum BodyLimits {
 
     /// Vestigial in v1.3.3+. Omitted max_tokens now flows through as nil and
     /// FoundationModels uses the remaining context window; this constant is
-    /// no longer consulted anywhere in the codebase. Kept solely for ApfelCore
+    /// no longer consulted anywhere in the codebase. Kept solely for SayItDevCore
     /// API stability for one release, slated for removal in 2.0.0.
     @available(*, deprecated, message: "No longer used. Omitted max_tokens flows through as nil; FoundationModels uses the remaining 4096-token context window. Output-side overflow is surfaced as finish_reason: \"length\". Will be removed in 2.0.0.")
     public static let defaultMaxResponseTokens: Int = 0

@@ -1,6 +1,6 @@
 // ============================================================================
 // MCPProtocol.swift - MCP JSON-RPC message formatting and parsing
-// Part of ApfelCore - pure protocol logic, no subprocess management
+// Part of SayItDevCore - pure protocol logic, no subprocess management
 // ============================================================================
 
 import Foundation
@@ -9,7 +9,7 @@ import Foundation
 /// No I/O, no subprocesses - just JSON-RPC 2.0 over MCP.
 public enum MCPProtocol {
 
-    /// The MCP protocol version ApfelCore speaks on the wire.
+    /// The MCP protocol version SayItDevCore speaks on the wire.
     public static let protocolVersion = "2025-06-18"
 
     // MARK: - Request formatting
@@ -19,7 +19,7 @@ public enum MCPProtocol {
         return jsonRPC(id: id, method: "initialize", params: [
             "protocolVersion": protocolVersion,
             "capabilities": [:] as [String: Any],
-            "clientInfo": ["name": "apfel", "version": "1.0.0"]
+            "clientInfo": ["name": "dev", "version": "1.0.0"]
         ])
     }
 
@@ -262,7 +262,7 @@ public enum MCPProtocol {
     }
 }
 
-/// Stable MCP protocol and transport failures surfaced by ApfelCore.
+/// Stable MCP protocol and transport failures surfaced by SayItDevCore.
 public enum MCPError: Error, Sendable, Equatable {
     /// The server returned malformed or incomplete JSON.
     case invalidResponse(String)

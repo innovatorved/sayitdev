@@ -1,8 +1,8 @@
 # Use Apple's Foundation Model from Any Scripting Language
 
-apfel exposes Apple's on-device **Foundation Model** over a local OpenAI-compatible HTTP server. Any language that can `POST` JSON to `http://localhost:11434/v1/chat/completions` can use it - **100% on-device, zero API cost, no network required for inference**.
+dev exposes Apple's on-device **Foundation Model** over a local OpenAI-compatible HTTP server. Any language that can `POST` JSON to `http://localhost:11434/v1/chat/completions` can use it - **100% on-device, zero API cost, no network required for inference**.
 
-These guides show how, in the idioms each language uses. Every code block was run against a live `apfel --serve` before publishing.
+These guides show how, in the idioms each language uses. Every code block was run against a live `dev --serve` before publishing.
 
 ## Guides
 
@@ -23,13 +23,13 @@ These guides show how, in the idioms each language uses. Every code block was ru
 
 1. **macOS 26+ Tahoe** on Apple Silicon
 2. **Apple Intelligence enabled** (`System Settings -> Apple Intelligence & Siri`)
-3. `brew install apfel`
-4. `apfel --serve` running in a terminal (default port `11434`)
+3. `brew install dev`
+4. `dev --serve` running in a terminal (default port `11434`)
 
 ## Verify with curl
 
 ```bash
-apfel --serve &
+dev --serve &
 curl -s http://localhost:11434/health
 # {"status":"ok"}
 ```
@@ -47,11 +47,11 @@ If `/health` responds, you're ready. Pick your language and follow the guide.
 
 ## See the tests that produced these guides
 
-Every guide links to its exact test script and captured output on [Arthur-Ficial/apfel-guides-lab](https://github.com/Arthur-Ficial/apfel-guides-lab). If you want to rerun them on your own Mac:
+Every guide links to its exact test script and captured output on [__UPSTREAM_DEV_REPO__-guides-lab](__UPSTREAM_DEV_URL__-guides-lab). If you want to rerun them on your own Mac:
 
 ```bash
-git clone https://github.com/Arthur-Ficial/apfel-guides-lab
-cd apfel-guides-lab
-apfel --serve &
+git clone __UPSTREAM_DEV_URL__-guides-lab
+cd dev-guides-lab
+dev --serve &
 python3 -m pytest -v
 ```

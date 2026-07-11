@@ -1,6 +1,6 @@
 // ============================================================================
 // SchemaIR.swift — Pure intermediate representation for JSON Schema
-// Part of ApfelCore — no FoundationModels dependency
+// Part of SayItDevCore — no FoundationModels dependency
 //
 // The tool-calling surface needs to convert arbitrary OpenAI JSON Schema
 // into FoundationModels' DynamicGenerationSchema. Doing the parsing into this
@@ -11,7 +11,7 @@
 
 import Foundation
 
-/// Pure intermediate representation for the JSON Schema subset ApfelCore supports.
+/// Pure intermediate representation for the JSON Schema subset SayItDevCore supports.
 public indirect enum SchemaIR: Equatable, Hashable, Sendable {
     /// An object schema with named child properties.
     case object(name: String, description: String?, properties: [Property])

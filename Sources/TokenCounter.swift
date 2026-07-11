@@ -6,7 +6,7 @@
 
 import Foundation
 import FoundationModels
-import ApfelCore
+import SayItDevCore
 
 actor TokenCounter {
     static let shared = TokenCounter()
@@ -98,9 +98,9 @@ actor TokenCounter {
         return true
     }
 
-    /// Current availability as our pure ApfelCore enum. Adapts Apple's
+    /// Current availability as our pure SayItDevCore enum. Adapts Apple's
     /// `SystemLanguageModel.Availability` into our `ModelAvailability`
-    /// so the rest of apfel can reason about the specific unavailable
+    /// so the rest of dev can reason about the specific unavailable
     /// reason without depending on FoundationModels.
     var availability: ModelAvailability {
         switch model.availability {
@@ -124,7 +124,7 @@ actor TokenCounter {
 
     /// Supported languages as locale identifier strings.
     /// Callers should fetch this ONCE at startup (see Server.swift) - it touches
-    /// the FoundationModels SDK, and a crash observed in apfel-gui#4 suggests
+    /// the FoundationModels SDK, and a crash observed in dev-gui#4 suggests
     /// repeated mid-flight access on Hummingbird's dispatch queue can destabilize
     /// the process in some macOS 26.4 environments.
     var supportedLanguages: [String] {

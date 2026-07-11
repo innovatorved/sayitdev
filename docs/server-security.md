@@ -1,6 +1,6 @@
 # Server Security
 
-apfel's HTTP server (`--serve`) runs on localhost by default and is designed for local development and on-device inference. This document explains the security settings and how to configure them.
+dev's HTTP server (`--serve`) runs on localhost by default and is designed for local development and on-device inference. This document explains the security settings and how to configure them.
 
 ## How it works
 
@@ -9,11 +9,11 @@ The `Origin` HTTP header is the key. Browsers automatically attach it to cross-o
 ```
 Browser on evil.com -> fetch("http://localhost:11434/v1/chat/completions")
                        ^^ Browser adds: Origin: http://evil.com
-                       ^^ apfel sees foreign origin -> 403 Forbidden
+                       ^^ dev sees foreign origin -> 403 Forbidden
 
 curl http://localhost:11434/v1/chat/completions
      ^^ No Origin header sent
-     ^^ apfel sees no Origin -> allowed (backward compatible)
+     ^^ dev sees no Origin -> allowed (backward compatible)
 ```
 
 This single check protects against browser-based attacks while keeping all non-browser workflows unchanged.
@@ -23,11 +23,11 @@ This single check protects against browser-based attacks while keeping all non-b
 ## Default behavior
 
 ```bash
-apfel --serve
+dev --serve
 ```
 
 ```
-apfel server
+dev server
 ├ endpoint: http://127.0.0.1:11434
 ├ cors:     disabled
 ├ origin:   localhost only (http://127.0.0.1, http://localhost, http://[::1])
@@ -48,7 +48,7 @@ from openai import OpenAI
 c = OpenAI(base_url='http://localhost:11434/v1', api_key='ignored')
 print(c.models.list().data[0].id)
 "
-# => apple-foundationmodel
+# => sayitdev-on-device
 
 # Browser JavaScript from localhost - allowed
 # fetch("http://localhost:11434/v1/models") from http://localhost:3000
@@ -79,7 +79,7 @@ curl -H "Origin: http://localhost.evil.com" http://localhost:11434/v1/models
 Enables full CORS support: the server responds to OPTIONS preflight requests with the necessary `Access-Control-Allow-*` headers so browsers can make POST requests and send custom headers (like `Authorization`).
 
 ```bash
-apfel --serve --cors
+dev --serve --cors
 ```
 
 ```
@@ -102,7 +102,7 @@ curl -X OPTIONS -D - http://localhost:11434/v1/chat/completions -o /dev/null
 # fetch("http://localhost:11434/v1/chat/completions", {
 #   method: "POST",
 #   headers: {"Content-Type": "application/json"},
-#   body: JSON.stringify({model: "apple-foundationmodel", messages: [...]})
+#   body: JSON.stringify({model: "sayitdev-on-device", messages: [...]})
 # })
 # => Works from http://localhost:* origins
 ```
@@ -117,7 +117,7 @@ curl -H "Origin: http://evil.com" http://localhost:11434/v1/models
 
 **Key insight:** `--cors` enables browser communication, but does NOT weaken the origin check. Foreign sites are still blocked.
 
-**When to use:** Your local web app needs to make `fetch()` calls to apfel. Without `--cors`, browsers block POST requests and requests with custom headers like `Authorization`.
+**When to use:** Your local web app needs to make `fetch()` calls to dev. Without `--cors`, browsers block POST requests and requests with custom headers like `Authorization`.
 
 ---
 
@@ -126,7 +126,7 @@ curl -H "Origin: http://evil.com" http://localhost:11434/v1/models
 Add specific origins to the default localhost allowlist. This is **additive** - localhost origins are always included.
 
 ```bash
-apfel --serve --cors --allowed-origins "http://myapp.local:8080"
+dev --serve --cors --allowed-origins "http://myapp.local:8080"
 ```
 
 ```
@@ -159,7 +159,7 @@ curl http://localhost:11434/v1/models
 **Multiple origins:**
 
 ```bash
-apfel --serve --cors --allowed-origins "http://localhost:3000,http://localhost:5173"
+dev --serve --cors --allowed-origins "http://localhost:3000,http://localhost:5173"
 ```
 
 **How matching works:**
@@ -182,7 +182,7 @@ apfel --serve --cors --allowed-origins "http://localhost:3000,http://localhost:5
 Disables the `Origin` header check entirely. Any origin is allowed.
 
 ```bash
-apfel --serve --no-origin-check
+dev --serve --no-origin-check
 ```
 
 ```
@@ -217,7 +217,7 @@ curl -H "Origin: http://anything.com" http://localhost:11434/v1/models
 Adds a second layer of security: every request must include a Bearer token. Works independently of origin checking.
 
 ```bash
-apfel --serve --token "my-secret-token"
+dev --serve --token "my-secret-token"
 ```
 
 ```
@@ -252,7 +252,7 @@ from openai import OpenAI
 c = OpenAI(base_url='http://localhost:11434/v1', api_key='my-secret-token')
 print(c.models.list().data[0].id)
 "
-# => apple-foundationmodel
+# => sayitdev-on-device
 ```
 
 **Security note:** When using `--token` (not `--token-auto`), the secret is NOT printed in the startup banner. Only `token: required` is shown.
@@ -270,7 +270,7 @@ print(c.models.list().data[0].id)
 Like `--token` but auto-generates a UUID and prints it on startup so you can copy it.
 
 ```bash
-apfel --serve --token-auto
+dev --serve --token-auto
 ```
 
 ```
@@ -289,17 +289,17 @@ curl -H "Authorization: Bearer E259FD6E-1220-49CA-95CE-66D14BB7FD4B" http://loca
 
 ---
 
-### `APFEL_TOKEN` environment variable
+### `DEV_TOKEN` environment variable
 
 Set the token via environment variable. Useful for scripts and systemd services.
 
 ```bash
-export APFEL_TOKEN="my-secret-token"
-apfel --serve
+export DEV_TOKEN="my-secret-token"
+dev --serve
 # Banner shows: token: required (secret not echoed)
 ```
 
-The `--token` flag overrides `APFEL_TOKEN`. The `--token-auto` flag overrides both (generates a new random one).
+The `--token` flag overrides `DEV_TOKEN`. The `--token-auto` flag overrides both (generates a new random one).
 
 ---
 
@@ -308,7 +308,7 @@ The `--token` flag overrides `APFEL_TOKEN`. The `--token-auto` flag overrides bo
 Combines `--no-origin-check` and `--cors` to disable all security. The name is a warning: it is easy to leave enabled and regret later.
 
 ```bash
-apfel --serve --footgun
+dev --serve --footgun
 ```
 
 ```
@@ -391,10 +391,10 @@ This means:
 
 ### I'm building a local web app
 
-Your React/Vite/Next.js dev server on `localhost:3000` needs to call apfel:
+Your React/Vite/Next.js dev server on `localhost:3000` needs to call dev:
 
 ```bash
-apfel --serve --cors --allowed-origins "http://localhost:3000"
+dev --serve --cors --allowed-origins "http://localhost:3000"
 ```
 
 Your JavaScript:
@@ -404,7 +404,7 @@ const response = await fetch("http://localhost:11434/v1/chat/completions", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    model: "apple-foundationmodel",
+    model: "sayitdev-on-device",
     messages: [{ role: "user", content: "Hello!" }]
   })
 });
@@ -416,12 +416,12 @@ const data = await response.json();
 Just run the server. Nothing extra needed:
 
 ```bash
-apfel --serve
+dev --serve
 
 # curl works as-is
 curl -X POST http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"apple-foundationmodel","messages":[{"role":"user","content":"Hi"}]}'
+  -d '{"model":"sayitdev-on-device","messages":[{"role":"user","content":"Hi"}]}'
 
 # Python SDK works as-is
 from openai import OpenAI
@@ -433,11 +433,11 @@ client = OpenAI(base_url="http://localhost:11434/v1", api_key="ignored")
 Bind to all interfaces and add token auth:
 
 ```bash
-apfel --serve --host 0.0.0.0 --token-auto
+dev --serve --host 0.0.0.0 --token-auto
 # Share the printed token with people on your network
 ```
 
-Binding a non-loopback host (`--host 0.0.0.0` or any LAN address) with **no** token starts the server with zero authentication - every host that can reach the socket can call the inference endpoints. apfel prints a loud red startup warning in that case and points you here; it does not refuse to bind, so always add `--token` or `--token-auto` before exposing the server.
+Binding a non-loopback host (`--host 0.0.0.0` or any LAN address) with **no** token starts the server with zero authentication - every host that can reach the socket can call the inference endpoints. dev prints a loud red startup warning in that case and points you here; it does not refuse to bind, so always add `--token` or `--token-auto` before exposing the server.
 
 Other machines connect with:
 
@@ -449,19 +449,19 @@ curl -H "Authorization: Bearer <token>" http://192.168.1.42:11434/health
 If you really need unauthenticated health probes on that network-exposed bind:
 
 ```bash
-apfel --serve --host 0.0.0.0 --token-auto --public-health
+dev --serve --host 0.0.0.0 --token-auto --public-health
 ```
 
-### I need multiple dev servers to access apfel
+### I need multiple dev servers to access dev
 
 ```bash
-apfel --serve --cors --allowed-origins "http://localhost:3000,http://localhost:5173,http://localhost:8080"
+dev --serve --cors --allowed-origins "http://localhost:3000,http://localhost:5173,http://localhost:8080"
 ```
 
 ### I want maximum security (locked down)
 
 ```bash
-apfel --serve --cors --allowed-origins "http://localhost:3000" --token "$(openssl rand -hex 16)"
+dev --serve --cors --allowed-origins "http://localhost:3000" --token "$(openssl rand -hex 16)"
 ```
 
 This gives you: origin restricted to one specific app + token auth required + CORS for that app only.
@@ -469,7 +469,7 @@ This gives you: origin restricted to one specific app + token auth required + CO
 ### Quick demo / hackathon
 
 ```bash
-apfel --serve --footgun
+dev --serve --footgun
 # WARNING banner printed - you know what you're doing
 ```
 
@@ -477,7 +477,7 @@ apfel --serve --footgun
 
 ## Local MCP subprocesses run with a scrubbed environment
 
-When you attach a local MCP tool script (`--mcp ./tool.py` or `--mcp ./tool`), apfel spawns it as a child process with an explicit, minimal environment rather than handing it the parent shell's full environment. This keeps a third-party tool script from reading apfel's own bearer token (`APFEL_TOKEN`, `APFEL_MCP_TOKEN`) or any cloud/API keys that happen to be exported in your shell.
+When you attach a local MCP tool script (`--mcp ./tool.py` or `--mcp ./tool`), dev spawns it as a child process with an explicit, minimal environment rather than handing it the parent shell's full environment. This keeps a third-party tool script from reading dev's own bearer token (`DEV_TOKEN`, `DEV_MCP_TOKEN`) or any cloud/API keys that happen to be exported in your shell.
 
 The child receives only an allowlist:
 
@@ -485,7 +485,7 @@ The child receives only an allowlist:
 - `LC_*` (locale)
 - `PYTHON*` (e.g. `PYTHONPATH`, `PYTHONHOME`) and `VIRTUAL_ENV` - what typical `python3`/FastMCP/venv servers need
 
-Everything else is dropped. In particular, any variable named `APFEL_*`, or any variable whose name contains `TOKEN`, `KEY`, or `SECRET`, is always excluded even if it would otherwise match. If your MCP script needs a specific secret, pass it in the script itself or via a wrapper - do not rely on it inheriting one from apfel's environment. Remote MCP servers (`--mcp https://...`) are unaffected; this applies only to locally spawned subprocesses.
+Everything else is dropped. In particular, any variable named `DEV_*`, or any variable whose name contains `TOKEN`, `KEY`, or `SECRET`, is always excluded even if it would otherwise match. If your MCP script needs a specific secret, pass it in the script itself or via a wrapper - do not rely on it inheriting one from dev's environment. Remote MCP servers (`--mcp https://...`) are unaffected; this applies only to locally spawned subprocesses.
 
 ---
 

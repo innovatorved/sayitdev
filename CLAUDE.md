@@ -1,20 +1,20 @@
-# apfel - Project Instructions
+# dev - Project Instructions
 
 **The free AI already on your Mac.** This is our claim. Every surface (README, landing page, repo description) must reinforce it.
 
 ## The Golden Goal
 
-apfel exposes Apple's on-device FoundationModels LLM. **Two things are the product. Two things are byproducts.**
+dev exposes Apple's on-device FoundationModels LLM. **Two things are the product. Two things are byproducts.**
 
-### Core product (this is what apfel IS)
+### Core product (this is what dev IS)
 
-1. **UNIX tool** (`apfel "prompt"`, `echo "text" | apfel`, `apfel --stream`)
+1. **UNIX tool** (`dev "prompt"`, `echo "text" | dev`, `dev --stream`)
    - Pipe-friendly, composable, correct exit codes
    - Works with `jq`, `xargs`, shell scripts
    - `--json` output for machine consumption
    - Respects `NO_COLOR`, `--quiet`, stdin detection
 
-2. **OpenAI API-compatible HTTP server** (`apfel --serve`)
+2. **OpenAI API-compatible HTTP server** (`dev --serve`)
    - Drop-in replacement for `openai.OpenAI(base_url="http://localhost:11434/v1")`
    - `/v1/chat/completions` (streaming + non-streaming)
    - `/v1/models`, `/health`, tool calling, `response_format`
@@ -25,21 +25,21 @@ These two modes are what the README.md leads with. Every design decision, test, 
 
 ### Byproducts (useful, but not the pitch)
 
-3. **Interactive mini TUI chat** (`apfel --chat`) - **a byproduct for quick testing, not a main product.**
+3. **Interactive mini TUI chat** (`dev --chat`) - **a byproduct for quick testing, not a main product.**
    - Ships because the pieces are already there (Session, ContextManager, tool calling)
    - Handy for quick testing a prompt or a local MCP server without writing a client
    - Should not dominate README real-estate; a short Quick Start entry is enough
-   - For a GUI chat app, point users to `apfel-chat` (separate repo)
+   - For a GUI chat app, point users to `dev-chat` (separate repo)
 
-4. **Swift library** (`import ApfelCore`, first shipped in `1.1.0`) - **a goal, but a secondary surface.**
+4. **Swift library** (`import SayItDevCore`, first shipped in `1.1.0`) - **a goal, but a secondary surface.**
    - Pure, FoundationModels-free Swift Package library product
    - OpenAI-compatible request/response types, validation, tool-call handling, schema parsing, MCP protocol, error classification, retry logic, context-trimming strategies
-   - Downstream apps call FoundationModels themselves - apfel just supplies the types and policies
-   - DocC catalog at `Sources/Core/ApfelCore.docc/`, runnable examples at `Examples/`, stability contract in [STABILITY.md](STABILITY.md)
+   - Downstream apps call FoundationModels themselves - dev just supplies the types and policies
+   - DocC catalog at `Sources/Core/SayItDevCore.docc/`, runnable examples at `Examples/`, stability contract in [STABILITY.md](STABILITY.md)
    - API-breakage guarded in CI via `swift package diagnose-api-breaking-changes`
-   - **Must NOT be front-and-center in README.md.** One single link to [docs/swift-library.md](docs/swift-library.md) further down the page - no install snippet, no `import ApfelCore` sample, no types list. All Swift-library README content lives on dedicated docs pages.
+   - **Must NOT be front-and-center in README.md.** One single link to [docs/swift-library.md](docs/swift-library.md) further down the page - no install snippet, no `import SayItDevCore` sample, no types list. All Swift-library README content lives on dedicated docs pages.
 
-The Debug GUI has been extracted to its own repo: [apfel-gui](https://github.com/Arthur-Ficial/apfel-gui)
+The Debug GUI has been extracted to its own repo: [dev-gui](__UPSTREAM_DEV_URL__-gui)
 
 ### README.md structure rule
 
@@ -47,9 +47,9 @@ The README.md mirrors this priority - **violating this structure is a bug.**
 
 - Hero + tagline: UNIX tool and OpenAI-compatible server only
 - "What it is" table: **two rows** (UNIX tool, OpenAI server). Nothing else.
-- Right after the table: a one-command "Try it right away: `apfel --chat`" pointer. Rationale: chat is not the main product, but it is the lowest-friction way for a new user to verify install and see apfel responding - so the try-it pointer belongs up top, next to the install block.
+- Right after the table: a one-command "Try it right away: `dev --chat`" pointer. Rationale: chat is not the main product, but it is the lowest-friction way for a new user to verify install and see dev responding - so the try-it pointer belongs up top, next to the install block.
 - Quick Start: UNIX tool first, server second, chat gets a short subsection covering flags and variants (MCP, system prompt, debug)
-- Swift library: **one link, one line**, in a later section (e.g. "Reference Docs" or near the `apfel tree`), pointing to [docs/swift-library.md](docs/swift-library.md). No code samples, no `Package.swift` snippets, no type catalogue in the README.
+- Swift library: **one link, one line**, in a later section (e.g. "Reference Docs" or near the `dev tree`), pointing to [docs/swift-library.md](docs/swift-library.md). No code samples, no `Package.swift` snippets, no type catalogue in the README.
 - All Swift-library detail (install snippet, import example, API surface summary, stability contract pointers, example catalogue) lives on `docs/swift-library.md` and the DocC catalog. Not in README.md.
 
 ### Non-negotiable principles:
@@ -64,7 +64,7 @@ The README.md mirrors this priority - **violating this structure is a bug.**
 ### Documentation style:
 
 - **Links in docs and README:** Always use the URL/path as the anchor text, not generic phrases like "full guide" or "click here". Example: `[docs/background-service.md](docs/background-service.md)` not `[full guide](docs/background-service.md)`.
-- **One code block, one purpose - never mix mutually-exclusive commands.** A fenced code block must be safe to copy-paste verbatim into a terminal: every line either runs in sequence as part of the same workflow, or the block contains only one command. Alternatives (e.g. `brew install apfel` vs `brew install Arthur-Ficial/tap/apfel` vs `git clone … && make install`) get **separate** fenced blocks with a one-line prose lead-in describing when to use that block. Inline `#` comments labelling alternatives inside one block are not a substitute - users hit "copy" and run the lot. This applies to README.md, every file under `docs/`, and any future user-facing surface.
+- **One code block, one purpose - never mix mutually-exclusive commands.** A fenced code block must be safe to copy-paste verbatim into a terminal: every line either runs in sequence as part of the same workflow, or the block contains only one command. Alternatives (e.g. `brew install dev` vs `brew install Arthur-Ficial/tap/dev` vs `git clone … && make install`) get **separate** fenced blocks with a one-line prose lead-in describing when to use that block. Inline `#` comments labelling alternatives inside one block are not a substitute - users hit "copy" and run the lot. This applies to README.md, every file under `docs/`, and any future user-facing surface.
 
 ## Architecture
 
@@ -77,16 +77,16 @@ HTTP Server (/v1/*) ───────┘   ContextManager → Transcript API
                                 TokenCounter → real tokenCount (SDK 26.4)
 ```
 
-- `ApfelCore` library: pure Swift, no FoundationModels dependency, unit-testable
+- `SayItDevCore` library: pure Swift, no FoundationModels dependency, unit-testable
 - Main target: FoundationModels integration, Hummingbird HTTP server
-- Tests: `swift run apfel-tests` (pure Swift runner, no XCTest needed)
+- Tests: `swift run dev-tests` (pure Swift runner, no XCTest needed)
 - No Xcode required - builds with Command Line Tools only
 
 ## Current Status
 
 - Version: `1.8.3` (source of truth: `.version`)
 - Tests: 1041 unit + 474 integration
-- Distribution: homebrew-core (`brew install apfel`), nixpkgs (`nix profile install nixpkgs#apfel-llm`), and the Arthur-Ficial/homebrew-tap
+- Distribution: homebrew-core (`brew install dev`), nixpkgs (`nix profile install nixpkgs#dev-llm`), and the Arthur-Ficial/homebrew-tap
 - Stability policy: [STABILITY.md](STABILITY.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 
@@ -98,14 +98,14 @@ make install                   # build release + install to /usr/local/bin (NO v
 make build                     # build release only (NO version bump)
 make version                   # print current version
 swift build                    # debug build
-swift run apfel-tests          # unit tests only (1041 tests)
+swift run dev-tests          # unit tests only (1041 tests)
 make preflight                 # light release gate: unit + model-free integration + policy (~1.5 min warm)
 make preflight FULL=1          # full qualification incl. the serial model phase (pre-#374 behavior)
 ```
 
 `make test` builds the release binary, runs all 1041 unit tests, starts test servers, runs all 474 integration tests (two phases, #374: the model-free partition in parallel via pytest-xdist, then the serial model phase), and cleans up. This is the single command for development.
 
-`make install` auto-unlinks Homebrew apfel so the dev binary takes PATH priority. `make uninstall` restores the Homebrew link.
+`make install` auto-unlinks Homebrew dev so the dev binary takes PATH priority. `make uninstall` restores the Homebrew link.
 
 **Version is in `.version` file** (single source of truth). Local builds (`make build`, `make install`) do NOT change the version. Only the release workflow (`make release`) bumps versions. This ensures patch versions mean "published compatible fix", not "someone ran a build". **Never manually edit `.version`, `BuildInfo.swift`, or the README badge** - these are updated atomically by the release workflow.
 
@@ -125,7 +125,7 @@ bash scripts/generate-examples.sh          # ~2 minutes, overwrites docs/EXAMPLE
 | Context strategies | `Sources/Core/ContextStrategy.swift`, `Sources/Summarizer.swift` |
 | Tool calling | `Sources/Core/ToolCallHandler.swift`, `Sources/SchemaConverter.swift` |
 | Token counting | `Sources/TokenCounter.swift` |
-| Error types | `Sources/Core/ApfelError.swift` |
+| Error types | `Sources/Core/SayItDevError.swift` |
 | Retry logic | `Sources/Core/Retry.swift` (withRetry, isRetryableError), `Sources/Retry.swift` (AsyncSemaphore) |
 | Models/types | `Sources/Models.swift`, `Sources/ToolModels.swift` |
 | Build info | `Sources/BuildInfo.swift` (auto-generated by `make`) |
@@ -141,7 +141,7 @@ bash scripts/generate-examples.sh          # ~2 minutes, overwrites docs/EXAMPLE
 
 When a new issue comes in, follow this process:
 
-1. **Fetch** the full issue with `gh issue view <n> --repo Arthur-Ficial/apfel --json body,comments,title,author,labels`
+1. **Fetch** the full issue with `gh issue view <n> --repo __UPSTREAM_DEV_REPO__ --json body,comments,title,author,labels`
 2. **Vet** - is it a real bug, valid feature request, or noise?
    - Does it align with the golden goal and non-negotiable principles?
    - Can you reproduce it?
@@ -150,32 +150,32 @@ When a new issue comes in, follow this process:
 3. **Fix** if valid:
    - Write tests first (TDD) for bugs
    - Keep changes minimal and KISS
-   - `make install` + run all tests (`swift run apfel-tests` + `python3 -m pytest Tests/integration/ -v`)
+   - `make install` + run all tests (`swift run dev-tests` + `python3 -m pytest Tests/integration/ -v`)
 4. **Release** if code changed - see "Publishing a Release" below
 5. **Close** the issue with a friendly, short, truthful comment:
    - What was the problem
    - What was fixed (or why it was closed without a fix)
-   - How to update (`brew upgrade apfel`)
-6. **Landing page** (apfel.franzai.com) is a separate Cloudflare Pages project, not in this repo
+   - How to update (`brew upgrade dev`)
+6. **Landing page** (dev.franzai.com) is a separate Cloudflare Pages project, not in this repo
 
 ## Handling Pull Requests
 
 When a PR is opened, follow this process. Scale the rigor to the PR type - docs-only PRs skip the security audit and test coverage steps, code PRs get the full treatment.
 
-**Automated first-responder:** `Arthur-Ficial/apfel` has a Claude Code routine (`.claude/routines/02-pr-auto-review.md`) that runs this entire process on `pull_request.opened` / `pull_request.synchronize` and posts a `COMMENTED` review. The routine cannot `--approve`, cannot merge, cannot run `make test` (no Apple Intelligence on cloud runners), and cannot cut releases. It is a first-pass safety net, not a replacement for human judgement. Franz still merges, Franz still releases - always. See [docs/routines.md](docs/routines.md) and [.claude/routines/README.md](.claude/routines/README.md).
+**Automated first-responder:** `__UPSTREAM_DEV_REPO__` has a Claude Code routine (`.claude/routines/02-pr-auto-review.md`) that runs this entire process on `pull_request.opened` / `pull_request.synchronize` and posts a `COMMENTED` review. The routine cannot `--approve`, cannot merge, cannot run `make test` (no Apple Intelligence on cloud runners), and cannot cut releases. It is a first-pass safety net, not a replacement for human judgement. Franz still merges, Franz still releases - always. See [docs/routines.md](docs/routines.md) and [.claude/routines/README.md](.claude/routines/README.md).
 
 ### 1. Fetch everything
 
 ```bash
-gh pr view <n> --repo Arthur-Ficial/apfel --json title,author,body,state,mergeable,mergeStateStatus,reviews,comments,commits,statusCheckRollup,files,headRefName,headRepositoryOwner
-gh pr diff <n> --repo Arthur-Ficial/apfel                             # full diff
-gh api repos/Arthur-Ficial/apfel/pulls/<n>/comments                   # inline review comments
+gh pr view <n> --repo __UPSTREAM_DEV_REPO__ --json title,author,body,state,mergeable,mergeStateStatus,reviews,comments,commits,statusCheckRollup,files,headRefName,headRepositoryOwner
+gh pr diff <n> --repo __UPSTREAM_DEV_REPO__                             # full diff
+gh api repos/__UPSTREAM_DEV_REPO__/pulls/<n>/comments                   # inline review comments
 git fetch origin pull/<n>/head:pr-<n>-head && git checkout pr-<n>-head # actual tree
 ```
 
 ### 2. Vet the author
 
-- First-time contributor to apfel? (`gh pr list --repo Arthur-Ficial/apfel --state all --author <login>`)
+- First-time contributor to dev? (`gh pr list --repo __UPSTREAM_DEV_REPO__ --state all --author <login>`)
 - Legitimate GitHub profile? Check `gh api users/<login>` for public_repos, followers, blog, creation date
 - Commit author email matches the GitHub account (spot typo-squatting)
 - Any red flags in prior public work
@@ -215,14 +215,14 @@ Priority-rank findings:
 
 - Does it fit the golden goal (UNIX tool + OpenAI server + chat)?
 - Does it respect the non-negotiable principles (100% on-device, honest limits, clean code, Swift 6 strict concurrency, usable security)?
-- Does it introduce cross-target dependencies that violate the `ApfelCore` (pure) / `ApfelCLI` (CLI types) / `apfel` (FoundationModels + Hummingbird) layering?
+- Does it introduce cross-target dependencies that violate the `SayItDevCore` (pure) / `SayItDevCLI` (CLI types) / `dev` (FoundationModels + Hummingbird) layering?
 - Are the existing patterns followed (test harness, error types, context strategy, retry)?
-- **Tool-calling boundary (parked architectural ticket #119):** apfel's tool execution is out-of-band - the model emits a tool-call request in its output text, apfel parses it via `ToolCallHandler.detectToolCall`, runs the tool via `MCPClient`, and feeds the result back. FoundationModels' native `Tool` protocol and in-band invocation are not used, so `FoundationModels.LanguageModelSession.ToolCallError` is unreachable and `ApfelError.classify(_:)` deliberately has no branch for it (see `Sources/Core/ApfelError.swift:23`). If a PR adds `LanguageModelSession(..., tools: [SomeTool()])`, defines a type conforming to `FoundationModels.Tool` inside apfel, or otherwise registers a live tool implementation with the framework, it MUST also add the companion `ApfelError` classifier branch and an integration test that exercises the throw path end-to-end. Reopen #119 with the PR.
+- **Tool-calling boundary (parked architectural ticket #119):** dev's tool execution is out-of-band - the model emits a tool-call request in its output text, dev parses it via `ToolCallHandler.detectToolCall`, runs the tool via `MCPClient`, and feeds the result back. FoundationModels' native `Tool` protocol and in-band invocation are not used, so `FoundationModels.LanguageModelSession.ToolCallError` is unreachable and `SayItDevError.classify(_:)` deliberately has no branch for it (see `Sources/Core/SayItDevError.swift:23`). If a PR adds `LanguageModelSession(..., tools: [SomeTool()])`, defines a type conforming to `FoundationModels.Tool` inside dev, or otherwise registers a live tool implementation with the framework, it MUST also add the companion `SayItDevError` classifier branch and an integration test that exercises the throw path end-to-end. Reopen #119 with the PR.
 
 ### 7. Test coverage check (code PRs)
 
 - New flag? Must have happy-path + every validation error test in `Tests/apfelTests/CLIArgumentsTests.swift`
-- New public API on a pure `ApfelCore` type? Unit test in the corresponding `Tests/apfelTests/*Tests.swift`
+- New public API on a pure `SayItDevCore` type? Unit test in the corresponding `Tests/apfelTests/*Tests.swift`
 - New network or subprocess surface? Integration test wired into `Tests/integration/` using the existing conftest pattern - **standalone manual scripts in `mcp/`, `scripts/`, etc. do not count**
 - Error tests must use the tightened style: `catch let e as CLIParseError { assertTrue(e.message.contains("...")) }` - not just `threw = true`
 - **Any `Sources/**` change (except the generated `BuildInfo.swift`) MUST add a `## [Unreleased]` bullet to `CHANGELOG.md`.** CI enforces this via the `changelog-gate` job (`scripts/check-changelog.sh`, #369); a changelog-less code PR that merges anyway hard-blocks the next release at `stamp-changelog.sh` (gate #263) - this is what stalled v1.8.1.
@@ -232,23 +232,23 @@ Priority-rank findings:
 ```bash
 git checkout pr-<n>-head
 swift build                                              # must be clean, no warnings
-swift run apfel-tests                                    # existing unit tests must still pass
+swift run dev-tests                                    # existing unit tests must still pass
 # For code PRs, also:
-make install && apfel --serve --port 11434 &
-apfel --serve --port 11435 --mcp mcp/calculator/server.py &
+make install && dev --serve --port 11434 &
+dev --serve --port 11435 --mcp mcp/calculator/server.py &
 sleep 4
 python3 -m pytest Tests/integration/ -v                  # must pass, 0 skipped
-pkill -f "apfel --serve"
+pkill -f "dev --serve"
 ```
 
 ### 9. Verify CI on the PR
 
-- `gh pr view <n> --repo Arthur-Ficial/apfel --json statusCheckRollup`
+- `gh pr view <n> --repo __UPSTREAM_DEV_REPO__ --json statusCheckRollup`
 - First-time contributors trigger `action_required` on Actions - the CI run needs manual approval before it executes. Approve it before reviewing so the PR has real CI results to reference.
 
 ### 10. Review
 
-Post a structured review via `gh pr review <n> --repo Arthur-Ficial/apfel --request-changes|--approve|--comment --body "..."`:
+Post a structured review via `gh pr review <n> --repo __UPSTREAM_DEV_REPO__ --request-changes|--approve|--comment --body "..."`:
 
 - **Open with genuine praise** for what works. Reviews that lead with negatives make contributors defensive.
 - **Summary table** of findings (P0/P1/P2, severity, area, one-line summary)
@@ -312,7 +312,7 @@ This runs locally (not on GitHub Actions - GitHub runners lack Apple Intelligenc
 2. Bumps `.version` (patch/minor/major)
 3. Builds the release binary
 4. Runs ALL unit tests (1041)
-5. Runs ALL integration test suites under `Tests/integration/` with real Apple Intelligence via directory discovery (cli_e2e, performance, openai_client, openapi_spec, openapi_conformance, security, server_validation, mcp_server, mcp_remote, plus model-free helpers like test_chat, test_brew_service, test_man_page, test_build_info, test_apfelcore_*). `APFEL_REQUIRE_FULL=1` fails the release on any skip (#227)
+5. Runs ALL integration test suites under `Tests/integration/` with real Apple Intelligence via directory discovery (cli_e2e, performance, openai_client, openapi_spec, openapi_conformance, security, server_validation, mcp_server, mcp_remote, plus model-free helpers like test_chat, test_brew_service, test_man_page, test_build_info, test_apfelcore_*). `DEV_REQUIRE_FULL=1` fails the release on any skip (#227)
 6. Stamps the `[Unreleased]` CHANGELOG section as the new version (`scripts/stamp-changelog.sh`), then commits `.version`, `README.md`, `Sources/BuildInfo.swift`, and `CHANGELOG.md` and pushes to `main`
 7. Creates git tag (`v<version>`) and pushes it
 8. Developer ID signs the binary under a hardened runtime, packages the tarball, notarizes it as a hard gate (#226), writes a `.sha256` checksum sidecar, and publishes the GitHub Release with the tarball, checksum asset, and changelog
@@ -329,12 +329,12 @@ Verifies: GitHub Release exists with tarball, git tag exists, `.version` matches
 
 ### Distribution channels
 
-apfel ships through three channels. All pull the same tarball from each GitHub Release. The tarball's `apfel` binary is Developer ID signed (Franz Enzenhofer, team 7D2YX5DQ6M) under a hardened runtime and the submission is notarized by Apple. It is NOT stapled - a bare CLI binary in a tarball cannot hold a stapled ticket (stapler needs a bundle/dmg/pkg), so Gatekeeper verifies notarization online. Each release also publishes an `apfel-<v>-arm64-macos.tar.gz.sha256` checksum asset; `scripts/post-release-verify.sh` cross-checks it against the tarball and the tap formula sha256 and confirms the TeamIdentifier.
+dev ships through three channels. All pull the same tarball from each GitHub Release. The tarball's `dev` binary is Developer ID signed (Franz Enzenhofer, team 7D2YX5DQ6M) under a hardened runtime and the submission is notarized by Apple. It is NOT stapled - a bare CLI binary in a tarball cannot hold a stapled ticket (stapler needs a bundle/dmg/pkg), so Gatekeeper verifies notarization online. Each release also publishes an `dev-<v>-arm64-macos.tar.gz.sha256` checksum asset; `scripts/post-release-verify.sh` cross-checks it against the tarball and the tap formula sha256 and confirms the TeamIdentifier.
 
-- **homebrew-core** - `brew install apfel`. Autobump detects new releases; latency ~24h. We do not maintain the formula.
-- **Arthur-Ficial/homebrew-tap** - `brew install Arthur-Ficial/tap/apfel`. Synchronous, pushed as part of `make release`. Secondary channel; also houses apfel-family tools (apfel-chat, apfel-clip, apfel-mcp, etc.).
-- **nixpkgs** - `nix profile install nixpkgs#apfel-llm`. Name is `apfel-llm` because nixpkgs already has an unrelated physics `apfel` package and the disambiguator landed upstream as `apfel-llm` (PR NixOS/nixpkgs#508084). `make release` opens a build-verified bump PR on `NixOS/nixpkgs` via `scripts/publish-nixpkgs-bump.sh` (final non-fatal step), and a nixpkgs committer merges it. There is **no zero-touch auto-merge**: apfel-llm is `aarch64-darwin`-only, so r-ryantm (Linux-only worker) can never evaluate it or open a PR, and the merge bot only merges PRs opened by r-ryantm or committers - maintainership lets us comment merge but not self-merge. The script build-verifies with `nix-build` on this Mac, opens one advancing PR following the nixpkgs Things-done + automation/AI-policy conventions, and re-runs twice daily via launchd (`com.arthurficial.apfel-nixpkgs-bump`) through the wrapper `scripts/nixpkgs-bump-cron.sh`, which emails Franz once per distinct failure. Silent failure mode to know: if the Arthur-Ficial GitHub account ever has an SMS 2FA factor, the NixOS org 403s ALL authenticated access (even reads), blocking PR creation and blinding `gh pr list` - remove SMS (authenticator TOTP is the anchor; `~/.claude/rules/services.md`). See [docs/nixpkgs.md](docs/nixpkgs.md).
-- Emergency Homebrew bump: `brew bump-formula-pr apfel --url=<tarball-url> --sha256=<hash>`
+- **homebrew-core** - `brew install dev`. Autobump detects new releases; latency ~24h. We do not maintain the formula.
+- **Arthur-Ficial/homebrew-tap** - `brew install Arthur-Ficial/tap/dev`. Synchronous, pushed as part of `make release`. Secondary channel; also houses dev-family tools (dev-chat, dev-clip, dev-mcp, etc.).
+- **nixpkgs** - `nix profile install nixpkgs#dev-llm`. Name is `dev-llm` because nixpkgs already has an unrelated physics `dev` package and the disambiguator landed upstream as `dev-llm` (PR NixOS/nixpkgs#508084). `make release` opens a build-verified bump PR on `NixOS/nixpkgs` via `scripts/publish-nixpkgs-bump.sh` (final non-fatal step), and a nixpkgs committer merges it. There is **no zero-touch auto-merge**: dev-llm is `aarch64-darwin`-only, so r-ryantm (Linux-only worker) can never evaluate it or open a PR, and the merge bot only merges PRs opened by r-ryantm or committers - maintainership lets us comment merge but not self-merge. The script build-verifies with `nix-build` on this Mac, opens one advancing PR following the nixpkgs Things-done + automation/AI-policy conventions, and re-runs twice daily via launchd (`com.innovatorved.sayitdev-nixpkgs-bump`) through the wrapper `scripts/nixpkgs-bump-cron.sh`, which emails Franz once per distinct failure. Silent failure mode to know: if the Arthur-Ficial GitHub account ever has an SMS 2FA factor, the NixOS org 403s ALL authenticated access (even reads), blocking PR creation and blinding `gh pr list` - remove SMS (authenticator TOTP is the anchor; `~/.claude/rules/services.md`). See [docs/nixpkgs.md](docs/nixpkgs.md).
+- Emergency Homebrew bump: `brew bump-formula-pr dev --url=<tarball-url> --sha256=<hash>`
 - Standalone nixpkgs bump (e.g. catch-up if a release skipped it): `./scripts/publish-nixpkgs-bump.sh --version X.Y.Z`. Manual recovery in [docs/nixpkgs.md](docs/nixpkgs.md) "Manual self-bump".
 
 ### Do NOT manually
@@ -356,7 +356,7 @@ apfel ships through three channels. All pull the same tarball from each GitHub R
 - [ ] `make release` (scripts/publish-release.sh) completed green
 - [ ] `./scripts/post-release-verify.sh` passed
 - [ ] CLAUDE.md version and test counts updated (if changed)
-- [ ] File a ticket on `Arthur-Ficial/apfel-web` if the landing page needs update
+- [ ] File a ticket on `__UPSTREAM_DEV_REPO__-web` if the landing page needs update
 
 ## CI / GitHub Actions
 
@@ -367,7 +367,7 @@ Model-dependent tests carry `@pytest.mark.model`; CI selects the rest with `-m "
 **What GitHub CI runs (automatic, every push/PR):**
 - Build (release binary)
 - 1041 unit tests (pure Swift, no model needed)
-- 179 model-free integration tests: `cli_e2e_test.py -m "not model"` (75, incl. the #370 silent-drop reject guards and the #373 --code conflict/help guards), man-page drift `test_man_page.py` (9), the model-free HTTP server suites `security_test.py` + `openapi_spec_test.py` + `server_validation_test.py -m "not model"` (73, servers started in CI so CORS/origin/Host/auth/501/OpenAI-shape and the /v1/responses validation surface are exercised, #261, #365), the bundled-calculator JSON-RPC suite `test_calculator_server.py` (7, #322), the EXAMPLES.md TOC consistency test `test_examples_doc.py` (1, #331), the CHANGELOG merge-gate suite `test_changelog_gate.py` (4, #369), the marker-discipline guard suite `test_marker_discipline.py` (4, #374), and the ApfelCore consumer + examples smoke tests (6)
+- 179 model-free integration tests: `cli_e2e_test.py -m "not model"` (75, incl. the #370 silent-drop reject guards and the #373 --code conflict/help guards), man-page drift `test_man_page.py` (9), the model-free HTTP server suites `security_test.py` + `openapi_spec_test.py` + `server_validation_test.py -m "not model"` (73, servers started in CI so CORS/origin/Host/auth/501/OpenAI-shape and the /v1/responses validation surface are exercised, #261, #365), the bundled-calculator JSON-RPC suite `test_calculator_server.py` (7, #322), the EXAMPLES.md TOC consistency test `test_examples_doc.py` (1, #331), the CHANGELOG merge-gate suite `test_changelog_gate.py` (4, #369), the marker-discipline guard suite `test_marker_discipline.py` (4, #374), and the SayItDevCore consumer + examples smoke tests (6)
 - Total: 1220 tests
 
 **What GitHub CI CANNOT run (no Apple Intelligence, `@pytest.mark.model`):**

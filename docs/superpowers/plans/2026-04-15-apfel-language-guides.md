@@ -1,56 +1,56 @@
-# apfel Language Guides Implementation Plan
+# dev Language Guides Implementation Plan
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Ship 10 SEO-optimized, empirically tested guides in `docs/guides/` backed by a new `apfel-guides-lab` repo that holds runnable scripts + pytest harness.
+**Goal:** Ship 10 SEO-optimized, empirically tested guides in `docs/guides/` backed by a new `dev-guides-lab` repo that holds runnable scripts + pytest harness.
 
-**Architecture:** Two repos. apfel hosts markdown only. apfel-guides-lab hosts scripts + pytest harness that boots `apfel --serve` and proves every script works. Guides paste real captured output.
+**Architecture:** Two repos. dev hosts markdown only. dev-guides-lab hosts scripts + pytest harness that boots `dev --serve` and proves every script works. Guides paste real captured output.
 
 **Tech Stack:** pytest, uv, composer, bundler, npm, swift-sh, curl, Perl, AWK, AppleScript, Zsh, Bash.
 
-**Spec:** `docs/superpowers/specs/2026-04-15-apfel-language-guides-design.md`
+**Spec:** `docs/superpowers/specs/2026-04-15-dev-language-guides-design.md`
 
 ---
 
 ## Phase 1 - Lab repo bootstrap
 
-### Task 1: Create apfel-guides-lab repo locally + on GitHub
+### Task 1: Create dev-guides-lab repo locally + on GitHub
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/` (new directory, not in apfel repo)
+- Create: `~/dev/dev-guides-lab/` (new directory, not in dev repo)
 
 - [ ] Create directory + git init
-- [ ] Create GitHub repo `Arthur-Ficial/apfel-guides-lab` via `gh repo create` (public, no README, no license yet)
+- [ ] Create GitHub repo `__UPSTREAM_DEV_REPO__-guides-lab` via `gh repo create` (public, no README, no license yet)
 - [ ] First commit: placeholder README
 - [ ] Push to main
 
 ### Task 2: Write lab repo README and Makefile
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/README.md`
-- Create: `~/dev/apfel-guides-lab/Makefile`
+- Create: `~/dev/dev-guides-lab/README.md`
+- Create: `~/dev/dev-guides-lab/Makefile`
 
-- [ ] README explains purpose, links to apfel repo, explains `make test` / `make capture`
+- [ ] README explains purpose, links to dev repo, explains `make test` / `make capture`
 - [ ] Makefile targets: `test`, `test-<lang>` (10 of them), `capture`, `capture-<lang>`, `clean`
 - [ ] Commit
 
 ### Task 3: Set up pytest harness
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/pyproject.toml`
-- Create: `~/dev/apfel-guides-lab/conftest.py`
-- Create: `~/dev/apfel-guides-lab/.gitignore`
+- Create: `~/dev/dev-guides-lab/pyproject.toml`
+- Create: `~/dev/dev-guides-lab/conftest.py`
+- Create: `~/dev/dev-guides-lab/.gitignore`
 
 - [ ] `pyproject.toml` with pytest + requests deps
-- [ ] `conftest.py`: session-scoped fixture boots `apfel --serve --port 11434`, polls `/health` until 200, tears down on SIGTERM
+- [ ] `conftest.py`: session-scoped fixture boots `dev --serve --port 11434`, polls `/health` until 200, tears down on SIGTERM
 - [ ] `.gitignore`: `__pycache__/`, `.venv/`, `node_modules/`, `vendor/`, `.pytest_cache/`, `outputs/*.tmp`
 - [ ] Commit
 
 ### Task 4: Write generic pytest helpers
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/tests/__init__.py`
-- Create: `~/dev/apfel-guides-lab/tests/helpers.py`
+- Create: `~/dev/dev-guides-lab/tests/__init__.py`
+- Create: `~/dev/dev-guides-lab/tests/helpers.py`
 
 - [ ] `run_script(path, stdin=None, timeout=60)` -> `CompletedProcess`
 - [ ] `assert_nonempty_model_output(stdout)` - asserts non-empty, non-error
@@ -59,7 +59,7 @@
 
 ### Task 5: Sanity-check harness
 
-- [ ] Start `apfel --serve` in a separate terminal
+- [ ] Start `dev --serve` in a separate terminal
 - [ ] Write minimal `tests/test_harness.py` that just curls `/health` via subprocess, asserts 200
 - [ ] Run `pytest -v` - must pass
 - [ ] Commit
@@ -71,8 +71,8 @@
 ### Task 6: Python 01 - one-shot
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/scripts/python/01_oneshot.py`
-- Create: `~/dev/apfel-guides-lab/tests/test_python.py`
+- Create: `~/dev/dev-guides-lab/scripts/python/01_oneshot.py`
+- Create: `~/dev/dev-guides-lab/tests/test_python.py`
 
 - [ ] Write `01_oneshot.py` using `openai` SDK pointed at `http://localhost:11434/v1`, sends a prompt, prints response
 - [ ] Write `test_python.py::test_oneshot` that runs the script, asserts non-empty stdout
@@ -103,7 +103,7 @@
 - [ ] `05_tools.py` defines a `get_weather(city)` tool schema, sends prompt, handles tool call, returns fake result, prints final answer
 - [ ] Test: asserts final stdout mentions weather/temperature
 - [ ] Run, capture, commit
-- [ ] **If apfel bug found:** file issue on `Arthur-Ficial/apfel`, mark script as Blocked in a `BLOCKED.md` in lab repo
+- [ ] **If dev bug found:** file issue on `__UPSTREAM_DEV_REPO__`, mark script as Blocked in a `BLOCKED.md` in lab repo
 
 ### Task 11: Python 06 - real mini-example
 
@@ -200,20 +200,20 @@ Same 6 scripts. Use `openai` npm package. `.mjs` files for ES modules.
 ### Task 66: Create guide template
 
 **Files:**
-- Create: `~/dev/apfel-guides-lab/TEMPLATE.md` (reference for writing guides)
+- Create: `~/dev/dev-guides-lab/TEMPLATE.md` (reference for writing guides)
 
 - [ ] Template with all 11 sections from spec
 - [ ] Include SEO H1 format, meta-intro, Tested with footer format
 - [ ] Commit to lab repo
 
-### Task 67: Write docs/guides/index.md in apfel repo
+### Task 67: Write docs/guides/index.md in dev repo
 
 **Files:**
-- Create: `/Users/arthurficial/dev/apfel/docs/guides/index.md`
+- Create: `/Users/arthurficial/dev/dev/docs/guides/index.md`
 
 - [ ] Hub page: one-paragraph intro, table of 10 languages each linking to its guide
 - [ ] SEO-tuned title + meta intro
-- [ ] Commit to apfel repo
+- [ ] Commit to dev repo
 
 ---
 
@@ -223,7 +223,7 @@ One task per language. Each task:
 1. Paste captured outputs from lab repo into the guide
 2. Follow TEMPLATE.md structure exactly
 3. Link to lab repo commit SHA for each script
-4. Commit to apfel repo
+4. Commit to dev repo
 
 - [ ] Task 68: `docs/guides/python.md`
 - [ ] Task 69: `docs/guides/nodejs.md`
@@ -243,9 +243,9 @@ One task per language. Each task:
 ### Task 78: Link guides from README
 
 **Files:**
-- Modify: `/Users/arthurficial/dev/apfel/README.md`
+- Modify: `/Users/arthurficial/dev/dev/README.md`
 
-- [ ] Add "Using apfel from other languages" section with link to `docs/guides/index.md`
+- [ ] Add "Using dev from other languages" section with link to `docs/guides/index.md`
 - [ ] Cross-link from `docs/integrations.md`
 - [ ] Commit
 
@@ -258,11 +258,11 @@ One task per language. Each task:
 
 ### Task 80: Publish lab repo
 
-- [ ] `gh repo edit Arthur-Ficial/apfel-guides-lab --description "..." --homepage "https://apfel.franzai.com"`
+- [ ] `gh repo edit __UPSTREAM_DEV_REPO__-guides-lab --description "..." --homepage "https://dev.franzai.com"`
 - [ ] Final push
 
 ---
 
 ## Bug reporting
 
-Per spec: any apfel bug found during testing = GitHub issue on `Arthur-Ficial/apfel` with curl reproducer, version, observed vs expected. Script marked Blocked in lab repo. Guide section held until apfel fix + re-verify.
+Per spec: any dev bug found during testing = GitHub issue on `__UPSTREAM_DEV_REPO__` with curl reproducer, version, observed vs expected. Script marked Blocked in lab repo. Guide section held until dev fix + re-verify.

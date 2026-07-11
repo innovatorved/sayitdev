@@ -1,10 +1,10 @@
 // ============================================================================
 // ChatLineEditor.swift — Minimal libedit-backed line editor for chat mode
-// Part of apfel — Apple Intelligence from the command line
+// Part of dev — Apple Intelligence from the command line
 // ============================================================================
 
 import Foundation
-import ApfelCLI
+import SayItDevCLI
 import CReadline
 
 final class ChatLineEditor: @unchecked Sendable {
@@ -15,13 +15,13 @@ final class ChatLineEditor: @unchecked Sendable {
     private var lastHistoryEntry: String?
 
     /// Path to the persistent history file, or nil for in-memory-only (the
-    /// default). Set only when the user opts in via APFEL_HISTFILE (#259).
+    /// default). Set only when the user opts in via DEV_HISTFILE (#259).
     private let historyFile: String?
     private let historyLimit: Int
 
     init(outputFormat: OutputFormat, historyLimit: Int = 500, historyFile: String? = nil) {
-        previousInstream = apfel_get_rl_instream()
-        previousOutstream = apfel_get_rl_outstream()
+        previousInstream = dev_get_rl_instream()
+        previousOutstream = dev_get_rl_outstream()
         self.historyFile = historyFile
         self.historyLimit = historyLimit
 
@@ -41,8 +41,8 @@ final class ChatLineEditor: @unchecked Sendable {
             setvbuf(ttyOutput, nil, _IONBF, 0)
             inputStream = ttyInput
             promptStream = ttyOutput
-            apfel_set_rl_instream(ttyInput)
-            apfel_set_rl_outstream(ttyOutput)
+            dev_set_rl_instream(ttyInput)
+            dev_set_rl_outstream(ttyOutput)
         } else {
             inputStream = nil
             promptStream = nil
@@ -52,8 +52,8 @@ final class ChatLineEditor: @unchecked Sendable {
     deinit {
         persistHistory()
         clear_history()
-        apfel_set_rl_instream(previousInstream)
-        apfel_set_rl_outstream(previousOutstream)
+        dev_set_rl_instream(previousInstream)
+        dev_set_rl_outstream(previousOutstream)
 
         if let inputStream {
             fclose(inputStream)
@@ -65,7 +65,7 @@ final class ChatLineEditor: @unchecked Sendable {
     }
 
     func readLine(prompt: String) -> String? {
-        guard let rawLine = prompt.withCString({ apfel_readline_interruptible($0) }) else {
+        guard let rawLine = prompt.withCString({ dev_readline_interruptible($0) }) else {
             return nil
         }
         defer { free(rawLine) }

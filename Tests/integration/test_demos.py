@@ -1,8 +1,8 @@
 """
-apfel Integration Tests - `apfel demos` and the embedded-demo generator.
+dev Integration Tests - `dev demos` and the embedded-demo generator.
 
 The demos are embedded in the binary (Sources/Core/GeneratedDemos.swift) so
-`apfel demos <dir>` behaves identically on homebrew-core, the tap, and source
+`dev demos <dir>` behaves identically on homebrew-core, the tap, and source
 builds - there is no brew `--with-demo` option that could (core forbids
 options). These tests assert the generated file stays in sync with demo/ and
 that the built binary actually writes the demos out.
@@ -21,8 +21,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 DEMO_DIR = ROOT / "demo"
 GENERATED = ROOT / "Sources" / "Core" / "GeneratedDemos.swift"
 GENERATOR = ROOT / "scripts" / "generate-demos.sh"
-BINARY = ROOT / ".build" / "release" / "apfel"
-DEBUG_BINARY = ROOT / ".build" / "debug" / "apfel"
+BINARY = ROOT / ".build" / "release" / "dev"
+DEBUG_BINARY = ROOT / ".build" / "debug" / "dev"
 
 
 def _binary() -> pathlib.Path | None:
@@ -80,14 +80,14 @@ def test_generator_is_idempotent():
 def test_apfel_demos_writes_executable_scripts(tmp_path):
     binary = _binary()
     if binary is None:
-        pytest.skip("apfel binary not built (run `swift build`)")
+        pytest.skip("dev binary not built (run `swift build`)")
     target = tmp_path / "demos"
     result = subprocess.run(
         [str(binary), "demos", str(target)], capture_output=True, text=True
     )
-    assert result.returncode == 0, f"apfel demos failed: {result.stderr}"
+    assert result.returncode == 0, f"dev demos failed: {result.stderr}"
     cmd = target / "cmd"
-    assert cmd.exists(), "apfel demos did not write cmd"
-    assert cmd.stat().st_mode & 0o111, "cmd is not executable after apfel demos"
+    assert cmd.exists(), "dev demos did not write cmd"
+    assert cmd.stat().st_mode & 0o111, "cmd is not executable after dev demos"
     # Byte-for-byte fidelity with the source.
     assert cmd.read_bytes() == (DEMO_DIR / "cmd").read_bytes()

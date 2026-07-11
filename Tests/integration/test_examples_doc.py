@@ -1,5 +1,5 @@
 """
-apfel Integration Tests -- docs/EXAMPLES.md internal consistency
+dev Integration Tests -- docs/EXAMPLES.md internal consistency
 
 Model-free: pure file checks. Guards #331: the generator script's Table of
 Contents is a hardcoded list that historically drifted from the sections the

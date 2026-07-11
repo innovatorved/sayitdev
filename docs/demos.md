@@ -1,18 +1,18 @@
 # Demos
 
-`apfel` ships with real shell wrappers in `demo/`. This page keeps the longer walkthroughs; the per-script overview stays in [../demo/README.md](../demo/README.md).
+`dev` ships with real shell wrappers in `demo/`. This page keeps the longer walkthroughs; the per-script overview stays in [../demo/README.md](../demo/README.md).
 
 ## Getting the demos
 
-The demos are embedded in the `apfel` binary - write them out no matter how you installed apfel (homebrew-core, the tap, or source):
+The demos are embedded in the `dev` binary - write them out no matter how you installed dev (homebrew-core, the tap, or source):
 
 ```bash
-apfel demos ./apfel-demos
+dev demos ./dev-demos
 ```
 
-This writes every demo (executable) plus a `README.md` into `./apfel-demos` (pass another directory to relocate). Re-run after `brew upgrade apfel` to refresh. There is deliberately no `brew install --with-demo` flag: homebrew-core does not support formula options, so it could never behave the same on core and tap - a built-in `apfel demos` command does.
+This writes every demo (executable) plus a `README.md` into `./dev-demos` (pass another directory to relocate). Re-run after `brew upgrade dev` to refresh. There is deliberately no `brew install --with-demo` flag: homebrew-core does not support formula options, so it could never behave the same on core and tap - a built-in `dev demos` command does.
 
-The Arthur-Ficial tap additionally installs each demo as an `apfel-<name>` command (e.g. `apfel-cmd`); `apfel demos` is the channel-independent way to get the raw, editable scripts.
+The Arthur-Ficial tap additionally installs each demo as an `dev-<name>` command (e.g. `dev-cmd`); `dev demos` is the channel-independent way to get the raw, editable scripts.
 
 ## [../demo/cmd](../demo/cmd)
 
@@ -31,8 +31,8 @@ demo/cmd -c "list open ports"                  # -c = copy to clipboard
 Add this to your `.zshrc` and use `cmd` from anywhere:
 
 ```bash
-# cmd - natural language to shell command (apfel). Add to .zshrc:
-cmd(){ local x c r a; while [[ $1 == -* ]]; do case $1 in -x)x=1;shift;; -c)c=1;shift;; *)break;; esac; done; r=$(apfel -q -s 'Output only a shell command.' "$*" | sed '/^```/d;/^#/d;s/\x1b\[[0-9;]*[a-zA-Z]//g;s/^[[:space:]]*//;/^$/d' | head -1); [[ $r ]] || { echo "no command generated"; return 1; }; printf '\e[32m$\e[0m %s\n' "$r"; [[ $c ]] && printf %s "$r" | pbcopy && echo "(copied)"; [[ $x ]] && { printf 'Run? [y/N] '; read -r a; [[ $a == y ]] && eval "$r"; }; return 0; }
+# cmd - natural language to shell command (dev). Add to .zshrc:
+cmd(){ local x c r a; while [[ $1 == -* ]]; do case $1 in -x)x=1;shift;; -c)c=1;shift;; *)break;; esac; done; r=$(dev -q -s 'Output only a shell command.' "$*" | sed '/^```/d;/^#/d;s/\x1b\[[0-9;]*[a-zA-Z]//g;s/^[[:space:]]*//;/^$/d' | head -1); [[ $r ]] || { echo "no command generated"; return 1; }; printf '\e[32m$\e[0m %s\n' "$r"; [[ $c ]] && printf %s "$r" | pbcopy && echo "(copied)"; [[ $x ]] && { printf 'Run? [y/N] '; read -r a; [[ $a == y ]] && eval "$r"; }; return 0; }
 ```
 
 ```bash
