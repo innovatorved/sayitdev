@@ -36,7 +36,7 @@ jobs:
         run: swift run sayitdev-tests
 
       - name: Install Python test dependencies
-        run: pip3 install --break-system-packages pytest pytest-xdist httpx jsonschema pyyaml
+        run: scripts/ensure-integration-deps.sh
 
       - name: Integration tests (model-free subset)
         run: |

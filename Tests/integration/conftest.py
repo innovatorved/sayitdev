@@ -89,7 +89,13 @@ def openai_spec():
     """
     if not OPENAI_SPEC.exists():
         pytest.skip(f"OpenAI spec not found at {OPENAI_SPEC}")
-    from openapi_core import Config, OpenAPI
+    try:
+        from openapi_core import Config, OpenAPI
+    except ImportError:
+        pytest.fail(
+            "openapi-core is required for conformance tests. "
+            "Run: scripts/ensure-integration-deps.sh"
+        )
     # The official OpenAI spec has internal inconsistencies (e.g. logprobs
     # enum default is [] instead of a string). Skip spec-level validation
     # since we care about response-level validation, not fixing their YAML.

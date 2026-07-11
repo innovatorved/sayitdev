@@ -53,6 +53,8 @@ swift run sayitdev-tests
 # --- Integration tests (ALL 7 suites, full qualification) ---
 step "Integration tests (full qualification)"
 
+scripts/ensure-integration-deps.sh
+
 pkill -f "dev --serve" 2>/dev/null || true
 sleep 1
 

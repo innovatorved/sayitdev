@@ -1,0 +1,10 @@
+# Python deps for Tests/integration/ (model + model-free phases).
+# Installed by scripts/ensure-integration-deps.sh before pytest in
+# make test / make preflight / make release.
+pytest>=8.0
+pytest-xdist>=3.0
+httpx>=0.27
+jsonschema>=4.0
+pyyaml>=6.0
+openai>=1.0
+openapi-core>=0.23

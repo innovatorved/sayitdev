@@ -213,6 +213,7 @@ test: build
 	@swift run sayitdev-tests
 	@echo ""
 	@echo "=== Integration tests ==="
+	@scripts/ensure-integration-deps.sh
 	@pkill -f "dev --serve" 2>/dev/null || true
 	@sleep 1
 	@.build/release/dev --serve --port 11434 2>/dev/null & echo $$! > /tmp/dev-test-server.pid; \

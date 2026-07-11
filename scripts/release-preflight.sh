@@ -87,6 +87,8 @@ fi
 # --- 6. Integration tests ---
 step "Integration tests"
 
+scripts/ensure-integration-deps.sh
+
 # Kill any leftover servers
 pkill -f "dev --serve" 2>/dev/null || true
 sleep 1
