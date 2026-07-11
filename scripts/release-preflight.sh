@@ -110,7 +110,7 @@ trap cleanup EXIT
 
 .build/release/dev --serve --port 11434 2>/dev/null &
 SERVER_PID=$!
-.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null &
+.build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py --token integration-test-token 2>/dev/null &
 MCP_SERVER_PID=$!
 
 # Wait for health

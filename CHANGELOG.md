@@ -10,6 +10,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 ### Fixed
 
 - `dev --agent` and `dev --listen` no longer abort with a heap "freed pointer" error: `MicCaptureSession` stops the mic graph before resuming the caller (`.isFinal` and silence paths), keeps `SFSpeechRecognizer` alive for the recognition task lifetime, and avoids cancelling the monitor during `Task.sleep`.
+- `make preflight` MCP test server startup now passes `--token` (required since MCP auth hardening).
 
 ## [1.0.1] - 2026-07-11
 

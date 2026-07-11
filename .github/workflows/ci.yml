@@ -95,7 +95,7 @@ jobs:
           pkill -f "dev --serve" 2>/dev/null || true
           sleep 1
           .build/release/dev --serve --port 11434 2>/dev/null & echo $! > /tmp/dev-server.pid
-          .build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py 2>/dev/null & echo $! > /tmp/dev-mcp.pid
+          .build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py --token integration-test-token 2>/dev/null & echo $! > /tmp/dev-mcp.pid
           READY=0
           for i in $(seq 1 15); do
             if curl -sf http://localhost:11434/health >/dev/null 2>&1 && \
