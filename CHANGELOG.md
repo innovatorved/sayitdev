@@ -7,6 +7,8 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-25
+
 ### Added
 
 - `dev --transcribe <file>` transcribes an existing audio file to stdout, fully on-device; honors `--locale`, `--timestamps`, and the other voice flags.
