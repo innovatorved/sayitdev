@@ -1,0 +1,1045 @@
+// ============================================================================
+// CLIArguments.swift - Parsed CLI arguments as a testable value type
+// Part of SayItDevCLI - CLI-specific parsing, separate from SayItDevCore domain logic
+//
+// parse() is a pure function: no side effects, no exit() calls, no direct file
+// I/O. File reading is injectable via the `readFile` closure for testability.
+// ============================================================================
+
+import Foundation
+import SayItDevCore
+
+/// A file attached via `-f` / `--file` with its source path retained.
+public struct FileAttachment: Sendable, Equatable {
+    public let path: String
+    public let content: String
+
+    public init(path: String, content: String) {
+        self.path = path
+        self.content = content
+    }
+}
+
+/// Represents the result of parsing CLI arguments into a typed struct.
+public struct CLIArguments: Sendable, Equatable {
+
+    // MARK: - Mode
+
+    public enum Mode: String, Sendable, Equatable {
+        case single
+        case stream
+        case chat
+        case serve
+        case benchmark
+        case modelInfo = "model-info"
+        case update
+        case demos
+        case countTokens = "count-tokens"
+        case completions
+        case help
+        case version
+        case release
+        case speak
+        case listen
+        case transcribe
+
+        /// Whether this mode supports reading piped stdin as prompt input.
+        /// Modes that accept a user prompt from the command line also accept
+        /// it (or a prefix to it) from stdin.
+        public var acceptsStdinInput: Bool {
+            switch self {
+            case .single, .stream, .countTokens, .speak: return true
+            default: return false
+            }
+        }
+    }
+
+    public var mode: Mode = .single
+
+    /// Target directory for `--demos` / `demos <dir>` (nil => default chosen at run time).
+    public var demosTarget: String? = nil
+
+    /// Shell requested by the `completions <shell>` subcommand.
+    public var completionsShell: CompletionShell? = nil
+
+    // MARK: - Prompt & Content
+
+    public var prompt: String = ""
+    public var systemPrompt: String? = nil
+    public var fileContents: [String] = []
+    /// Path + content for each `-f` / `--file` attachment (for `--count-tokens` breakdown).
+    public var fileAttachments: [FileAttachment] = []
+    /// Paths to image attachments passed via `--image` / `-i`.
+    public var imagePaths: [String] = []
+
+    /// Exit 4 when over budget (only valid with `--count-tokens`).
+    public var strictCount: Bool = false
+
+    /// Print only the first fenced code block of the response (#373). Pairs a
+    /// steering system-prompt directive with `CodeCropper.extract`; a response
+    /// without a code block exits `SayItDevExitCodes.noCode` (7).
+    public var codeOnly: Bool = false
+
+    /// Raw JSON Schema text from `--schema <file>` (#361). Validated at parse
+    /// time via `SchemaParser` so a malformed schema is a usage error (exit 2),
+    /// never a runtime failure. nil => unconstrained generation.
+    public var schemaJSON: String? = nil
+
+    /// Root name for the generation schema, derived from the `--schema`
+    /// filename stem (see `schemaName(fromPath:)`).
+    public var schemaName: String? = nil
+
+    /// Raw conversation JSON from `--messages <file>` (#363). Validated at
+    /// parse time via `MessagesInput` so a malformed conversation is a usage
+    /// error (exit 2). nil => normal positional/stdin prompt.
+    public var messagesJSON: String? = nil
+
+    /// True for `--messages -`: the executable reads the conversation JSON
+    /// from piped stdin (validated there, same exit-2 semantics).
+    public var messagesFromStdin: Bool = false
+
+    // MARK: - Output
+
+    public var outputFormat: OutputFormat? = nil
+    public var quiet: Bool = false
+    public var noColor: Bool = false
+
+    // MARK: - Server
+
+    public var serverPort: Int = 11434
+    public var serverHost: String = "127.0.0.1"
+    public var serverCORS: Bool = false
+    public var serverMaxConcurrent: Int = 5
+    public var debug: Bool = false
+    public var serverAllowedOrigins: [String] = []
+    public var serverOriginCheckEnabled: Bool = true
+    public var serverToken: String? = nil
+    public var serverTokenAuto: Bool = false
+    public var serverPublicHealth: Bool = false
+    /// Override refusal of non-loopback `--serve` without `--token` (#228 hardening).
+    public var serverAllowInsecureBind: Bool = false
+
+    // MARK: - MCP
+
+    public var mcpServerPaths: [String] = []
+    public var mcpTimeoutSeconds: Int = 5
+    public var mcpBearerToken: String? = nil
+
+    // MARK: - Generation
+
+    public var temperature: Double? = nil
+    public var topP: Double? = nil
+    public var seed: UInt64? = nil
+    public var maxTokens: Int? = nil
+    public var permissive: Bool = false
+
+    // MARK: - Retry
+
+    public var retryEnabled: Bool = false
+    public var retryCount: Int = 3
+
+    // MARK: - Context
+
+    public var contextStrategy: ContextStrategy? = nil
+    public var contextMaxTurns: Int? = nil
+    public var contextOutputReserve: Int? = nil
+    public var contextStatus: Bool = false
+
+    // MARK: - Voice (SayItDev)
+
+    public var inputDeviceUID: String? = nil
+    public var voiceName: String? = nil
+    public var localeID: String? = nil
+    public var ttsRate: Float? = nil
+    public var audioFormat: AudioOutputFormat? = nil
+    public var timestamps: Bool = false
+    /// Audio file path for `--transcribe <path>`.
+    public var transcribePath: String? = nil
+
+    // MARK: - Warnings
+
+    /// Non-fatal parse warnings (e.g. an invalid `DEV_*` env value that was
+    /// ignored in favor of the default). Collected here so `parse()` stays pure
+    /// and testable; the executable prints them to stderr unless `--quiet` (#254).
+    public var warnings: [String] = []
+
+    public init() {}
+
+    /// Every flag spelling the parser recognizes. Single source of truth for
+    /// "is this token a known flag" checks (currently the #255 warning that a
+    /// flag placed after the prompt is swallowed into the prompt text). Keep in
+    /// sync with the `switch` in `parse()`. `--` is a separator, not a flag, so
+    /// it is intentionally absent.
+    public static let knownFlags: Set<String> = [
+        "-h", "--help", "-v", "--version", "--release",
+        "-s", "--system", "--system-file", "-o", "--output",
+        "-q", "--quiet", "--no-color",
+        "--chat", "--stream", "--serve", "--benchmark", "--count-tokens",
+        "--strict", "--model-info", "--update", "--demos",
+        "--port", "--host", "--cors", "--max-concurrent", "--debug",
+        "--allowed-origins", "--no-origin-check", "--token", "--token-auto",
+        "--public-health", "--footgun", "--i-know-what-im-doing",
+        "--mcp", "--mcp-timeout", "--mcp-token",
+        "--temperature", "--top-p", "--seed", "--max-tokens", "--permissive",
+        "--retry",
+        "--context-strategy", "--context-max-turns", "--context-output-reserve",
+        "--context-status",
+        "-f", "--file", "-i", "--image",
+        "--schema", "--messages", "--code",
+        "--speak", "--listen", "--transcribe",
+        "--input-device", "--voice-name", "--locale", "--rate", "--audio-format", "--timestamps",
+    ]
+
+    /// Derive the generation-schema root name from a `--schema` file path:
+    /// basename, all extensions stripped, non-alphanumerics collapsed to `_`.
+    /// Falls back to "schema" when nothing usable remains.
+    public static func schemaName(fromPath path: String) -> String {
+        let base = (path as NSString).lastPathComponent
+        let stem = String(base.prefix(while: { $0 != "." }))
+        let sanitized = stem.map { $0.isLetter || $0.isNumber ? String($0) : "_" }.joined()
+        let trimmed = sanitized.trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        return trimmed.isEmpty ? "schema" : trimmed
+    }
+
+    /// Whether `token` is a flag the parser knows, ignoring any attached
+    /// `=value` (so `--retry=5` counts as the known flag `--retry`).
+    public static func isKnownFlag(_ token: String) -> Bool {
+        if knownFlags.contains(token) { return true }
+        if let eq = token.firstIndex(of: "=") {
+            return knownFlags.contains(String(token[..<eq]))
+        }
+        return false
+    }
+}
+
+/// Errors thrown during argument parsing. Contains a user-facing message.
+public struct CLIParseError: Error, Equatable, CustomStringConvertible {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var description: String { message }
+}
+
+// MARK: - Validation
+
+/// Parser-phase state passed into `CLIArguments.validate(context:)`. Carries
+/// information that is needed for semantic checks but does not belong on the
+/// `CLIArguments` result struct itself (because it is process state, not
+/// user-visible output).
+///
+/// Today this only tracks which mode flags were seen in which order so that
+/// `validate()` can produce a friendly "cannot combine --X and --Y" error
+/// when more than one is set. Future cross-flag checks will add more fields.
+public struct ValidationContext: Sendable, Equatable {
+    public var modeFlagsSeen: [String]
+
+    public init() {
+        self.modeFlagsSeen = []
+    }
+
+    public init(modeFlagsSeen: [String]) {
+        self.modeFlagsSeen = modeFlagsSeen
+    }
+}
+
+extension CLIArguments {
+
+    /// Run semantic validation on a parsed `CLIArguments` value. This is the
+    /// post-parse phase where cross-flag invariants are checked. Call this
+    /// after `parse()` has returned a fully-populated struct, or call it
+    /// directly on a hand-built struct (with an explicit context) to unit-test
+    /// individual invariants.
+    ///
+    /// `parse()` invokes `validate()` internally as its last step, so callers
+    /// using the normal API path (`CLIArguments.parse(args)`) do not need to
+    /// call `validate()` themselves.
+    ///
+    /// - Parameter context: Parser-phase state (e.g., which mode flags were
+    ///   seen in which order). Defaults to an empty context, which is
+    ///   sufficient for checks that only need the `CLIArguments` struct
+    ///   itself.
+    public func validate(context: ValidationContext = .init()) throws {
+        // Mode conflict: more than one mode flag was set during parsing.
+        // First two flags seen win the error message, matching pre-refactor
+        // behavior.
+        if context.modeFlagsSeen.count > 1 {
+            throw CLIErrors.modeConflict(
+                context.modeFlagsSeen[0],
+                context.modeFlagsSeen[1]
+            )
+        }
+        if strictCount && mode != .countTokens {
+            throw CLIParseError("--strict requires --count-tokens")
+        }
+        if schemaJSON != nil {
+            // Guaranteed structured output is a single-prompt feature (#361):
+            // one prompt in, one schema-valid JSON object out. --messages is
+            // the one composition: schema-constrained reply to a conversation.
+            if mode != .single {
+                throw CLIParseError("--schema requires a single one-shot prompt; cannot combine with --\(mode.rawValue)")
+            }
+            if !mcpServerPaths.isEmpty {
+                throw CLIParseError("--schema cannot be combined with MCP tool calling (--mcp / DEV_MCP)")
+            }
+        }
+        if codeOnly {
+            // --code is a single-shot output contract (#373): the complete
+            // response is cropped to its first fenced block. Streaming cannot
+            // crop before the closing fence arrives, chat is conversational,
+            // and the non-generating modes have no response to crop.
+            if mode != .single {
+                throw CLIParseError("--code requires a single one-shot prompt; cannot combine with --\(mode.rawValue)")
+            }
+            // Schema-constrained JSON and code-cropping are contradictory
+            // output contracts.
+            if schemaJSON != nil {
+                throw CLIParseError("--code cannot be combined with --schema; pick one output contract")
+            }
+        }
+        if messagesJSON != nil || messagesFromStdin {
+            // One-shot multi-turn (#363): the conversation JSON is the whole
+            // input. Only single and stream modes make sense.
+            if mode != .single && mode != .stream {
+                throw CLIParseError("--messages cannot be combined with --\(mode.rawValue)")
+            }
+            if !prompt.isEmpty {
+                throw CLIParseError("--messages replaces the positional prompt; append the final user turn to the conversation JSON instead")
+            }
+            if !fileContents.isEmpty || !fileAttachments.isEmpty {
+                throw CLIParseError("--messages cannot be combined with -f/--file; inline file content into the conversation JSON")
+            }
+        }
+        // Silent-drop guard (#370 audit): .serve/.benchmark/.model-info/.update
+        // neither read a one-shot prompt nor run per-request generation, so a
+        // positional prompt, -f file, system prompt, or generation/context
+        // tuning flag was parsed and then silently ignored. Reject it loudly
+        // rather than pretend it took effect. (.serve still honors --permissive,
+        // --retry, --mcp, and the server flags - those are consumed.)
+        let inputIgnoringModes: Set<Mode> = [.serve, .benchmark, .modelInfo, .update, .listen, .transcribe]
+        if inputIgnoringModes.contains(mode) {
+            var offender: String? = nil
+            if !prompt.isEmpty { offender = "a positional prompt" }
+            else if !fileContents.isEmpty || !fileAttachments.isEmpty { offender = "-f/--file content" }
+            else if systemPrompt != nil { offender = "-s/--system" }
+            else if temperature != nil { offender = "--temperature" }
+            else if topP != nil { offender = "--top-p" }
+            else if maxTokens != nil { offender = "--max-tokens" }
+            else if seed != nil { offender = "--seed" }
+            else if contextStrategy != nil { offender = "--context-strategy" }
+            else if contextMaxTurns != nil { offender = "--context-max-turns" }
+            else if contextOutputReserve != nil { offender = "--context-output-reserve" }
+            if let offender {
+                throw CLIParseError("--\(mode.rawValue) does not accept \(offender) - it would be ignored in this mode")
+            }
+        }
+        // --context-status is a --chat-only display toggle; it does nothing in
+        // any other mode, so reject it there instead of silently ignoring it.
+        if contextStatus && mode != .chat {
+            throw CLIParseError("--context-status only applies to --chat")
+        }
+        // Future cross-flag checks live here.
+    }
+}
+
+// MARK: - Parsing
+
+extension CLIArguments {
+
+    /// Parse command-line arguments into a CLIArguments struct.
+    ///
+    /// Pure function: does not call exit(), does not read files directly, does
+    /// not print. Returns the parsed result or throws `CLIParseError`.
+    ///
+    /// - Parameters:
+    ///   - args: Command-line arguments (without the executable name).
+    ///   - env: Environment variables. Env defaults are applied first, CLI
+    ///     flags override them.
+    ///   - readFile: Closure to read file contents by path. Defaults to
+    ///     `String(contentsOfFile:)`. Injectable for testing. Used by `--system-file`
+    ///     (which stays text-only).
+    ///   - extractFile: Closure that turns a `-f` file into prompt-ready text. Defaults to
+    ///     the same plain UTF-8 read as `readFile`; the executable injects a lesbar-backed
+    ///     extractor that also handles PDF and images (OCR + classification). Injectable so
+    ///     `parse` stays pure and framework-free.
+    public static func parse(
+        _ args: [String],
+        env: [String: String] = [:],
+        readFile: (_ path: String) throws -> String = { try String(contentsOfFile: $0, encoding: .utf8) },
+        extractFile: (_ path: String) throws -> String = { try String(contentsOfFile: $0, encoding: .utf8) }
+    ) throws -> CLIArguments {
+        var result = CLIArguments()
+
+        // Environment variable defaults (CLI flags override these). Invalid
+        // values are ignored in favor of the default AND recorded as a warning
+        // so the executable can surface them on stderr, rather than silently
+        // dropping to the default while the equivalent flag hard-errors (#254).
+        // A set-but-empty var is treated as absence, not a misconfiguration.
+        func envValue(_ name: String) -> String? {
+            guard let raw = env[name], !raw.isEmpty else { return nil }
+            return raw
+        }
+
+        result.systemPrompt = env["DEV_SYSTEM_PROMPT"]
+
+        if let raw = envValue("DEV_PORT") {
+            if let p = Int(raw), (1...65535).contains(p) {
+                result.serverPort = p
+            } else {
+                result.warnings.append("ignoring DEV_PORT=\(raw) (not in 1-65535)")
+            }
+        }
+
+        result.serverHost = env["DEV_HOST"] ?? "127.0.0.1"
+        result.serverToken = env["DEV_TOKEN"]
+        result.mcpServerPaths = env["DEV_MCP"].map { parseMCPServerPaths($0) } ?? []
+
+        if let raw = envValue("DEV_MCP_TIMEOUT") {
+            if let t = Int(raw), t > 0 {
+                result.mcpTimeoutSeconds = min(t, 300)
+            } else {
+                result.warnings.append("ignoring DEV_MCP_TIMEOUT=\(raw) (not a positive integer)")
+            }
+        }
+
+        result.mcpBearerToken = env["DEV_MCP_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
+
+        if let raw = envValue("DEV_TEMPERATURE") {
+            if let t = Double(raw), t >= 0 {
+                result.temperature = t
+            } else {
+                result.warnings.append("ignoring DEV_TEMPERATURE=\(raw) (not a non-negative number)")
+            }
+        }
+
+        if let raw = envValue("DEV_MAX_TOKENS") {
+            if let n = Int(raw), n > 0 {
+                result.maxTokens = n
+            } else {
+                result.warnings.append("ignoring DEV_MAX_TOKENS=\(raw) (not a positive integer)")
+            }
+        }
+
+        if let raw = envValue("DEV_CONTEXT_STRATEGY") {
+            if let s = ContextStrategy(rawValue: raw) {
+                result.contextStrategy = s
+            } else {
+                result.warnings.append("ignoring DEV_CONTEXT_STRATEGY=\(raw) (unknown strategy)")
+            }
+        }
+
+        if let raw = envValue("DEV_CONTEXT_MAX_TURNS") {
+            if let n = Int(raw), n > 0 {
+                result.contextMaxTurns = n
+            } else {
+                result.warnings.append("ignoring DEV_CONTEXT_MAX_TURNS=\(raw) (not a positive integer)")
+            }
+        }
+
+        if let raw = envValue("DEV_CONTEXT_OUTPUT_RESERVE") {
+            if let n = Int(raw), n > 0 {
+                result.contextOutputReserve = n
+            } else {
+                result.warnings.append("ignoring DEV_CONTEXT_OUTPUT_RESERVE=\(raw) (not a positive integer)")
+            }
+        }
+        // DEV_DEBUG=<any non-empty value> enables debug logging, same as --debug (#164).
+        if let raw = envValue("DEV_TTS_RATE") {
+            if let d = Double(raw), d > 0 {
+                result.ttsRate = Float(min(4.0, max(0.25, d)))
+            } else {
+                result.warnings.append("ignoring DEV_TTS_RATE=\(raw) (not a positive number)")
+            }
+        }
+        if let raw = envValue("DEV_TTS_FORMAT"), let fmt = AudioOutputFormat.parse(raw) {
+            result.audioFormat = fmt
+        } else if let raw = env["DEV_TTS_FORMAT"], !raw.isEmpty {
+            result.warnings.append("ignoring DEV_TTS_FORMAT=\(raw) (use wav, pcm, or aac)")
+        }
+        result.inputDeviceUID = env["DEV_AUDIO_INPUT"].flatMap { $0.isEmpty ? nil : $0 }
+        result.voiceName = env["DEV_TTS_VOICE"].flatMap { $0.isEmpty ? nil : $0 }
+        result.localeID = env["DEV_STT_LOCALE"].flatMap { $0.isEmpty ? nil : $0 }
+
+        if let debugVal = env["DEV_DEBUG"], !debugVal.isEmpty {
+            result.debug = true
+        }
+
+        // Parser-phase state. Mode-setting flags are recorded in
+        // `context.modeFlagsSeen` so the post-parse validate() step can detect
+        // conflicts like `dev --chat --serve`. --help/-h/--version/-v
+        // /--release short-circuit out of parse entirely and do not
+        // participate in conflict detection.
+        var context = ValidationContext()
+
+        // Subcommand form: `dev demos [dir]`. Bare `demos` as the first token
+        // is the friendly alias for `--demos`; a quoted prompt ("demos") still
+        // works as a normal prompt because it is not the literal first arg here.
+        if args.first == "demos" {
+            result.mode = .demos
+            // Scan the tokens after `demos`: a `-h`/`--help` shows help (never
+            // writes files), the first non-dash token is the target dir, and any
+            // other dash token is a real error instead of being silently
+            // discarded (#248).
+            for token in args.dropFirst() {
+                if token == "-h" || token == "--help" {
+                    result.mode = .help
+                    return result
+                }
+                if token.hasPrefix("-") {
+                    throw CLIErrors.unknownOption(token)
+                }
+                if result.demosTarget == nil {
+                    result.demosTarget = token
+                }
+            }
+            return result
+        }
+
+        // Subcommand form: `dev completions <shell>`. Prints a shell
+        // completion script to stdout. `-h`/`--help` shows help; a missing or
+        // unknown shell is a usage error.
+        if args.first == "completions" {
+            let rest = Array(args.dropFirst())
+            if rest.contains("-h") || rest.contains("--help") {
+                result.mode = .help
+                return result
+            }
+            guard let shellArg = rest.first else {
+                throw CLIParseError(
+                    "completions requires a shell: one of \(CompletionShell.allCases.map(\.rawValue).joined(separator: ", "))")
+            }
+            guard let shell = CompletionShell(rawValue: shellArg) else {
+                throw CLIErrors.invalidValue(
+                    got: shellArg, kind: "shell",
+                    hint: "use one of \(CompletionShell.allCases.map(\.rawValue).joined(separator: ", "))")
+            }
+            if rest.count > 1 {
+                throw CLIErrors.unknownOption(rest[1])
+            }
+            result.mode = .completions
+            result.completionsShell = shell
+            return result
+        }
+
+        var i = 0
+        while i < args.count {
+            switch args[i] {
+
+            // -- Immediate-exit modes (no conflict detection) --
+
+            case "-h", "--help":
+                result.mode = .help
+                return result
+
+            case "-v", "--version":
+                result.mode = .version
+                return result
+
+            case "--release":
+                result.mode = .release
+                return result
+
+            // -- System prompt --
+
+            case "-s", "--system":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--system", "a value") }
+                result.systemPrompt = args[i]
+
+            case "--system-file":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--system-file", "a file path") }
+                let path = args[i]
+                do {
+                    result.systemPrompt = try readFile(path)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                } catch let e as CLIParseError {
+                    throw e
+                } catch {
+                    throw CLIParseError(fileErrorMessage(path: path))
+                }
+
+            // -- Structured output (#361) --
+
+            case "--schema":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--schema", "a JSON Schema file path") }
+                let schemaPath = args[i]
+                guard schemaPath != "-" else {
+                    throw CLIParseError("--schema does not read from stdin; pass a file path (stdin is reserved for prompt input)")
+                }
+                let schemaText: String
+                do {
+                    schemaText = try readFile(schemaPath)
+                } catch let e as CLIParseError {
+                    throw e
+                } catch {
+                    throw CLIParseError(fileErrorMessage(path: schemaPath))
+                }
+                let name = CLIArguments.schemaName(fromPath: schemaPath)
+                // Validate the schema NOW so a broken file is a usage error
+                // (exit 2) with a precise message, not a runtime failure.
+                do {
+                    _ = try SchemaParser.parse(json: schemaText, name: name)
+                } catch let e as SchemaParser.Error {
+                    throw CLIParseError("invalid JSON schema in \(schemaPath): \(schemaErrorMessage(e))")
+                }
+                result.schemaJSON = schemaText
+                result.schemaName = name
+
+            // -- One-shot multi-turn (#363) --
+
+            case "--messages":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--messages", "a JSON file path or -") }
+                let messagesPath = args[i]
+                if messagesPath == "-" {
+                    // Conversation JSON arrives on stdin; the executable reads
+                    // and validates it (parse() must stay free of I/O).
+                    result.messagesFromStdin = true
+                } else {
+                    let messagesText: String
+                    do {
+                        messagesText = try readFile(messagesPath)
+                    } catch let e as CLIParseError {
+                        throw e
+                    } catch {
+                        throw CLIParseError(fileErrorMessage(path: messagesPath))
+                    }
+                    do {
+                        _ = try MessagesInput.decode(messagesText)
+                    } catch let e as MessagesInput.Error {
+                        throw CLIParseError("invalid --messages JSON in \(messagesPath): \(e.message)")
+                    }
+                    result.messagesJSON = messagesText
+                }
+
+            // -- Output --
+
+            case "-o", "--output":
+                i += 1
+                guard i < args.count else {
+                    throw CLIErrors.requires("--output", "a value (plain or json)")
+                }
+                guard let fmt = OutputFormat(rawValue: args[i]) else {
+                    throw CLIErrors.invalidValue(got: args[i], kind: "output format", hint: "use plain or json")
+                }
+                result.outputFormat = fmt
+
+            case "-q", "--quiet":
+                result.quiet = true
+
+            case "--no-color":
+                result.noColor = true
+
+            // -- Modes (conflict-detected via post-parse validate() step) --
+
+            case "--chat":
+                context.modeFlagsSeen.append("--chat")
+                result.mode = .chat
+
+            case "--stream":
+                context.modeFlagsSeen.append("--stream")
+                result.mode = .stream
+
+            case "--serve":
+                context.modeFlagsSeen.append("--serve")
+                result.mode = .serve
+
+            case "--benchmark":
+                context.modeFlagsSeen.append("--benchmark")
+                result.mode = .benchmark
+
+            case "--count-tokens":
+                context.modeFlagsSeen.append("--count-tokens")
+                result.mode = .countTokens
+
+            case "--strict":
+                result.strictCount = true
+
+            case "--code":
+                result.codeOnly = true
+
+            case "--model-info":
+                context.modeFlagsSeen.append("--model-info")
+                result.mode = .modelInfo
+
+            case "--update":
+                context.modeFlagsSeen.append("--update")
+                result.mode = .update
+
+            case "--demos":
+                context.modeFlagsSeen.append("--demos")
+                result.mode = .demos
+                // Optional positional target dir directly after the flag.
+                if i + 1 < args.count, !args[i + 1].hasPrefix("-") {
+                    i += 1
+                    result.demosTarget = args[i]
+                }
+
+            case "--speak":
+                context.modeFlagsSeen.append("--speak")
+                result.mode = .speak
+
+            case "--listen":
+                context.modeFlagsSeen.append("--listen")
+                result.mode = .listen
+
+            case "--transcribe":
+                context.modeFlagsSeen.append("--transcribe")
+                result.mode = .transcribe
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--transcribe", "an audio file path") }
+                result.transcribePath = args[i]
+
+            case "--input-device":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--input-device", "a device UID") }
+                result.inputDeviceUID = args[i]
+
+            case "--voice-name":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--voice-name", "a voice id or 'personal'") }
+                result.voiceName = args[i]
+
+            case "--locale":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--locale", "a locale id (e.g. en-US)") }
+                result.localeID = args[i]
+
+            case "--rate":
+                i += 1
+                guard i < args.count, let d = Double(args[i]), d >= 0.25, d <= 4.0 else {
+                    throw CLIErrors.invalidValue(got: i < args.count ? args[i] : "", kind: "rate", hint: "use 0.25–4.0")
+                }
+                result.ttsRate = Float(d)
+
+            case "--audio-format":
+                i += 1
+                guard i < args.count, let fmt = AudioOutputFormat.parse(args[i]) else {
+                    throw CLIErrors.invalidValue(got: i < args.count ? args[i] : "", kind: "audio format", hint: "use wav, pcm, or aac")
+                }
+                result.audioFormat = fmt
+
+            case "--timestamps":
+                result.timestamps = true
+
+            // -- Server --
+
+            case "--port":
+                i += 1
+                guard i < args.count, let p = Int(args[i]), p > 0, p < 65536 else {
+                    throw CLIErrors.requires("--port", "a valid port number (1-65535)")
+                }
+                result.serverPort = p
+
+            case "--host":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--host", "an address") }
+                result.serverHost = args[i]
+
+            case "--cors":
+                result.serverCORS = true
+
+            case "--max-concurrent":
+                i += 1
+                guard i < args.count, let n = Int(args[i]), n > 0 else {
+                    throw CLIErrors.requires("--max-concurrent", "a positive number")
+                }
+                result.serverMaxConcurrent = n
+
+            case "--debug":
+                result.debug = true
+
+            case "--allowed-origins":
+                i += 1
+                guard i < args.count else {
+                    throw CLIErrors.requires("--allowed-origins", "a comma-separated list of origins")
+                }
+                let origins = parseAllowedOrigins(args[i])
+                guard !origins.isEmpty else {
+                    throw CLIErrors.requires("--allowed-origins", "at least one non-empty origin")
+                }
+                for origin in origins where !result.serverAllowedOrigins.contains(origin) {
+                    result.serverAllowedOrigins.append(origin)
+                }
+
+            case "--no-origin-check":
+                result.serverOriginCheckEnabled = false
+
+            case "--token":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--token", "a secret value") }
+                result.serverToken = args[i]
+
+            case "--token-auto":
+                result.serverTokenAuto = true
+
+            case "--public-health":
+                result.serverPublicHealth = true
+
+            case "--footgun":
+                result.serverOriginCheckEnabled = false
+                result.serverCORS = true
+
+            case "--i-know-what-im-doing":
+                result.serverAllowInsecureBind = true
+
+            // -- MCP --
+
+            case "--mcp":
+                i += 1
+                guard i < args.count else {
+                    throw CLIErrors.requires("--mcp", "a path to an MCP server script")
+                }
+                result.mcpServerPaths.append(args[i])
+
+            case "--mcp-timeout":
+                i += 1
+                guard i < args.count, let t = Int(args[i]), t > 0 else {
+                    throw CLIErrors.requires("--mcp-timeout", "a positive number (seconds)")
+                }
+                result.mcpTimeoutSeconds = min(t, 300)
+
+            case "--mcp-token":
+                i += 1
+                guard i < args.count else {
+                    throw CLIErrors.requires("--mcp-token", "a token value")
+                }
+                result.mcpBearerToken = args[i]
+
+            // -- Generation --
+
+            case "--temperature":
+                i += 1
+                guard i < args.count, let t = Double(args[i]), t >= 0 else {
+                    throw CLIErrors.requires("--temperature", "a non-negative number (e.g., 0.7)")
+                }
+                result.temperature = t
+
+            case "--top-p":
+                i += 1
+                guard i < args.count, let p = Double(args[i]), p > 0, p <= 1 else {
+                    throw CLIErrors.requires("--top-p", "a number in (0, 1] (e.g., 0.9)")
+                }
+                result.topP = p
+
+            case "--seed":
+                i += 1
+                guard i < args.count, let s = UInt64(args[i]) else {
+                    throw CLIErrors.requires("--seed", "a positive integer")
+                }
+                result.seed = s
+
+            case "--max-tokens":
+                i += 1
+                guard i < args.count, let n = Int(args[i]), n > 0 else {
+                    throw CLIErrors.requires("--max-tokens", "a positive number")
+                }
+                result.maxTokens = n
+
+            case "--permissive":
+                result.permissive = true
+
+            // -- Retry --
+
+            case "--retry":
+                result.retryEnabled = true
+                // Ambiguous optional argument. The next token is treated as the
+                // count only when it parses as a positive integer AND at least
+                // one more token follows it, so a bare numeric prompt is not
+                // swallowed: `dev --retry 7` keeps "7" as the prompt with the
+                // default count, while `dev --retry 3 "prompt"` still consumes
+                // 3 as the count. Use `--retry=N` for the unambiguous spelling.
+                // A non-positive value is rejected like other numeric flags (#253).
+                if i + 2 < args.count, let n = Int(args[i + 1]) {
+                    guard n > 0 else {
+                        throw CLIErrors.requires("--retry", "a positive number")
+                    }
+                    result.retryCount = n
+                    i += 1
+                }
+
+            case let flag where flag.hasPrefix("--retry="):
+                // Unambiguous spelling: the count is attached, never confused
+                // with a prompt (#253).
+                result.retryEnabled = true
+                let value = String(flag.dropFirst("--retry=".count))
+                guard let n = Int(value), n > 0 else {
+                    throw CLIErrors.requires("--retry", "a positive number")
+                }
+                result.retryCount = n
+
+            // -- Context --
+
+            case "--context-strategy":
+                i += 1
+                guard i < args.count, let s = ContextStrategy(rawValue: args[i]) else {
+                    throw CLIErrors.requires("--context-strategy", "one of: newest-first|oldest-first|sliding-window|summarize|strict")
+                }
+                result.contextStrategy = s
+
+            case "--context-max-turns":
+                i += 1
+                guard i < args.count, let n = Int(args[i]), n > 0 else {
+                    throw CLIErrors.requires("--context-max-turns", "a positive number")
+                }
+                result.contextMaxTurns = n
+
+            case "--context-output-reserve":
+                i += 1
+                guard i < args.count, let n = Int(args[i]), n > 0 else {
+                    throw CLIErrors.requires("--context-output-reserve", "a positive number")
+                }
+                result.contextOutputReserve = n
+
+            case "--context-status":
+                result.contextStatus = true
+
+            // -- File attachment --
+
+            case "-f", "--file":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--file", "a file path") }
+                let path = args[i]
+                do {
+                    let content = try extractFile(path)
+                    result.fileContents.append(content)
+                    result.fileAttachments.append(FileAttachment(path: path, content: content))
+                } catch let e as CLIParseError {
+                    throw e
+                } catch {
+                    throw CLIParseError(fileErrorMessage(path: path))
+                }
+
+            case "-i", "--image":
+                i += 1
+                guard i < args.count else { throw CLIErrors.requires("--image", "an image file path") }
+                result.imagePaths.append(args[i])
+
+            // -- End of options (UNIX convention) --
+
+            case "--":
+                // Everything after "--" is the prompt verbatim, even if it
+                // starts with a dash. A bare trailing "--" leaves the prompt
+                // empty so stdin handling is unchanged.
+                let rest = args[(i + 1)...]
+                if !rest.isEmpty {
+                    result.prompt = rest.joined(separator: " ")
+                }
+                i = args.count
+                continue
+
+            // -- Fallthrough: prompt or unknown flag --
+
+            default:
+                if args[i].hasPrefix("-") {
+                    throw CLIErrors.unknownOption(args[i])
+                }
+                let tail = Array(args[i...])
+                result.prompt = tail.joined(separator: " ")
+                // Non-breaking: everything from the first positional onward is
+                // the prompt verbatim. But a known flag sitting in that tail is
+                // almost always a mistake (the user expected it to be parsed),
+                // so warn and point at flag placement / `--` (#255). Uses the
+                // parser's own knownFlags table - no second hardcoded list.
+                let swallowed = tail.dropFirst().filter { CLIArguments.isKnownFlag($0) }
+                if !swallowed.isEmpty {
+                    result.warnings.append(
+                        "treating \(swallowed.joined(separator: ", ")) as prompt text; "
+                        + "flags after the prompt are not parsed - put options before the "
+                        + "prompt, or use -- to mark the rest as the prompt"
+                    )
+                }
+                i = args.count
+                continue
+            }
+            i += 1
+        }
+
+        // Post-parse semantic validation: mode conflicts, cross-flag
+        // invariants, etc. Runs as the final step so parse() preserves its
+        // end-to-end contract (callers catch the same errors they did
+        // before).
+        try result.validate(context: context)
+
+        return result
+    }
+
+    // MARK: - Helpers
+
+    /// Parse a colon- or comma-separated list of MCP server paths/URLs.
+    ///
+    /// Commas are the canonical separator and always work, including with
+    /// http(s):// URLs. Colons work only for local paths (legacy); URL schemes
+    /// are reassembled to avoid splitting "https://host:8080/mcp" incorrectly.
+    private static func parseMCPServerPaths(_ value: String) -> [String] {
+        if value.contains(",") {
+            return value.split(separator: ",")
+                .map { String($0).trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        }
+        let parts = value.split(separator: ":").map(String.init).filter { !$0.isEmpty }
+        var result: [String] = []
+        var i = parts.startIndex
+        while i < parts.endIndex {
+            let part = parts[i]
+            let next = parts.index(after: i)
+            if (part == "http" || part == "https"),
+               next < parts.endIndex,
+               parts[next].hasPrefix("//") {
+                var url = part + ":" + parts[next]
+                var j = parts.index(after: next)
+                while j < parts.endIndex, !parts[j].hasPrefix("//"),
+                      !parts[j].hasPrefix("/"),   // absolute local path = end of URL
+                      parts[j] != "http", parts[j] != "https" {
+                    url += ":" + parts[j]
+                    j = parts.index(after: j)
+                }
+                result.append(url)
+                i = j
+            } else {
+                result.append(part)
+                i = parts.index(after: i)
+            }
+        }
+        return result.filter { !$0.isEmpty }
+    }
+
+    private static func parseAllowedOrigins(_ value: String) -> [String] {
+        value.split(separator: ",")
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Human-friendly error message for a file read failure. Inspects the path
+    /// to detect common mistakes (missing file, permissions, binary/image).
+    public static func fileErrorMessage(path: String) -> String {
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: path) {
+            return "no such file: \(path)"
+        }
+        if !fm.isReadableFile(atPath: path) {
+            return "permission denied: \(path)"
+        }
+        let ext = (path.lowercased() as NSString).pathExtension
+        switch ext {
+        case "zip", "tar", "gz", "dmg", "pkg", "exe", "bin", "dat", "mp3", "mp4", "mov", "avi", "wav":
+            return "unsupported file: \(path) -- dev -f reads text, PDF, and images (JPEG, PNG, HEIC, TIFF, ...)"
+        default:
+            return "file is not valid UTF-8 text: \(path) (binary file?)"
+        }
+    }
+
+    /// Human-friendly message for a `--schema` validation failure (#361).
+    static func schemaErrorMessage(_ error: SchemaParser.Error) -> String {
+        switch error {
+        case .invalidJSON:
+            return "not valid JSON"
+        case .unsupportedType(let t):
+            return "unsupported type \"\(t)\" (supported: object, string, integer, number, boolean, array)"
+        case .missingArrayItems:
+            return "array schema is missing \"items\""
+        case .invalidProperty(let p):
+            return "property \"\(p)\" is not a schema object"
+        }
+    }
+}

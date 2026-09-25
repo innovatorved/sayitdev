@@ -1,0 +1,257 @@
+import Foundation
+
+public enum SayItDevError: Error, Equatable, Hashable, Sendable {
+    case guardrailViolation
+    case refusal(String)
+    case contextOverflow
+    case rateLimited
+    case concurrentRequest
+    case assetsUnavailable
+    case unsupportedGuide
+    case decodingFailure(String)
+    case unsupportedLanguage(String)
+    case toolExecution(String)
+    case unknown(String)
+
+    /// Classify any thrown error into a typed SayItDevError.
+    /// Matches on FoundationModels.GenerationError first, falls back to string matching.
+    public static func classify(_ error: Error) -> SayItDevError {
+        if let already = error as? SayItDevError { return already }
+        if let mcpError = error as? MCPError {
+            return .toolExecution(mcpError.description)
+        }
+        // FoundationModels ToolCallError is unreachable - dev runs tools out-of-band; see #119
+
+        let typeName = String(describing: type(of: error))
+        let mirror = String(reflecting: error)
+        if let generationError = classifyGenerationError(
+            typeName: typeName,
+            mirror: mirror,
+            localizedDescription: error.localizedDescription
+        ) {
+            return generationError
+        }
+
+        return classifyLocalizedDescription(error.localizedDescription)
+    }
+
+    private static func classifyGenerationError(
+        typeName: String,
+        mirror: String,
+        localizedDescription: String
+    ) -> SayItDevError? {
+        guard typeName.contains("GenerationError") || mirror.contains("GenerationError") else {
+            return nil
+        }
+
+        guard let generationCase = FoundationModelsGenerationErrorCase.firstMatch(in: mirror) else {
+            // It IS a GenerationError, but the case name is one we don't recognise.
+            // Return .unknown directly rather than falling through to
+            // classifyLocalizedDescription's locale-fragile English keyword matching.
+            return .unknown(localizedDescription)
+        }
+
+        return generationCase.apfelError(localizedDescription: localizedDescription)
+    }
+
+    private static func classifyLocalizedDescription(_ description: String) -> SayItDevError {
+        let desc = description.lowercased()
+        if desc.contains(anyOf: ["refused", "refusal", "declined"]) {
+            return .refusal(description)
+        }
+        if desc.contains(anyOf: ["guardrail", "content policy", "unsafe"]) {
+            return .guardrailViolation
+        }
+        if desc.contains(anyOf: ["context window", "exceeded"]) {
+            return .contextOverflow
+        }
+        if desc.contains(anyOf: ["rate limit", "ratelimited", "rate_limit"]) {
+            return .rateLimited
+        }
+        if desc.contains("concurrent") {
+            return .concurrentRequest
+        }
+        if desc.contains("unsupported language") {
+            return .unsupportedLanguage(description)
+        }
+        return .unknown(description)
+    }
+
+    public var cliLabel: String {
+        switch self {
+        case .guardrailViolation:  return "[guardrail]"
+        case .refusal:             return "[refusal]"
+        case .contextOverflow:     return "[context overflow]"
+        case .rateLimited:         return "[rate limited]"
+        case .concurrentRequest:   return "[busy]"
+        case .assetsUnavailable:   return "[model loading]"
+        case .unsupportedGuide:    return "[unsupported guide]"
+        case .decodingFailure:     return "[decoding failure]"
+        case .unsupportedLanguage: return "[unsupported language]"
+        case .toolExecution:       return "[tool error]"
+        case .unknown:             return "[error]"
+        }
+    }
+
+    public var openAIType: String {
+        switch self {
+        case .guardrailViolation:  return "content_policy_violation"
+        case .refusal:             return "content_policy_violation"
+        case .contextOverflow:     return "context_length_exceeded"
+        case .rateLimited:         return "rate_limit_error"
+        case .concurrentRequest:   return "rate_limit_error"
+        case .assetsUnavailable:   return "server_error"
+        case .unsupportedGuide:    return "invalid_request_error"
+        case .decodingFailure:     return "server_error"
+        case .unsupportedLanguage: return "invalid_request_error"
+        case .toolExecution:       return "server_error"
+        case .unknown:             return "server_error"
+        }
+    }
+
+    /// HTTP status code for this error type.
+    ///
+    /// `.refusal` returns 200 because an output-side refusal is a successful
+    /// completion per the OpenAI wire format: HTTP 200 with
+    /// `finish_reason: "content_filter"` and the refusal text on the assistant
+    /// message. The CLI exit-code mapping stays separate (`SayItDevExitCodes`).
+    public var httpStatusCode: Int {
+        switch self {
+        case .guardrailViolation:  return 400
+        case .refusal:             return 200
+        case .contextOverflow:     return 400
+        case .rateLimited:         return 429
+        case .concurrentRequest:   return 429
+        case .assetsUnavailable:   return 503
+        case .unsupportedGuide:    return 400
+        case .decodingFailure:     return 500
+        case .unsupportedLanguage: return 400
+        case .toolExecution:       return 500
+        case .unknown:             return 500
+        }
+    }
+
+    public var openAIMessage: String {
+        switch self {
+        case .guardrailViolation:
+            return "The request was blocked by Apple's safety guardrails. Try rephrasing."
+        case .refusal(let explanation):
+            return "The on-device model refused the request: \(explanation)"
+        case .contextOverflow:
+            // No hardcoded size: the window is dynamic (TokenCounter.contextSize)
+            // and this string must stay true if the OS changes it (#330, #192).
+            return "Input exceeds the model's context window. Shorten the conversation history."
+        case .rateLimited:
+            return "Apple Intelligence is rate limited. Retry after a few seconds."
+        case .concurrentRequest:
+            return "Apple Intelligence is busy with another request. Retry shortly."
+        case .assetsUnavailable:
+            return "Model assets are loading. Try again in a moment."
+        case .unsupportedGuide:
+            return "The requested generation guide is not supported by this model."
+        case .decodingFailure(let msg):
+            return "Model output could not be decoded: \(msg)"
+        case .unsupportedLanguage(let msg):
+            return "Unsupported language: \(msg)"
+        case .toolExecution(let msg):
+            return msg
+        case .unknown(let msg):
+            return msg
+        }
+    }
+
+    /// Whether this error type is transient and should be retried.
+    /// Uses typed matching (locale-independent) — safe on any macOS language.
+    public var isRetryable: Bool {
+        switch self {
+        case .rateLimited, .concurrentRequest, .assetsUnavailable:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+private enum FoundationModelsGenerationErrorCase: String, CaseIterable {
+    case guardrailViolation
+    case refusal
+    case exceededContextWindowSize
+    case rateLimited
+    case concurrentRequests
+    case unsupportedLanguageOrLocale
+    case assetsUnavailable
+    case unsupportedGuide
+    case decodingFailure
+
+    static func firstMatch(in mirror: String) -> FoundationModelsGenerationErrorCase? {
+        allCases.first { mirror.contains($0.rawValue) }
+    }
+
+    func apfelError(localizedDescription: String) -> SayItDevError {
+        switch self {
+        case .guardrailViolation:
+            return .guardrailViolation
+        case .refusal:
+            return .refusal(localizedDescription)
+        case .exceededContextWindowSize:
+            return .contextOverflow
+        case .rateLimited:
+            return .rateLimited
+        case .concurrentRequests:
+            return .concurrentRequest
+        case .unsupportedLanguageOrLocale:
+            return .unsupportedLanguage(localizedDescription)
+        case .assetsUnavailable:
+            return .assetsUnavailable
+        case .unsupportedGuide:
+            return .unsupportedGuide
+        case .decodingFailure:
+            return .decodingFailure(localizedDescription)
+        }
+    }
+}
+
+private extension String {
+    func contains(anyOf needles: [String]) -> Bool {
+        needles.contains { contains($0) }
+    }
+}
+
+extension SayItDevError: LocalizedError, CustomStringConvertible, CustomDebugStringConvertible {
+    public var errorDescription: String? { openAIMessage }
+
+    public var description: String { openAIMessage }
+
+    public var debugDescription: String {
+        switch self {
+        case .guardrailViolation:
+            return "SayItDevError.guardrailViolation"
+        case .refusal(let message):
+            return "SayItDevError.refusal(\(String(reflecting: message)))"
+        case .contextOverflow:
+            return "SayItDevError.contextOverflow"
+        case .rateLimited:
+            return "SayItDevError.rateLimited"
+        case .concurrentRequest:
+            return "SayItDevError.concurrentRequest"
+        case .assetsUnavailable:
+            return "SayItDevError.assetsUnavailable"
+        case .unsupportedGuide:
+            return "SayItDevError.unsupportedGuide"
+        case .decodingFailure(let message):
+            return "SayItDevError.decodingFailure(\(String(reflecting: message)))"
+        case .unsupportedLanguage(let message):
+            return "SayItDevError.unsupportedLanguage(\(String(reflecting: message)))"
+        case .toolExecution(let message):
+            return "SayItDevError.toolExecution(\(String(reflecting: message)))"
+        case .unknown(let message):
+            return "SayItDevError.unknown(\(String(reflecting: message)))"
+        }
+    }
+}
+
+/// Check if an error is retryable using SayItDevError.classify().
+/// Locale-safe: matches on Swift type names, not localizedDescription.
+public func isRetryableError(_ error: Error) -> Bool {
+    SayItDevError.classify(error).isRetryable
+}

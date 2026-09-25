@@ -1,0 +1,79 @@
+"""Smoke-test the runnable SayItDevCore example targets.
+
+These examples back the public Swift package docs. If they stop compiling
+or their basic output changes unexpectedly, we want CI to fail loudly.
+"""
+
+import subprocess
+
+import pytest
+
+
+EXAMPLES = [
+    (
+        "sayitdevcore-context-strategies-example",
+        [
+            "strategy=sliding-window",
+            "max_turns=8",
+            "output_reserve=512",
+        ],
+    ),
+    (
+        "sayitdevcore-openai-types-example",
+        [
+            "model=sayitdev-on-device",
+            "messages=2",
+        ],
+    ),
+    (
+        "sayitdevcore-tool-calling-example",
+        [
+            "## Tool Calling Format",
+            '"name" : "add"',
+        ],
+    ),
+    (
+        "sayitdevcore-error-handling-example",
+        [
+            "[rate limited]",
+            "[context overflow]",
+            "[unsupported language]",
+        ],
+    ),
+    (
+        "sayitdevcore-mcp-protocol-example",
+        [
+            '"method":"initialize"',
+            '"method":"tools\\/list"',
+        ],
+    ),
+]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def guard_server_11434():
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def guard_server_11435():
+    yield
+
+
+@pytest.mark.parametrize(("target", "expected_fragments"), EXAMPLES)
+def test_sayitdevcore_examples_build_and_run(target, expected_fragments):
+    result = subprocess.run(
+        ["swift", "run", target],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"{target} failed to build or run\n"
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
+    for fragment in expected_fragments:
+        assert fragment in result.stdout, (
+            f"{target} output missing expected fragment: {fragment!r}\n"
+            f"stdout:\n{result.stdout}"
+        )

@@ -1,0 +1,16 @@
+.build/
+.swiftpm/
+*.xcodeproj
+xcuserdata/
+DerivedData/
+.DS_Store
+.triage-log/
+.wrangler/
+__pycache__/
+.notes/
+dev-*.tar.gz
+dev-*.tar.gz.sha256
+.worktrees/
+
+# Internal working notes (SDD controller ledger)
+.superpowers/

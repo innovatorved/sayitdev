@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select latest Xcode
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [[ -n "$latest" ]]; then
+            echo "Selecting $latest"
+            sudo xcode-select -s "$latest/Contents/Developer"
+          fi
+          echo "Active SDK: $(xcrun --show-sdk-version)"
+          echo "Swift: $(swift --version 2>&1 | head -1)"
+
+      - name: Build
+        # Use make so generate-man-page (and generate-build-info) run too.
+        run: make build
+
+      - name: Unit tests
+        run: swift run sayitdev-tests
+
+      - name: Install Python test dependencies
+        run: scripts/ensure-integration-deps.sh
+
+      - name: Integration tests (model-free subset)
+        run: |
+          # GitHub-hosted macos-26 runners are arm64 VMs without Apple
+          # Intelligence (the constraint is the virtualized runner, not the CPU
+          # architecture). We run every test that does NOT need the model. Full
+          # integration qualification runs locally via `make preflight` / `make release`.
+
+          # CLI tests: everything NOT marked @pytest.mark.model. A brittle -k
+          # name-substring allowlist used to silently drop tests on rename and
+          # never picked up new model-free tests (#266). The marker + strict
+          # markers make selection self-maintaining. DEV_MODELFREE_ONLY makes
+          # require_model() FAIL (not skip) if an unmarked model test leaks past
+          # the filter, so a forgotten @pytest.mark.model turns CI red instead
+          # of passing green-by-skip.
+          DEV_MODELFREE_ONLY=1 python3 -m pytest Tests/integration/cli_e2e_test.py \
+            -m "not model" \
+            -v --tb=short
+
+          # Man page drift tests (model-free): block any PR that adds/renames
+          # a flag, env var, or exit code without updating man/dev.1.in.
+          python3 -m pytest Tests/integration/test_man_page.py -v --tb=short
+
+          # Bundled MCP calculator (model-free, direct JSON-RPC over stdio):
+          # guards #322 - string args are coerced, non-numeric args error.
+          python3 -m pytest Tests/integration/test_calculator_server.py -v --tb=short
+
+          # docs/EXAMPLES.md consistency (model-free): TOC must match the
+          # emitted sections; guards the generator's hardcoded TOC (#331).
+          python3 -m pytest Tests/integration/test_examples_doc.py -v --tb=short
+
+          # CHANGELOG merge-gate logic (model-free): scripts/check-changelog.sh
+          # blocks a Sources/** change with no [Unreleased] entry (#369).
+          python3 -m pytest Tests/integration/test_changelog_gate.py -v --tb=short
+
+          # Marker-discipline guards (model-free, #374): the two-phase test
+          # partition (-m "not model and not serial" / -m "model or serial")
+          # is only sound while markers stay truthful; these source scans
+          # turn marker rot into a red build.
+          python3 -m pytest Tests/integration/test_marker_discipline.py -v --tb=short
+
+          python3 -m pytest Tests/integration/test_rebrand_guard.py -v --tb=short
+
+          python3 -m pytest Tests/integration/test_voice.py -v --tb=short
+          # It runs locally via make preflight / make release.
+
+      - name: Model-free HTTP server suites
+        run: |
+          # Start the two servers (reusing the Makefile pattern with the FATAL
+          # readiness check) so per-PR CI actually exercises the HTTP server:
+          # CORS/origin wiring, Host validation, auth middleware, /health, 501
+          # stubs, request validation, and the OpenAI response shape. A PR that
+          # breaks SecurityMiddleware.swift / Handlers.swift now fails CI (#261).
+          # The servers start fine without Apple Intelligence (health reports
+          # model_available:false); the calculator MCP server is pure stdlib.
+          pkill -f "dev --serve" 2>/dev/null || true
+          sleep 1
+          .build/release/dev --serve --port 11434 2>/dev/null & echo $! > /tmp/dev-server.pid
+          .build/release/dev --serve --port 11435 --mcp mcp/calculator/server.py --token integration-test-token 2>/dev/null & echo $! > /tmp/dev-mcp.pid
+          READY=0
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:11434/health >/dev/null 2>&1 && \
+               curl -sf http://localhost:11435/health >/dev/null 2>&1; then
+              READY=1; break
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then echo "FATAL: servers did not start"; exit 1; fi
+
+          # Only the model-free tests (-m "not model"): validation/errors,
+          # Host/Origin/CORS, token banners, 413, /health, /v1/models, 501 stubs,
+          # and OpenAI error-shape parity. Tests needing a real completion carry
+          # @pytest.mark.model and run locally via make preflight / make release.
+          STATUS=0
+          # -n auto --dist loadfile (#374): one worker per file - safe because
+          # these three suites only share the two read-mostly test servers.
+          DEV_MODELFREE_ONLY=1 python3 -m pytest \
+            Tests/integration/security_test.py \
+            Tests/integration/openapi_spec_test.py \
+            Tests/integration/server_validation_test.py \
+            -m "not model" -n auto --dist loadfile -v --tb=short || STATUS=$?
+          kill "$(cat /tmp/dev-server.pid)" "$(cat /tmp/dev-mcp.pid)" 2>/dev/null || true
+          rm -f /tmp/dev-server.pid /tmp/dev-mcp.pid
+          exit $STATUS
+
+  changelog-gate:
+    # Permanent guard (#369): a PR that changes production source (Sources/**,
+    # excluding the generated BuildInfo.swift) must carry a non-empty
+    # CHANGELOG.md [Unreleased] entry. Without it the change merges
+    # changelog-less and then hard-blocks the next release at stamp-changelog.sh
+    # (gate #263) - which is exactly what stalled v1.8.1. Cheap Linux job, no
+    # Xcode needed; only meaningful on pull_request (on push to main the
+    # base...HEAD diff is empty and the gate passes).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Fetch base branch
+        run: git fetch --no-tags --prune origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+      - name: Require CHANGELOG [Unreleased] entry for source changes
+        run: bash scripts/check-changelog.sh "origin/${{ github.base_ref }}"
+
+  sayitdevcore-public-api:
+    runs-on: macos-26
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select latest Xcode
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [[ -n "$latest" ]]; then
+            echo "Selecting $latest"
+            sudo xcode-select -s "$latest/Contents/Developer"
+          fi
+          echo "Active SDK: $(xcrun --show-sdk-version)"
+          echo "Swift: $(swift --version 2>&1 | head -1)"
+
+      - name: Build SayItDevCore target
+        run: swift build --target SayItDevCore
+
+      - name: Strict concurrency build for SayItDevCore
+        run: swift build --target SayItDevCore -Xswiftc -strict-concurrency=complete
+
+      - name: Build SayItDevCore docs
+        run: |
+          mkdir -p "$RUNNER_TEMP/sayitdevcore-docs"
+          swift package \
+            --allow-writing-to-directory "$RUNNER_TEMP/sayitdevcore-docs" \
+            generate-documentation \
+            --target SayItDevCore \
+            --disable-indexing \
+            --warnings-as-errors \
+            --output-path "$RUNNER_TEMP/sayitdevcore-docs"
+
+      - name: Diagnose API breakage for SayItDevCore
+        run: |
+          baseline=$(git describe --tags --abbrev=0)
+          if git show "${baseline}:Package.swift" | grep -Fq '.library(name: "SayItDevCore"'; then
+            # Public SayItDevCore enums are non-frozen: new cases are allowed in
+            # minor releases (STABILITY.md "Enum evolution"). Fail only on
+            # genuine breakage (removals, signature/type changes).
+            out=$(swift package diagnose-api-breaking-changes "$baseline" --products SayItDevCore 2>&1) || true
+            echo "$out"
+            real=$(echo "$out" | grep -F '💔' | grep -v 'has been added as a new enum case' || true)
+            if [[ -n "$real" ]]; then
+              echo "::error::Non-additive SayItDevCore API breakage detected:"
+              echo "$real"
+              exit 1
+            fi
+            echo "No non-additive API breakage."
+          else
+            echo "Skipping API breakage check: ${baseline} predates the SayItDevCore product."
+          fi
+
+      - name: Install Python test dependencies
+        run: pip3 install --break-system-packages pytest httpx
+
+      - name: Downstream consumer smoke test
+        run: python3 -m pytest Tests/integration/test_sayitdevcore_package.py -v --tb=short
+
+      - name: SayItDevCore examples smoke test
+        run: python3 -m pytest Tests/integration/test_sayitdevcore_examples.py -v --tb=short

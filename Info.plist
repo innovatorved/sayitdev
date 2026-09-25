@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>SayItDev</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.innovatorved.sayitdev</string>
+    <key>CFBundleExecutable</key>
+    <string>dev</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>SayItDev needs microphone access for speech-to-text and voice agent mode.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>SayItDev uses on-device speech recognition to transcribe your voice.</string>
+</dict>
+</plist>

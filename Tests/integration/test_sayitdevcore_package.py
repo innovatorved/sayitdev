@@ -1,0 +1,40 @@
+"""
+Smoke-test `SayItDevCore` as a downstream SwiftPM product.
+
+This fixture package depends on the repo by local path and imports
+`SayItDevCore` as an external product. The test should fail until
+`Package.swift` exposes `.library(name: "SayItDevCore", targets: ["SayItDevCore"])`.
+"""
+
+import pathlib
+import subprocess
+
+import pytest
+
+
+FIXTURE = pathlib.Path(__file__).resolve().parent / "fixtures" / "sayitdevcore-consumer"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def guard_server_11434():
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def guard_server_11435():
+    yield
+
+
+def test_sayitdevcore_can_be_imported_by_a_downstream_package():
+    result = subprocess.run(
+        ["swift", "run", "sayitdevcore-consumer"],
+        cwd=FIXTURE,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "downstream SwiftPM consumer failed to build or run\n"
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
+    assert result.stdout.strip() == "hello|sliding-window"

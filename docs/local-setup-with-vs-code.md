@@ -1,0 +1,193 @@
+# Local Setup with Visual Studio Code
+
+The shape of the setup is:
+
+1. Run `dev --serve` as a local OpenAI-compatible server.
+2. Use the Continue extension in Visual Studio Code.
+3. Route **chat/code review** to local `dev`.
+4. Route **edit/apply** to a second model.
+5. Keep `~/.continue/.env` in sync from the shell so Continue can read `OPENAI_API_KEY`.
+
+For the underlying API contract, see [openai-api-compatibility.md](openai-api-compatibility.md) and [server-security.md](server-security.md).
+
+## 1. Start `dev` as the local server
+
+Use `dev` as the local OpenAI-compatible base URL:
+
+```text
+http://127.0.0.1:11434/v1
+```
+
+Start it in the foreground:
+
+```bash
+dev --serve
+```
+
+Or run it in the background:
+
+```bash
+brew services start dev
+```
+
+Background-service details: [background-service.md](background-service.md)
+
+Important: this setup uses **Chat Completions** (`POST /v1/chat/completions`), which is what Continue's `openai` provider speaks. dev also implements the newer Responses API (`POST /v1/responses`), but Continue does not use it here.
+
+## 2. Install the Continue extension in Visual Studio Code
+
+Use Continue as the Visual Studio Code front end.
+
+Continue reads configuration from:
+
+- `~/.continue/config.yaml`
+- `~/.continue/.env`
+
+## 3. Configure Continue with two models
+
+Use local `dev` for safer chat/review work and a second model for edit/apply.
+
+Create or replace `~/.continue/config.yaml` with:
+
+```yaml
+name: SayItDev Review + OpenAI Apply
+version: 0.0.1
+schema: v1
+
+models:
+  - name: dev-review
+    provider: openai
+    model: sayitdev-on-device
+    apiBase: http://127.0.0.1:11434/v1
+    apiKey: ignored
+    roles:
+      - chat
+    contextLength: 4096
+    defaultCompletionOptions:
+      temperature: 0.0
+      maxTokens: 256
+    requestOptions:
+      extraBodyProperties:
+        x_context_output_reserve: 256
+    chatOptions:
+      baseSystemMessage: |
+        You are a code review assistant.
+        Prioritize bugs, regressions, edge cases, security risks, and missing tests.
+        Give findings first and be concrete.
+
+  - name: gpt-5.1-apply
+    provider: openai
+    model: gpt-5.1
+    apiKey: ${{ secrets.OPENAI_API_KEY }}
+    roles:
+      - edit
+      - apply
+    defaultCompletionOptions:
+      temperature: 0.0
+      maxTokens: 1200
+
+context:
+  - provider: diff
+  - provider: file
+```
+
+Why this split works:
+
+- `dev-review` is restricted to `chat`, so it becomes the local review lane.
+- `gpt-5.1-apply` handles `edit` and `apply`, where a stronger hosted model is more useful.
+- `temperature: 0.0` keeps both lanes deterministic.
+- `contextLength: 4096` matches `dev`'s local context budget.
+
+## 4. Provide `OPENAI_API_KEY` to Continue
+
+Continue reads secrets from `~/.continue/.env`.
+
+The direct manual version is:
+
+```dotenv
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+But in our setup, we also wired this into the shell so Continue's `.env` file is updated automatically from the existing Codex login helpers in `~/.zshrc`. (See: [Leveraging multiple, repository-specific OpenAI Codex API Keys with Visual Studio Code on macOS](https://snelson.us/2026/04/many-to-one-api-keys/).)
+
+## 5. Sync `~/.continue/.env` automatically from `~/.zshrc`
+
+Inside the `# --- OpenAI Codex: Start` / `# --- OpenAI Codex: End` block in `~/.zshrc`, we added helpers so that:
+
+- `cli` logs Codex in and writes `OPENAI_API_KEY=...` to `~/.continue/.env`
+- `clo` logs Codex out and removes only the `OPENAI_API_KEY` line from `~/.continue/.env`
+
+This keeps the Continue secret in step with your Codex/OpenAI shell workflow without manual edits. Your typical flow becomes:
+
+```bash
+source ~/.zshrc
+cli
+```
+
+When you are done with the Visual Studio Code session:
+
+```bash
+clo
+```
+
+## 6. Restart Visual Studio Code after auth changes
+
+After changing auth state, reload Visual Studio Code's extension host so Continue picks up the current environment and config.
+
+Use:
+
+```text
+Cmd + Shift + P -> Developer: Restart Extension Host
+```
+
+## 7. Recommended day-to-day usage
+
+Use local `dev` for:
+
+- review the current diff
+- review the selected function
+- summarize a file before editing
+- identify likely regressions
+- point out missing tests
+
+Use the hosted edit/apply model for:
+
+- targeted code changes
+- apply/fix flows
+- rewriting a selected block
+- generating a patch after review findings are clear
+
+This is the important habit: keep `dev` focused on **small review contexts**. It works best on a diff, one file, or one selected region, not giant repo-wide prompts.
+
+## 8. Typical workflow
+
+1. Start `dev` with `dev --serve` or `brew services start dev`.
+2. Open Visual Studio Code.
+3. Run `cli` in your shell to authenticate Codex and update `~/.continue/.env`.
+4. Restart the Visual Studio Code extension host.
+5. Ask Continue chat to review the current diff or selected code using the local `dev-review` model.
+6. Once the review is clear, use Edit/Apply to hand the actual code change to the hosted `gpt-5.1-apply` model.
+7. Run `clo` when you are done to clear the shell key and remove `OPENAI_API_KEY` from `~/.continue/.env`.
+
+## 9. Troubleshooting
+
+If Continue cannot talk to local `dev`:
+
+- make sure `dev --serve` is running
+- confirm the base URL is `http://127.0.0.1:11434/v1`
+- confirm the model name is `sayitdev-on-device`
+- make sure the client is pointed at Chat Completions (`/v1/chat/completions`)
+
+If Continue cannot use the hosted edit/apply model:
+
+- check that `~/.continue/.env` contains `OPENAI_API_KEY=...`
+- run `cli` again after reloading `~/.zshrc`
+- restart the Visual Studio Code extension host
+
+If you need a browser client instead of Continue:
+
+- use `dev --serve --cors --allowed-origins "<your local origin>"`
+
+For security and browser details, see [server-security.md](server-security.md).
+
+_Kudos to [@dan-snelson](https://github.com/dan-snelson)._

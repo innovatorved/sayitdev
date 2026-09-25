@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# voice-check — smoke test SayItDev voice CLI + server audio routes
+# Run from Terminal.app (not Cursor) for mic tests.
+#
+# Usage:
+#   ./voice-check           # TTS + HTTP audio (no microphone)
+#   ./voice-check --full    # also test dev --listen (interactive mic)
+
+set -euo pipefail
+
+FULL=false
+DEV="${DEV_BIN:-dev}"
+PORT="${VOICE_CHECK_PORT:-11499}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --full) FULL=true; shift ;;
+        -h|--help)
+            echo "Usage: voice-check [--full]"
+            echo "  --full   also run dev --listen (needs mic + speech permissions)"
+            exit 0
+            ;;
+        \#*) shift ;;  # ignore inline comments when pasted from docs
+        *) echo "Unknown option: $1"; exit 2 ;;
+    esac
+done
+
+if ! command -v "$DEV" &>/dev/null; then
+    if [[ -x "$(dirname "$0")/../.build/release/dev" ]]; then
+        DEV="$(cd "$(dirname "$0")/.." && pwd)/.build/release/dev"
+    elif [[ -x "$(dirname "$0")/../.build/debug/dev" ]]; then
+        DEV="$(cd "$(dirname "$0")/.." && pwd)/.build/debug/dev"
+    else
+        echo "Error: dev not found. Run make build or set DEV_BIN=."
+        exit 1
+    fi
+fi
+
+echo "== SayItDev voice-check =="
+echo "dev: $DEV"
+"$DEV" --version
+echo ""
+
+pass() { echo "  OK  $*"; }
+fail() { echo "  FAIL $*"; exit 1; }
+
+echo "[1/6] dev --speak (argument)"
+if "$DEV" --speak "SayItDev voice check one two three"; then
+    pass "--speak"
+else
+    fail "--speak exited non-zero"
+fi
+
+echo "[2/6] dev --speak (stdin)"
+if echo "stdin speak test" | "$DEV" --speak; then
+    pass "stdin --speak"
+else
+    fail "stdin --speak"
+fi
+
+echo "[3/6] server: start on port $PORT"
+"$DEV" --serve --port "$PORT" >/tmp/sayitdev-voice-check-serve.log 2>&1 &
+SRV=$!
+trap 'kill "$SRV" 2>/dev/null || true' EXIT
+sleep 2
+
+echo "[4/6] GET /v1/audio/voices"
+VOICES=$(curl -sf "http://127.0.0.1:$PORT/v1/audio/voices") || fail "GET /v1/audio/voices"
+echo "$VOICES" | grep -q '"voices"' && pass "voices JSON" || fail "voices JSON shape"
+
+echo "[5/6] POST /v1/audio/speech"
+curl -sf -X POST "http://127.0.0.1:$PORT/v1/audio/speech" \
+    -H "Content-Type: application/json" \
+    -d '{"input":"hello","voice":"default","response_format":"wav"}' \
+    -o /tmp/sayitdev-voice-check.wav || fail "POST /v1/audio/speech"
+file /tmp/sayitdev-voice-check.wav | grep -q WAVE && pass "WAV output" || fail "not a WAV file"
+
+echo "[6/6] POST /v1/audio/transcriptions (round-trip)"
+STT_HTTP=$(curl -s -o /tmp/sayitdev-voice-check-stt.json -w "%{http_code}" \
+    -X POST "http://127.0.0.1:$PORT/v1/audio/transcriptions" \
+    -F "file=@/tmp/sayitdev-voice-check.wav" \
+    -F "model=sayitdev-on-device") || STT_HTTP="000"
+if [[ "$STT_HTTP" == "200" ]] && grep -q '"text"' /tmp/sayitdev-voice-check-stt.json 2>/dev/null; then
+    pass "transcription JSON"
+elif [[ "$STT_HTTP" == "403" ]]; then
+    echo "  SKIP  transcription (HTTP 403 — enable Speech Recognition for Terminal.app in System Settings → Privacy)"
+elif ! kill -0 "$SRV" 2>/dev/null; then
+    fail "server crashed on transcription (grant Speech Recognition to Terminal.app, then rebuild: make build)"
+else
+    fail "POST /v1/audio/transcriptions (HTTP $STT_HTTP): $(cat /tmp/sayitdev-voice-check-stt.json 2>/dev/null | head -c 200)"
+fi
+
+if $FULL; then
+    echo ""
+    echo "[optional] dev --listen — speak now, then wait for transcript:"
+    "$DEV" --listen || fail "--listen"
+    pass "--listen"
+    echo ""
+    echo "[optional] dev --agent — voice Q&A loop (Ctrl-C to quit):"
+    echo "  Run manually: $DEV --agent"
+fi
+
+echo ""
+echo "All automated voice checks passed."
