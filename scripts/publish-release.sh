@@ -234,7 +234,7 @@ echo "Asset: $asset"
 echo "SHA256: $sha256"
 echo "Checksum asset: $asset.sha256"
 
-prev_tag=$(git tag --sort=-v:refname | grep -Fxv "v$version" | head -1)
+prev_tag=$(git tag --sort=-v:refname | grep -Fxv "v$version" | head -1 || true)
 notes="## What's Changed"$'\n\n'
 if [ -n "$prev_tag" ]; then
     notes+=$(git log --oneline "$prev_tag"..HEAD~1 -- | sed 's/^/- /')
