@@ -45,9 +45,12 @@ public enum SayItDevError: Error, Equatable, Hashable, Sendable {
         }
 
         guard let generationCase = FoundationModelsGenerationErrorCase.firstMatch(in: mirror) else {
-            // It IS a GenerationError, but the case name is one we don't recognise.
-            // Return .unknown directly rather than falling through to
-            // classifyLocalizedDescription's locale-fragile English keyword matching.
+            // Keep the type-name path first, but newer SDKs may add safety
+            // cases before this client knows their case names. Preserve the
+            // established safety mapping for Apple's explicit unsafe message.
+            if localizedDescription == "Detected content likely to be unsafe" {
+                return .guardrailViolation
+            }
             return .unknown(localizedDescription)
         }
 
@@ -250,8 +253,11 @@ extension SayItDevError: LocalizedError, CustomStringConvertible, CustomDebugStr
     }
 }
 
-/// Check if an error is retryable using SayItDevError.classify().
-/// Locale-safe: matches on Swift type names, not localizedDescription.
+/// Check whether an error is retryable.
+/// Locale-safe: classification matches Swift type names, not localizedDescription.
 public func isRetryableError(_ error: Error) -> Bool {
-    SayItDevError.classify(error).isRetryable
+    if let error = error as? ApfelError {
+        return error.isRetryable
+    }
+    return SayItDevError.classify(error).isRetryable
 }

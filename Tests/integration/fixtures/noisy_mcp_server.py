@@ -61,25 +61,18 @@ def handle(msg):
         noise("tools/list")
         respond(msg_id, {
             "tools": [{
-                "name": "multiply",
-                "description": "Multiply two numbers",
+                "name": "marker",
+                "description": "Return a fixed marker proving the tool response arrived.",
                 "inputSchema": {
                     "type": "object",
-                    "properties": {
-                        "a": {"type": "number"},
-                        "b": {"type": "number"},
-                    },
-                    "required": ["a", "b"],
+                    "properties": {},
                 },
             }]
         })
     elif method == "tools/call":
         noise("tools/call")
-        args = msg.get("params", {}).get("arguments", {})
-        product = float(args.get("a", 0)) * float(args.get("b", 0))
-        text = str(int(product)) if product == int(product) else str(product)
         respond(msg_id, {
-            "content": [{"type": "text", "text": text}],
+            "content": [{"type": "text", "text": "20501"}],
             "isError": False,
         })
 

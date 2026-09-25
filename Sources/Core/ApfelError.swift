@@ -249,9 +249,3 @@ extension ApfelError: LocalizedError, CustomStringConvertible, CustomDebugString
         }
     }
 }
-
-/// Check if an error is retryable using ApfelError.classify().
-/// Locale-safe: matches on Swift type names, not localizedDescription.
-public func isRetryableError(_ error: Error) -> Bool {
-    ApfelError.classify(error).isRetryable
-}

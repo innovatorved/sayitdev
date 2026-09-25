@@ -1109,7 +1109,7 @@ def test_chat_history_persists_with_histfile(tmp_path):
         ["--chat"],
         steps=[
             (b"you", marker.encode() + b"\n"),
-            (None, b"quit\n"),
+            (None, b"quit\n", 0.5),
         ],
         env={"DEV_HISTFILE": str(histfile)},
         timeout=90,
@@ -1141,7 +1141,7 @@ def test_chat_multibyte_backspace_buffer_is_clean_end_to_end(tmp_path):
         ["--chat"],
         steps=[
             (b"you", b"caf\xc3\xa9\x7fXsentinel\n"),
-            (None, b"quit\n"),
+            (None, b"quit\n", 0.5),
         ],
         env={
             "DEV_HISTFILE": str(histfile),

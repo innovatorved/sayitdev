@@ -26,7 +26,8 @@ let package = Package(
         .target(
             name: "SayItDevCore",
             dependencies: [],
-            path: "Sources/Core"
+            path: "Sources/Core",
+            exclude: ["ApfelCore.docc"]
         ),
         // CLI argument parsing — depends on SayItDevCore for ContextStrategy
         .target(

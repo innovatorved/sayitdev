@@ -9,6 +9,22 @@ import SayItDevCore
 
 func runCodeCropperTests() {
 
+    test("extracts command from FoundationModels code response JSON") {
+        let input = #"{"language_info":{"name":"English","iso_639":"en"},"command":"brew outdated --only-homebrew"}"#
+        let crop = CodeCropper.crop(from: input)
+        try assertEqual(crop?.code, "brew outdated --only-homebrew\n")
+    }
+
+    test("extracts command from fenced FoundationModels code response JSON") {
+        let input = """
+        ```json
+        {"language_info":{"name":"English","iso_639_1":"en"},"command":"brew outdated --only-homebrew"}
+        ```
+        """
+        let crop = CodeCropper.crop(from: input)
+        try assertEqual(crop?.code, "brew outdated --only-homebrew\n")
+    }
+
     // Case 1: prose + one ```python block + prose (real transcript, abridged)
     test("extracts first python block from prose-wrapped response") {
         let input = """

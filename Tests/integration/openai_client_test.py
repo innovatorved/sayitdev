@@ -442,13 +442,13 @@ def test_models_endpoint():
 # MARK: - Error Handling
 
 def test_image_rejection():
-    """Image content is rejected with a clear error."""
+    """A URL that cannot be fetched is rejected instead of silently dropping the image."""
     with pytest.raises(openai.BadRequestError) as exc:
         client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": [
                 {"type": "text", "text": "What's in this image?"},
-                {"type": "image_url", "image_url": {"url": "http://example.com/img.jpg"}}
+                {"type": "image_url", "image_url": {"url": "http://127.0.0.1:1/missing.jpg"}}
             ]}]
         )
     assert "image" in str(exc.value).lower()

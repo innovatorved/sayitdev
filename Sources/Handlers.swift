@@ -201,8 +201,19 @@ func handleChatCompletion(_ request: Request, context: some RequestContext) asyn
     if #available(macOS 27.0, *) {
         let rawURLs = chatRequest.messages.last?.imageURLs ?? []
         for raw in rawURLs {
-            if let resolved = try? await ImagePayloadResolver.resolve(urlString: raw) {
+            do {
+                let resolved = try await ImagePayloadResolver.resolve(urlString: raw)
                 imageURLs.append(resolved)
+            } catch {
+                return chatFailure(
+                    status: .badRequest,
+                    message: "Unable to load image content.",
+                    type: "invalid_request_error",
+                    stream: isStreaming,
+                    requestBody: requestBodyString,
+                    events: events,
+                    event: "image resolution failed"
+                )
             }
         }
     }

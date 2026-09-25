@@ -201,9 +201,11 @@ man: generate-man-page
 #   make release              # patch bump (default)
 #   make release TYPE=minor   # minor bump
 #   make release TYPE=major   # major bump
+#   make release TYPE=reset VERSION=1.0.0 # start a fresh release line
 TYPE ?= patch
+VERSION ?=
 release:
-	@scripts/publish-release.sh $(TYPE)
+	@scripts/publish-release.sh $(TYPE) $(VERSION)
 
 # --- Test (build + all tests, single command) ---
 

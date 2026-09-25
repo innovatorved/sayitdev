@@ -99,6 +99,13 @@ func runSayItDevErrorTests() {
             try assertEqual(SayItDevError.classify(err), item.expected, "case=\(item.caseName)")
         }
     }
+    test("classify falls back for newer safety-related GenerationError cases") {
+        let err = FoundationModelsGenerationErrorStub(
+            caseName: "contentSafetyViolation",
+            localizedMsg: "Detected content likely to be unsafe"
+        )
+        try assertEqual(SayItDevError.classify(err), .guardrailViolation)
+    }
     test("classify preserves refusal explanation text, distinct from guardrailViolation") {
         let refusal = FoundationModelsGenerationErrorStub(
             caseName: "refusal",

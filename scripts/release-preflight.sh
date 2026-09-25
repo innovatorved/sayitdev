@@ -161,7 +161,7 @@ fi
 # (this happened for v1.6.1). Docs/test/CI-only commits are fine; the gate only
 # fires when work has landed but nobody wrote a changelog entry. See #263.
 step "CHANGELOG [Unreleased]"
-last_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+last_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
 if [ -z "$last_tag" ]; then
     echo "(no version tags yet - skipping [Unreleased] content gate)"
 elif [ "$(git rev-list "$last_tag"..HEAD --count)" -eq 0 ]; then
@@ -218,4 +218,5 @@ else
     echo "  make release                  # patch (x.y.z -> x.y.z+1)"
     echo "  make release TYPE=minor       # minor (x.y.z -> x.y+1.0)"
     echo "  make release TYPE=major       # major (x.y.z -> x+1.0.0)"
+    echo "  make release TYPE=reset VERSION=1.0.0 # fresh release line"
 fi

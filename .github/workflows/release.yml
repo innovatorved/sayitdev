@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -19,11 +19,10 @@ jobs:
 
       - name: Select latest Xcode
         run: |
-          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
-          if [[ -n "$latest" ]]; then
-            echo "Selecting $latest"
-            sudo xcode-select -s "$latest/Contents/Developer"
-          fi
+          xcode=/Applications/Xcode_27.0.app
+          test -d "$xcode/Contents/Developer" || { echo "Xcode 27.0 SDK is required" >&2; exit 1; }
+          echo "Selecting stable Xcode $xcode"
+          sudo xcode-select -s "$xcode/Contents/Developer"
           echo "Active SDK: $(xcrun --show-sdk-version)"
           echo "Swift: $(swift --version 2>&1 | head -1)"
 

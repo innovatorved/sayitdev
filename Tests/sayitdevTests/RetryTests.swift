@@ -24,6 +24,11 @@ func runRetryTests() {
         try assertTrue(isRetryableError(SayItDevError.assetsUnavailable))
     }
 
+    test("isRetryableError: legacy ApfelError remains retryable through Error") {
+        let error: Error = ApfelError.rateLimited
+        try assertTrue(isRetryableError(error))
+    }
+
     test("isRetryableError: guardrailViolation is NOT retryable") {
         try assertTrue(!isRetryableError(SayItDevError.guardrailViolation))
     }

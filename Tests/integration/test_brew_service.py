@@ -24,7 +24,8 @@ pytestmark = pytest.mark.serial
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SERVICE_PORT = 11434
+SERVICE_FORMULA = os.environ.get("DEV_BREW_SERVICE_FORMULA", "dev")
+SERVICE_PORT = int(os.environ.get("DEV_BREW_SERVICE_PORT", "11434"))
 SERVICE_URL = f"http://127.0.0.1:{SERVICE_PORT}"
 
 
@@ -32,7 +33,7 @@ def _brew_service_available():
     """Check if dev is installed via Homebrew with a service block."""
     try:
         result = subprocess.run(
-            ["brew", "services", "info", "dev", "--json"],
+            ["brew", "services", "info", SERVICE_FORMULA, "--json"],
             capture_output=True, text=True, timeout=10,
         )
         if result.returncode != 0:
@@ -58,12 +59,12 @@ def brew_service():
         pytest.skip("dev not installed via Homebrew or missing service block")
 
     # Stop if already running (clean slate)
-    subprocess.run(["brew", "services", "stop", "dev"],
+    subprocess.run(["brew", "services", "stop", SERVICE_FORMULA],
                     capture_output=True, timeout=10)
     time.sleep(1)
 
     # Start
-    result = subprocess.run(["brew", "services", "start", "dev"],
+    result = subprocess.run(["brew", "services", "start", SERVICE_FORMULA],
                              capture_output=True, text=True, timeout=10)
     if result.returncode != 0:
         pytest.skip(f"brew services start failed: {result.stderr}")
@@ -79,7 +80,7 @@ def brew_service():
     yield
 
     # Cleanup
-    subprocess.run(["brew", "services", "stop", "dev"],
+    subprocess.run(["brew", "services", "stop", SERVICE_FORMULA],
                     capture_output=True, timeout=10)
 
 
@@ -149,7 +150,7 @@ def test_brew_service_info_shows_loaded(brew_service):
             break
         time.sleep(0.5)
     result = subprocess.run(
-        ["brew", "services", "info", "dev", "--json"],
+        ["brew", "services", "info", SERVICE_FORMULA, "--json"],
         capture_output=True, text=True, timeout=10,
     )
     assert result.returncode == 0
@@ -161,7 +162,7 @@ def test_brew_service_info_shows_loaded(brew_service):
 
 def test_brew_service_logs_exist(brew_service):
     """Brew service log file exists and has content."""
-    log_path = pathlib.Path("/opt/homebrew/var/log/dev.log")
+    log_path = pathlib.Path(f"/opt/homebrew/var/log/{SERVICE_FORMULA}.log")
     assert log_path.exists(), f"Log file not found at {log_path}"
     content = log_path.read_text()
     assert "SayItDev server" in content or "dev server" in content, "Log file missing server startup output"
@@ -169,7 +170,7 @@ def test_brew_service_logs_exist(brew_service):
 
 def test_brew_service_restart(brew_service):
     """Brew service can be restarted."""
-    result = subprocess.run(["brew", "services", "restart", "dev"],
+    result = subprocess.run(["brew", "services", "restart", SERVICE_FORMULA],
                              capture_output=True, text=True, timeout=15)
     assert result.returncode == 0
     # Wait for health after restart

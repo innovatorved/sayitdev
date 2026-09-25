@@ -1,9 +1,8 @@
 """
-Smoke-test `ApfelCore` as a downstream SwiftPM product.
+Smoke-test `SayItDevCore` as a downstream SwiftPM product.
 
 This fixture package depends on the repo by local path and imports
-`ApfelCore` as an external product. The test should fail until
-`Package.swift` exposes `.library(name: "ApfelCore", targets: ["ApfelCore"])`.
+`SayItDevCore` as an external product.
 """
 
 import pathlib
@@ -25,9 +24,9 @@ def guard_server_11435():
     yield
 
 
-def test_apfelcore_can_be_imported_by_a_downstream_package():
+def test_sayitdevcore_can_be_imported_by_a_downstream_package():
     result = subprocess.run(
-        ["swift", "run", "apfelcore-consumer"],
+        ["swift", "run", "sayitdevcore-consumer"],
         cwd=FIXTURE,
         capture_output=True,
         text=True,

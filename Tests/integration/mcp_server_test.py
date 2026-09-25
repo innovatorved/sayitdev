@@ -675,14 +675,14 @@ def test_mcp_noisy_server_tool_call_succeeds():
         data = post_chat_rotating_seeds(f"{api_url}/chat/completions", {
             "model": MODEL,
             "messages": [
-                {"role": "user", "content": "Use the multiply tool to compute 247 times 83. Reply with just the number."}
+                {"role": "user", "content": "Call the marker tool and reply with the exact value it returns."}
             ],
             "max_tokens": 128,
         }, 30)
         assert data["choices"][0]["finish_reason"] == "stop"
         content = data["choices"][0]["message"]["content"] or ""
-        assert "20501" in content or "20,501" in content, \
-            f"Expected 20501 through the noisy server, got: {content}"
+        assert "20501" in content, \
+            f"Expected the noisy server's marker response, got: {content}"
 
 
 def test_mcp_concurrent_tool_calls_do_not_cross_deliver():

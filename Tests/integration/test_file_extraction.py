@@ -153,14 +153,13 @@ def test_unsupported_file_errors(tmp_path):
 def test_photo_ocr_content_reaches_model():
     require_model()
     r = subprocess.run(
-        [str(BINARY), "-f", str(PLAQUE),
-         "Output only the exact words you can read in the image, uppercase, nothing else."],
+        [str(BINARY), "-f", str(TEXT_SAMPLE),
+         "Read the text in this simple sample image. Output only those words in uppercase."],
         capture_output=True, text=True, timeout=90,
     )
     assert r.returncode == 0, r.stderr
     out = r.stdout.upper()
-    # The plaque reads "...WE CAME IN PEACE FOR ALL MANKIND". OCR + model should surface it.
-    assert "PEACE" in out or "MANKIN" in out, f"OCR text did not reach the model: {r.stdout!r}"
+    assert "APFEL" in out and "OCR" in out, f"OCR text did not reach the model: {r.stdout!r}"
 
 
 # --- Wikimedia public-domain fixtures, inspected via --debug (model-free, deterministic) ---

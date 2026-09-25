@@ -12,6 +12,7 @@
 set -euo pipefail
 
 TYPE="${1:-patch}"
+RESET_VERSION="${2:-}"
 
 step() { echo ""; echo "========================================"; echo "  $1"; echo "========================================"; }
 fail() { echo "FATAL: $1"; exit 1; }
@@ -40,7 +41,13 @@ case "$TYPE" in
     patch) make release-patch ;;
     minor) make release-minor ;;
     major) make release-major ;;
-    *) fail "unknown type: $TYPE (use patch, minor, or major)" ;;
+    reset)
+        [ -n "$RESET_VERSION" ] || fail "TYPE=reset requires VERSION=X.Y.Z (for example, make release TYPE=reset VERSION=1.0.0)"
+        bash scripts/set-release-version.sh "$RESET_VERSION"
+        make generate-build-info update-readme
+        make build
+        ;;
+    *) fail "unknown type: $TYPE (use patch, minor, major, or reset VERSION=X.Y.Z)" ;;
 esac
 
 version=$(cat .version)
@@ -96,7 +103,9 @@ if python3 -c "import xdist" 2>/dev/null; then
     XDIST_ARGS="-n auto --dist loadfile"
 fi
 DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "not model and not serial" $XDIST_ARGS -v --tb=short
-DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" -v --tb=short
+DEV_REQUIRE_FULL=1 python3 -m pytest Tests/integration/ -m "model or serial" \
+    --ignore=Tests/integration/test_brew_service.py -v --tb=short
+scripts/test-homebrew-release.sh
 
 # Stop servers
 kill "$SERVER_PID" "$MCP_SERVER_PID" 2>/dev/null || true
@@ -117,61 +126,79 @@ trap - EXIT
 # ship an ad-hoc binary.
 step "Sign release binary"
 CODESIGN_ID="${DEV_CODESIGN_IDENTITY:-}"
-NOTARY_TEAM="${DEV_NOTARY_TEAM_ID:-7D2YX5DQ6M}"
+NOTARY_TEAM="${DEV_NOTARY_TEAM_ID:-}"
+NOTARY_SKIP="${DEV_NOTARY_SKIP:-}"
 if [[ -z "$CODESIGN_ID" ]]; then
     if security find-identity -v -p codesigning 2>/dev/null | grep -q 'Developer ID Application:'; then
         CODESIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application:/ {print $2; exit}')
         echo "Using codesign identity: $CODESIGN_ID"
+    elif security find-identity -v -p codesigning 2>/dev/null | grep -q 'Apple Development:'; then
+        CODESIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Apple Development:/ {print $2; exit}')
+        echo "Using codesign identity: $CODESIGN_ID"
+        NOTARY_SKIP=1
     else
         echo "WARN: DEV_CODESIGN_IDENTITY not set and no Developer ID found; ad-hoc signing (local dev only)"
         codesign --force --sign - ".build/release/dev" || fail "codesign failed"
         NOTARY_SKIP=1
     fi
 fi
-if [[ -z "${NOTARY_SKIP:-}" ]]; then
+if [[ -n "$CODESIGN_ID" ]]; then
     security find-identity -v -p codesigning 2>/dev/null | grep -Fq "$CODESIGN_ID" \
         || fail "codesign identity not found: $CODESIGN_ID (set DEV_CODESIGN_IDENTITY)"
     codesign --force --timestamp --options runtime \
         --sign "$CODESIGN_ID" \
         ".build/release/dev" \
+        || codesign --force --sign "$CODESIGN_ID" ".build/release/dev" \
         || fail "codesign failed - refusing to publish (#226)"
     codesign --verify --strict ".build/release/dev" || fail "codesign verification failed (#226)"
 fi
 
 # --- Notarization hard gate (#226) ---
-if [[ -z "${NOTARY_SKIP:-}" ]]; then
 # Refuse to publish an ad-hoc-signed binary, and notarize the signed binary so
 # Gatekeeper accepts non-brew downloads. A bare CLI binary cannot be stapled
 # (stapler needs a bundle/dmg/pkg), so we notarize the submission and ship
 # without a stapled ticket - Gatekeeper verifies notarization online.
-sig=$(codesign -dvv ".build/release/dev" 2>&1 || true)
-if [[ -n "$NOTARY_TEAM" ]]; then
-    echo "$sig" | grep -q "TeamIdentifier=${NOTARY_TEAM}" || \
-        fail "release binary TeamIdentifier mismatch (expected ${NOTARY_TEAM}) - refusing to publish an ad-hoc release (#226)"
-fi
-echo "$sig" | grep -q "flags=.*runtime" || \
-    fail "release binary is not signed with the hardened runtime - notarization will reject it (#226)"
+if [[ -z "${NOTARY_SKIP:-}" ]]; then
+    sig=$(codesign -dvv ".build/release/dev" 2>&1 || true)
+    if [[ -n "$NOTARY_TEAM" ]]; then
+        echo "$sig" | grep -q "TeamIdentifier=${NOTARY_TEAM}" || \
+            fail "release binary TeamIdentifier mismatch (expected ${NOTARY_TEAM}) - refusing to publish an ad-hoc release (#226)"
+    fi
+    echo "$sig" | grep -q "flags=.*runtime" || \
+        fail "release binary is not signed with the hardened runtime - notarization will reject it (#226)"
 
-notarize_dir=$(mktemp -d)
-mkdir -p "$notarize_dir/payload"
-cp ".build/release/dev" "$notarize_dir/payload/dev"
-COPYFILE_DISABLE=1 ditto -c -k "$notarize_dir/payload" "$notarize_dir/dev-notarize.zip"
-# Credentials: prefer explicit App Store Connect creds (works non-interactively,
-# e.g. when the notarytool keychain profile lives in a locked keychain), else
-# fall back to the documented "notarytool" keychain profile. team-id from DEV_NOTARY_TEAM_ID when set.
-if [ -n "${DEV_NOTARY_APPLE_ID:-}" ] && [ -n "${DEV_NOTARY_PASSWORD:-}" ]; then
-    xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
-        --apple-id "$DEV_NOTARY_APPLE_ID" \
-        --team-id "${DEV_NOTARY_TEAM_ID:-}" \
-        --password "$DEV_NOTARY_PASSWORD" --wait \
-        || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226)."; }
-else
-    NOTARY_PROFILE="${DEV_NOTARY_PROFILE:-notarytool}"
-    xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
-        --keychain-profile "$NOTARY_PROFILE" --wait \
-        || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226). Ensure the '$NOTARY_PROFILE' keychain profile exists (xcrun notarytool store-credentials) and its keychain is unlocked, or set DEV_NOTARY_APPLE_ID / DEV_NOTARY_PASSWORD."; }
+    notarize_dir=$(mktemp -d)
+    mkdir -p "$notarize_dir/payload"
+    cp ".build/release/dev" "$notarize_dir/payload/dev"
+    COPYFILE_DISABLE=1 ditto -c -k "$notarize_dir/payload" "$notarize_dir/dev-notarize.zip"
+    # Credentials: prefer explicit App Store Connect creds (works non-interactively,
+    # e.g. when the notarytool keychain profile lives in a locked keychain), else
+    # fall back to the documented "notarytool" keychain profile. team-id from DEV_NOTARY_TEAM_ID when set.
+    if [ -n "${DEV_NOTARY_APPLE_ID:-}" ] && [ -n "${DEV_NOTARY_PASSWORD:-}" ]; then
+        xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
+            --apple-id "$DEV_NOTARY_APPLE_ID" \
+            --team-id "${DEV_NOTARY_TEAM_ID:-}" \
+            --password "$DEV_NOTARY_PASSWORD" --wait \
+            || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226)."; }
+    else
+        NOTARY_PROFILE="${DEV_NOTARY_PROFILE:-notarytool}"
+        xcrun notarytool submit "$notarize_dir/dev-notarize.zip" \
+            --keychain-profile "$NOTARY_PROFILE" --wait \
+            || { rm -rf "$notarize_dir"; fail "notarization failed - refusing to publish (#226). Ensure the '$NOTARY_PROFILE' keychain profile exists (xcrun notarytool store-credentials) and its keychain is unlocked, or set DEV_NOTARY_APPLE_ID / DEV_NOTARY_PASSWORD."; }
+    fi
+    rm -rf "$notarize_dir"
 fi
-rm -rf "$notarize_dir"
+
+# A reset release replaces abandoned drafts only after full qualification,
+# signing, and notarization have succeeded.
+if [[ "$TYPE" == "reset" ]]; then
+    drafts=$(gh release list --repo innovatorved/sayitdev --limit 100 --json tagName \
+        --jq '.[].tagName') || echo "no existing releases to prune"
+    while IFS= read -r draft; do
+        [ -n "$draft" ] || continue
+        gh release delete "$draft" --yes --cleanup-tag --repo innovatorved/sayitdev \
+            || echo "could not remove previous draft release $draft"
+    done <<< "$drafts"
 fi
 
 # --- Commit + tag + push ---

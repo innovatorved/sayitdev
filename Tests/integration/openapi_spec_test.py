@@ -495,15 +495,16 @@ def test_error_invalid_json_schema():
 
 
 def test_error_image_rejection_schema():
-    """Image content is accepted when allowImages is enabled (macOS 27 vision)."""
-    status, _ = chat([{
+    """Image content with unreachable URL returns 400 and matches error schema."""
+    status, data = chat([{
         "role": "user",
         "content": [
             {"type": "text", "text": "What's this?"},
             {"type": "image_url", "image_url": {"url": "http://example.com/x.jpg"}},
         ],
     }])
-    assert status == 200
+    assert status == 400
+    validate(instance=data, schema=ERROR_RESPONSE_SCHEMA)
 
 
 def test_error_unsupported_n_schema():

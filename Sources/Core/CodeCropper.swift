@@ -55,11 +55,29 @@ public enum CodeCropper {
     /// Returns nil only when the response is empty or whitespace-only — the
     /// CLI's exit-7 case.
     public static func crop(from response: String) -> Crop? {
-        if let fenced = extract(from: response) { return fenced }
+        if let fenced = extract(from: response) {
+            return commandEnvelope(from: fenced.code) ?? fenced
+        }
+        if let command = commandEnvelope(from: response) { return command }
         let normalized = response.replacingOccurrences(of: "\r\n", with: "\n")
         let body = trimmed(normalized.components(separatedBy: "\n"))
         guard !body.isEmpty else { return nil }
         return Crop(code: unwrapInlineSpan(body), language: nil)
+    }
+
+    /// Unwrap the JSON command envelope emitted by some FoundationModels SDKs.
+    private static func commandEnvelope(from response: String) -> Crop? {
+        if let data = response.data(using: .utf8),
+           let object = try? JSONSerialization.jsonObject(with: data),
+           let envelope = object as? [String: Any],
+           envelope["language_info"] != nil,
+           let command = envelope["command"] as? String {
+            let code = trimmed(command.replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: "\n"))
+            guard !code.isEmpty else { return nil }
+            return Crop(code: code, language: nil)
+        }
+        return nil
     }
 
     /// Unwrap `body` (newline-terminated) when its content is exactly one

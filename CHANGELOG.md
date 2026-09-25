@@ -17,6 +17,10 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ### Fixed
 
+- Chat completions now return a clear 400 for image URLs that cannot be loaded, instead of silently dropping the requested image.
+- Newer FoundationModels safety errors with Apple's explicit unsafe-content message map to the guardrail response instead of HTTP 500.
+- `--code` extracts the command from FoundationModels' JSON-wrapped code response, keeping shell output pipe-safe.
+- Fixed the duplicate `isRetryableError(_:)` declaration that prevented the core target from compiling, while preserving retry classification for legacy `ApfelError` values.
 - `dev --listen` silence polling runs in the same `@MainActor` async function as capture setup (no nested monitor `Task`), eliminating child-task deallocation races at end-of-speech.
 - The mic tap appends to the recognition request under the same lock as stop/end, so a realtime callback cannot `append` after `endAudio()`.
 - First-capture reliability on Bluetooth mics: `MicCaptureSession.start()` waits (up to 2s, zero delay on the normal path) for a usable input format during A2DP→HFP profile switch.
@@ -38,7 +42,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 - `dev --listen` streams live partial transcript to stdout and stops on pause (~1.5s silence) or after ~8s with no speech, instead of a fixed 30s timeout.
 - Default STT/TTS locale is `en-US` when `--locale` / `DEV_STT_LOCALE` are omitted (`dev --listen` works without `--locale en-US`).
 
-## [1.0.0] - 2026-07-11
+## [1.0.0-preview] - 2026-07-11
 
 ### Added
 
@@ -438,7 +442,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## Upstream (apfel) history
 
-## [1.0.0] - 2026-04-12
+### [apfel-1.0.0] - 2026-04-12
 
 First stable release. CLI flags, exit codes, API endpoints, and response schemas are now semver-protected (see [STABILITY.md](STABILITY.md)).
 
