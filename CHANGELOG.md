@@ -10,7 +10,7 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 ### Added
 
 - `dev --ui` command line flag to start the server with CORS enabled and automatically launch the web chat and vision UI in the default browser.
-- Production-grade web chat, vision, and audio interface styled with Fanout.sh / system-design design tokens, dark and light theme switching, syntax-highlighted code blocks with 1-click copy, responsive conversation history, drag-and-drop & clipboard image attachments, and TTS audio playback.
+- Web chat, vision, and audio interface based on innovatorved/chatbot (shadcn/ui + Tailwind design tokens, Vercel AI Chatbot layout, multimodal attachments, responsive sidebar history, and audio playback).
 
 ## [1.0.0] - 2026-09-25
 
