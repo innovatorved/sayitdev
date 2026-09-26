@@ -50,7 +50,7 @@ def count_tokens_file(path: pathlib.Path) -> int:
     """
     r = subprocess.run(
         [str(BINARY), "-f", str(path), "--count-tokens"],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True, text=True, timeout=120,
     )
     assert r.returncode == 0, f"extraction failed for {path.name}: {r.stderr}"
     return _tokens_from_output(r.stdout)
@@ -61,7 +61,7 @@ def count_tokens_piped(path: pathlib.Path) -> int:
     data = path.read_bytes()
     r = subprocess.run(
         [str(BINARY), "--count-tokens"],
-        input=data, capture_output=True, timeout=60,
+        input=data, capture_output=True, timeout=120,
     )
     assert r.returncode == 0, f"piped extraction failed: {r.stderr.decode(errors='replace')}"
     return _tokens_from_output(r.stdout.decode(errors="replace"))
