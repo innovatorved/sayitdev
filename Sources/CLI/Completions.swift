@@ -78,6 +78,7 @@ public enum ShellCompletions {
             CompletionFlag(["--chat"], .none, "Interactive conversation"),
             CompletionFlag(["--stream"], .none, "Stream a single response"),
             CompletionFlag(["--serve"], .none, "Start OpenAI-compatible HTTP server"),
+            CompletionFlag(["--ui"], .none, "Start server and open web chat and vision UI in browser"),
             CompletionFlag(["--benchmark"], .none, "Run internal benchmarks"),
             CompletionFlag(["--count-tokens"], .none, "Count tokens without calling the model"),
             CompletionFlag(["--strict"], .none, "With --count-tokens: exit 4 if over budget"),

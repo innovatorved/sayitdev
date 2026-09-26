@@ -1,3 +1,12 @@
+// ============================================================================
+// WebUI.swift — Production-Grade Embedded Web Chat, Vision & Audio Interface
+// Part of dev — Apple Intelligence from the command line
+// ============================================================================
+
+import Foundation
+
+public enum WebUIContent {
+    public static let html: String = ##"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -662,17 +671,20 @@
     document.getElementById('refresh-btn').onclick = checkHealth;
     serverInput.onchange = checkHealth;
 
+    // Auto-grow textarea
     promptInput.addEventListener('input', () => {
       promptInput.style.height = 'auto';
       promptInput.style.height = Math.min(promptInput.scrollHeight, 180) + 'px';
     });
 
+    // File attachments
     attachBtn.onclick = () => filePicker.click();
     filePicker.onchange = (e) => {
       const file = e.target.files[0];
       if (file) handleImage(file);
     };
 
+    // Drag and drop & paste
     ['dragenter', 'dragover'].forEach(name => {
       inputBox.addEventListener(name, (e) => { e.preventDefault(); inputBox.classList.add('drag-over'); });
     });
@@ -825,6 +837,7 @@
         conv.messages.push({ role: 'assistant', content: fullText });
         saveConversations();
 
+        // Add TTS speak button
         const footer = assistantRow.querySelector('.msg-footer');
         const speakBtn = document.createElement('button');
         speakBtn.className = 'audio-play-btn';
@@ -879,11 +892,15 @@
 
     function renderMarkdown(el, md) {
       if (!md) { el.textContent = ''; return; }
+      // Format code blocks
       let html = md.replace(/```([a-zA-Z0-9]*)\n([\s\S]*?)```/g, (match, lang, code) => {
         return `<pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.innerText);this.innerText='Copied!';setTimeout(()=>this.innerText='Copy',1500)">Copy</button><code>${escapeHtml(code.trim())}</code></pre>`;
       });
+      // Bold
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Inline code
       html = html.replace(/`([^`]+)`/g, '<code style="background:var(--code-bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">$1</code>');
+      // Line breaks
       html = html.replace(/\n/g, '<br>');
       el.innerHTML = html;
     }
@@ -910,6 +927,7 @@
       }
     }
 
+    // Voice recording (STT)
     let mediaRecorder = null;
     let audioChunks = [];
     voiceBtn.onclick = async () => {
@@ -953,3 +971,5 @@
   </script>
 </body>
 </html>
+"""##
+}

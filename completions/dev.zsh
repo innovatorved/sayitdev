@@ -22,6 +22,7 @@ _dev() {
     '--chat[Interactive conversation]' \
     '--stream[Stream a single response]' \
     '--serve[Start OpenAI-compatible HTTP server]' \
+    '--ui[Start server and open web chat and vision UI in browser]' \
     '--benchmark[Run internal benchmarks]' \
     '--count-tokens[Count tokens without calling the model]' \
     '--strict[With --count-tokens: exit 4 if over budget]' \

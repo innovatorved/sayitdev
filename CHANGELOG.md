@@ -7,6 +7,11 @@ and this project adheres to [https://semver.org/](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `dev --ui` command line flag to start the server with CORS enabled and automatically launch the web chat and vision UI in the default browser.
+- Embedded web chat and vision UI served directly from the server at `GET /` and `GET /ui`.
+
 ## [1.0.0] - 2026-09-25
 
 ### Added

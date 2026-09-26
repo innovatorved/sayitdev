@@ -25,6 +25,7 @@ struct ServerConfig: Sendable {
     let retryCount: Int
     let permissive: Bool
     let allowInsecureBind: Bool
+    let openUI: Bool
 
     var healthRequiresAuthentication: Bool {
         token != nil && !publicHealth && !isLoopbackHost(host)
@@ -75,6 +76,28 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil, voiceConfi
 
     // Security middleware: origin check, token auth, CORS headers
     router.add(middleware: SecurityMiddleware<BasicRequestContext>(config: config))
+
+    // Web UI
+    router.get("/") { _, _ -> Response in
+        return Response(
+            status: .ok,
+            headers: [.contentType: "text/html; charset=utf-8"],
+            body: .init(byteBuffer: ByteBuffer(string: WebUIContent.html))
+        )
+    }
+    router.head("/") { _, _ -> Response in
+        return Response(status: .ok, headers: [.contentType: "text/html; charset=utf-8"])
+    }
+    router.get("/ui") { _, _ -> Response in
+        return Response(
+            status: .ok,
+            headers: [.contentType: "text/html; charset=utf-8"],
+            body: .init(byteBuffer: ByteBuffer(string: WebUIContent.html))
+        )
+    }
+    router.head("/ui") { _, _ -> Response in
+        return Response(status: .ok, headers: [.contentType: "text/html; charset=utf-8"])
+    }
 
     // Health - includes model availability from SDK.
     // contextSize and supportedLanguages captured from startup to avoid
@@ -375,6 +398,7 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil, voiceConfi
 
     printStderr("")
     printStderr(styledErr("Endpoints:", .yellow, .bold))
+    printStderr("  GET  http://\(config.host):\(config.port)/ (Web UI)")
     printStderr("  POST http://\(config.host):\(config.port)/v1/chat/completions")
     printStderr("  POST http://\(config.host):\(config.port)/v1/audio/speech")
     printStderr("  POST http://\(config.host):\(config.port)/v1/audio/transcriptions")
@@ -386,6 +410,20 @@ func startServer(config: ServerConfig, mcpManager: MCPManager? = nil, voiceConfi
     }
     printStderr("  GET  http://\(config.host):\(config.port)/health")
     printStderr("")
+
+    if config.openUI {
+        let port = config.port
+        let host = ServerSecurity.isLoopbackHost(config.host) ? "127.0.0.1" : config.host
+        let urlString = "http://\(host):\(port)/"
+        printStderr("Opening UI in browser: \(urlString)")
+        Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            p.arguments = [urlString]
+            try? p.run()
+        }
+    }
 
     await SpeechInput.prewarmForServer()
 

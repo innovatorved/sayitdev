@@ -386,7 +386,8 @@ do {
             retryEnabled: parsed.retryEnabled,
             retryCount: parsed.retryCount,
             permissive: parsed.permissive,
-            allowInsecureBind: parsed.serverAllowInsecureBind
+            allowInsecureBind: parsed.serverAllowInsecureBind,
+            openUI: parsed.openUI
         )
         try await startServer(config: config, mcpManager: mcpManager, voiceConfig: voiceConfig)
 

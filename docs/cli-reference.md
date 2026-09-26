@@ -50,6 +50,7 @@ CONTEXT (--chat)
   --context-status                        Print chat context fill after each turn
 
 SERVER (--serve)
+  --ui                                    Start server and open web chat UI in browser
   --port <n>                              Server port (default: 11434)
   --host <addr>                           Bind address (default: 127.0.0.1)
   --cors                                  Enable CORS headers
@@ -176,6 +177,9 @@ dev --chat --context-status
 # --serve
 dev --serve
 dev --serve --port 3000 --host 0.0.0.0
+
+# --ui
+dev --ui
 
 # --cors, --token, --footgun
 dev --serve --cors

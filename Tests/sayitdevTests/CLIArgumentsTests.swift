@@ -60,6 +60,13 @@ func runCLIArgumentsTests() {
         try assertEqual(args.mode, .serve)
     }
 
+    test("--ui sets serve mode, cors, and openUI") {
+        let args = try CLIArguments.parse(["--ui"])
+        try assertEqual(args.mode, .serve)
+        try assertTrue(args.serverCORS)
+        try assertTrue(args.openUI)
+    }
+
     test("--benchmark sets benchmark mode") {
         let args = try CLIArguments.parse(["--benchmark"])
         try assertEqual(args.mode, .benchmark)

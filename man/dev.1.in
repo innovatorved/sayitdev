@@ -31,6 +31,10 @@ dev \- on-device voice and Apple Intelligence from the command line
 .RI [ server-options ]
 .br
 .B dev
+.B \-\-ui
+.RI [ server-options ]
+.br
+.B dev
 .B \-\-benchmark
 .br
 .B dev
@@ -418,6 +422,9 @@ Print the current chat context fill after each turn.
 .TP
 .B \-\-serve
 Start the OpenAI-compatible HTTP server.
+.TP
+.B \-\-ui
+Start the OpenAI-compatible HTTP server and open the web chat and vision UI in the default browser.
 .TP
 .BI \-\-port " number"
 Port to bind. Default

@@ -867,6 +867,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
       \(appName) --chat                   Interactive conversation
       \(appName) --stream <prompt>        Stream a single response
       \(appName) --serve                  Start OpenAI-compatible HTTP server
+      \(appName) --ui                     Start server and open web chat & vision UI
       \(appName) --speak <text>           Text-to-speech (stdin or argument)
       \(appName) --listen                 Speech-to-text from default microphone
       \(appName) --transcribe <file>      Speech-to-text from an audio file
@@ -927,6 +928,7 @@ func printUsage(to handle: FileHandle = .standardOutput) {
 
     \(styled("SERVER OPTIONS:", .yellow, .bold))
           --serve                Start OpenAI-compatible HTTP server
+          --ui                   Start server and open web chat & vision UI
           --port <number>        Server port [default: 11434]
           --host <address>       Bind address [default: 127.0.0.1]
           --cors                 Enable CORS headers for browser clients

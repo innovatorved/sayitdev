@@ -118,6 +118,8 @@ public struct CLIArguments: Sendable, Equatable {
     public var serverPublicHealth: Bool = false
     /// Override refusal of non-loopback `--serve` without `--token` (#228 hardening).
     public var serverAllowInsecureBind: Bool = false
+    /// Open the web chat and vision UI in the default browser when starting the server.
+    public var openUI: Bool = false
 
     // MARK: - MCP
 
@@ -174,7 +176,7 @@ public struct CLIArguments: Sendable, Equatable {
         "-h", "--help", "-v", "--version", "--release",
         "-s", "--system", "--system-file", "-o", "--output",
         "-q", "--quiet", "--no-color",
-        "--chat", "--stream", "--serve", "--benchmark", "--count-tokens",
+        "--chat", "--stream", "--serve", "--ui", "--benchmark", "--count-tokens",
         "--strict", "--model-info", "--update", "--demos",
         "--port", "--host", "--cors", "--max-concurrent", "--debug",
         "--allowed-origins", "--no-origin-check", "--token", "--token-auto",
@@ -643,6 +645,12 @@ extension CLIArguments {
             case "--serve":
                 context.modeFlagsSeen.append("--serve")
                 result.mode = .serve
+
+            case "--ui":
+                context.modeFlagsSeen.append("--ui")
+                result.mode = .serve
+                result.serverCORS = true
+                result.openUI = true
 
             case "--benchmark":
                 context.modeFlagsSeen.append("--benchmark")
