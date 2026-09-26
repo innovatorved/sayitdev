@@ -8,7 +8,8 @@
     /* ═══════════════════════════════════════════════════════════════
        Design Tokens & Themes — innovatorved/chatbot (shadcn/ui + Tailwind)
        ═══════════════════════════════════════════════════════════════ */
-    :root {
+    :root, [data-theme="light"], html:not(.dark) {
+      color-scheme: light;
       --background: 0 0% 100%;
       --foreground: 0 0% 9%;
       --card: 0 0% 100%;
@@ -40,7 +41,8 @@
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
-    .dark {
+    .dark, [data-theme="dark"], html.dark {
+      color-scheme: dark;
       --background: 0 0% 10%;
       --foreground: 0 0% 95%;
       --card: 0 0% 10%;
@@ -721,11 +723,7 @@
   <aside id="sidebar">
     <div class="sidebar-header">
       <a href="/" class="sidebar-brand">
-        <!-- BotIcon from icons.tsx -->
-        <svg height="18" viewBox="0 0 16 16" width="18" fill="currentColor">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M8.75 2.79933C9.19835 2.53997 9.5 2.05521 9.5 1.5C9.5 0.671573 8.82843 0 8 0C7.17157 0 6.5 0.671573 6.5 1.5C6.5 2.05521 6.80165 2.53997 7.25 2.79933V5H7C4.027 5 1.55904 7.16229 1.08296 10H0V13H1V14.5V16H2.5H13.5H15V14.5V13H16V10H14.917C14.441 7.16229 11.973 5 9 5H8.75V2.79933ZM7 6.5C4.51472 6.5 2.5 8.51472 2.5 11V14.5H13.5V11C13.5 8.51472 11.4853 6.5 9 6.5H7ZM7.25 11.25C7.25 12.2165 6.4665 13 5.5 13C4.5335 13 3.75 12.2165 3.75 11.25C3.75 10.2835 4.5335 9.5 5.5 9.5C6.4665 9.5 7.25 10.2835 7.25 11.25ZM10.5 13C11.4665 13 12.25 12.2165 12.25 11.25C12.25 10.2835 11.4665 9.5 10.5 9.5C9.5335 9.5 8.75 10.2835 8.75 11.25C8.75 12.2165 9.5335 13 10.5 13Z"/>
-        </svg>
-        <span>Chatbot</span>
+        <span style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em; padding-left: 2px;">Chatbot</span>
       </a>
       <button class="btn-new-chat" id="sidebar-new-chat-btn" title="New Chat">
         <!-- PlusIcon from icons.tsx -->
@@ -902,22 +900,31 @@
   const modelNameLabel = document.getElementById('model-name-label');
 
   // ── Theme Management ──────────────────────────────────────────
-  function initTheme() {
-    const saved = localStorage.getItem('cb_theme') || 'dark';
-    if (saved === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-  }
-  themeToggleBtn.onclick = () => {
-    const isDark = document.documentElement.classList.contains('dark');
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('cb_theme', 'light');
-    } else {
+  function setTheme(theme) {
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.style.colorScheme = 'dark';
       localStorage.setItem('cb_theme', 'dark');
+      themeToggleBtn.innerHTML = '<svg height="16" viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+      themeToggleBtn.title = 'Switch to light mode';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+      localStorage.setItem('cb_theme', 'light');
+      themeToggleBtn.innerHTML = '<svg height="16" viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+      themeToggleBtn.title = 'Switch to dark mode';
     }
+  }
+
+  themeToggleBtn.onclick = () => {
+    const isDark = document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+    setTheme(isDark ? 'light' : 'dark');
   };
-  initTheme();
+
+  const initialTheme = localStorage.getItem('cb_theme') || 'dark';
+  setTheme(initialTheme);
 
   // ── Sidebar Toggle ────────────────────────────────────────────
   sidebarToggleBtn.onclick = () => {
@@ -1237,10 +1244,10 @@
         <span>${elapsed}s</span>
         <span>&bull;</span>
         <button class="action-btn" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(fullText)}')); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy',1500)">
-          <span>📋</span> Copy
+          Copy
         </button>
         <button class="action-btn" onclick="speakMessage(decodeURIComponent('${encodeURIComponent(fullText)}'))">
-          <span>🔊</span> Listen
+          Listen
         </button>
       `;
 
@@ -1303,10 +1310,10 @@
       if (text) {
         actions.innerHTML = `
           <button class="action-btn" onclick="navigator.clipboard.writeText(decodeURIComponent('${encodeURIComponent(text)}')); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy',1500)">
-            <span>📋</span> Copy
+            Copy
           </button>
           <button class="action-btn" onclick="speakMessage(decodeURIComponent('${encodeURIComponent(text)}'))">
-            <span>🔊</span> Listen
+            Listen
           </button>
         `;
       }
