@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SayItDev Chat & Vision</title>
+  <style>
+    :root {
+      --bg: #1a1a1e;
+      --card-bg: #24242a;
+      --bubble-user: #2d62d8;
+      --bubble-bot: #2c2c34;
+      --border: #383842;
+      --text: #f0f0f4;
+      --text-muted: #8e8e98;
+      --accent: #3b82f6;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      font-weight: 500;
+    }
+    .status-badge.offline {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+    .server-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 200px;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+      height: 100%;
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+      gap: 6px;
+    }
+    .message.user {
+      align-self: flex-end;
+    }
+    .message.assistant {
+      align-self: flex-start;
+    }
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .message.user .bubble {
+      background: var(--bubble-user);
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+    .message.assistant .bubble {
+      background: var(--bubble-bot);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+    .attached-img {
+      max-width: 260px;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+    .msg-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      padding: 0 4px;
+    }
+    #input-area {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #image-preview-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    #image-preview-bar img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    #image-preview-bar .img-info {
+      flex: 1;
+      font-size: 0.85rem;
+    }
+    #remove-image-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px;
+    }
+    #remove-image-btn:hover { color: var(--danger); }
+    .input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    #prompt-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      resize: none;
+      min-height: 44px;
+      max-height: 160px;
+      line-height: 1.4;
+      font-family: inherit;
+    }
+    #prompt-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .action-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      transition: opacity 0.2s;
+    }
+    .action-btn:hover { opacity: 0.9; }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { background: var(--bg); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="logo">🍏 SayItDev UI</div>
+      <div id="status-badge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">Checking server...</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <label for="server-url" style="color:var(--text-muted)">Server:</label>
+      <input id="server-url" class="server-input" value="http://127.0.0.1:11434" />
+      <button id="reconnect-btn" class="icon-btn" title="Refresh health">🔄</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="chat-container">
+      <div id="messages">
+        <div class="message assistant">
+          <div class="bubble">Hello! I am SayItDev running on-device with Apple Intelligence. You can chat with me, ask questions, or attach images for vision analysis!</div>
+          <div class="msg-meta">System Ready</div>
+        </div>
+      </div>
+
+      <div id="input-area">
+        <div id="image-preview-bar">
+          <img id="preview-img" src="" alt="attachment preview" />
+          <div class="img-info">
+            <span id="preview-name" style="font-weight: 500;">image.png</span>
+            <span id="preview-size" style="color: var(--text-muted); margin-left: 8px;"></span>
+          </div>
+          <button id="remove-image-btn" title="Remove image">&times;</button>
+        </div>
+
+        <div class="input-row">
+          <input type="file" id="file-input" accept="image/*" style="display:none;" />
+          <button id="attach-btn" class="icon-btn" title="Attach image (Vision)">📷</button>
+          <textarea id="prompt-input" rows="1" placeholder="Type a message or paste an image... (Enter to send, Shift+Enter for newline)"></textarea>
+          <button id="send-btn" class="action-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const serverUrlInput = document.getElementById('server-url');
+    const statusBadge = document.getElementById('status-badge');
+    const statusText = document.getElementById('status-text');
+    const messagesContainer = document.getElementById('messages');
+    const promptInput = document.getElementById('prompt-input');
+    const sendBtn = document.getElementById('send-btn');
+    const attachBtn = document.getElementById('attach-btn');
+    const fileInput = document.getElementById('file-input');
+    const imagePreviewBar = document.getElementById('image-preview-bar');
+    const previewImg = document.getElementById('preview-img');
+    const previewName = document.getElementById('preview-name');
+    const previewSize = document.getElementById('preview-size');
+    const removeImageBtn = document.getElementById('remove-image-btn');
+    const reconnectBtn = document.getElementById('reconnect-btn');
+
+    let currentImageData = null; // base64 data URI
+    let chatHistory = [];
+
+    async function checkHealth() {
+      const baseUrl = serverUrlInput.value.replace(/\/+$/, '');
+      try {
+        const res = await fetch(`${baseUrl}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          statusBadge.className = 'status-badge';
+          statusText.textContent = `Connected (${data.model || 'on-device'})`;
+        } else {
+          statusBadge.className = 'status-badge offline';
+          statusText.textContent = `Server error (${res.status})`;
+        }
+      } catch (err) {
+        statusBadge.className = 'status-badge offline';
+        statusText.textContent = 'Server offline (Run: dev --serve --cors)';
+      }
+    }
+
+    reconnectBtn.addEventListener('click', checkHealth);
+    serverUrlInput.addEventListener('change', checkHealth);
+    checkHealth();
+
+    // Auto resize textarea
+    promptInput.addEventListener('input', () => {
+      promptInput.style.height = 'auto';
+      promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
+    });
+
+    // Attach file
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleImageFile(file);
+    });
+
+    // Drag and drop & paste images
+    window.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+          const blob = item.getAsFile();
+          handleImageFile(blob);
+          break;
+        }
+      }
+    });
+
+    function handleImageFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImageData = e.target.result;
+        previewImg.src = currentImageData;
+        previewName.textContent = file.name || 'Pasted Image';
+        previewSize.textContent = `${Math.round(file.size / 1024)} KB`;
+        imagePreviewBar.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    removeImageBtn.addEventListener('click', () => {
+      currentImageData = null;
+      fileInput.value = '';
+      imagePreviewBar.style.display = 'none';
+    });
+
+    promptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    async function sendMessage() {
+      const text = promptInput.value.trim();
+      if (!text && !currentImageData) return;
+
+      const userContent = [];
+      if (text) userContent.push({ type: 'text', text });
+      if (currentImageData) {
+        userContent.push({
+          type: 'image_url',
+          image_url: { url: currentImageData }
+        });
+      }
+
+      // Add user message to UI
+      appendMessage('user', text, currentImageData);
+
+      const requestPayload = {
+        model: 'sayitdev-on-device',
+        stream: true,
+        messages: [
+          ...chatHistory,
+          { role: 'user', content: userContent }
+        ]
+      };
+
+      // Reset input
+      promptInput.value = '';
+      promptInput.style.height = 'auto';
+      const sentImage = currentImageData;
+      currentImageData = null;
+      fileInput.value = '';
+      imagePreviewBar.style.display = 'none';
+      sendBtn.disabled = true;
+
+      // Assistant bubble for streaming
+      const assistantMsg = appendMessage('assistant', '', null);
+      const bubble = assistantMsg.querySelector('.bubble');
+
+      const baseUrl = serverUrlInput.value.replace(/\/+$/, '');
+      try {
+        const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestPayload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          bubble.textContent = `Error: ${errData.error?.message || response.statusText}`;
+          sendBtn.disabled = false;
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // keep last incomplete line
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
+              try {
+                const json = JSON.parse(trimmed.slice(6));
+                const delta = json.choices[0]?.delta?.content || '';
+                fullText += delta;
+                bubble.textContent = fullText;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              } catch (_) {}
+            }
+          }
+        }
+
+        chatHistory.push({ role: 'user', content: userContent });
+        chatHistory.push({ role: 'assistant', content: fullText });
+
+      } catch (err) {
+        bubble.textContent = `Network Error: ${err.message}`;
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    function appendMessage(role, text, imageSrc) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${role}`;
+
+      let imgHtml = '';
+      if (imageSrc) {
+        imgHtml = `<img src="${imageSrc}" class="attached-img" alt="attachment" />`;
+      }
+
+      msgDiv.innerHTML = `
+        ${imgHtml}
+        <div class="bubble">${escapeHtml(text)}</div>
+        <div class="msg-meta">${role === 'user' ? 'You' : 'SayItDev'} • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+      `;
+
+      messagesContainer.appendChild(msgDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return msgDiv;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>
